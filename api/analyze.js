@@ -1,9 +1,7 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
     const chunks = [];
@@ -55,13 +53,16 @@ Voici un enregistrement audio d'une réunion intitulée "${title}" (durée : ${d
 
 Analyse cet enregistrement et réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans backticks, sans texte avant ou après.
 
-Format attendu :
+Format JSON attendu :
 {
-  "transcript": "transcription complète et fidèle en français",
-  "summary": "résumé structuré en 3 à 6 paragraphes",
-  "actions": ["Action 1", "Action 2"]
+  "participants": ["Prénom Nom", "Prénom Nom"],
+  "subjects": ["Sujet 1 abordé", "Sujet 2 abordé"],
+  "decisions": ["Décision 1 prise", "Décision 2 prise"],
+  "summary": "Synthèse générale de la réunion en 2-3 phrases",
+  "actions": ["Action 1 avec responsable si mentionné", "Action 2"]
 }
 
+Si une section n'a pas d'information, mets un tableau vide [].
 Réponds UNIQUEMENT avec le JSON.`;
 
     const result = await model.generateContent([
@@ -76,7 +77,7 @@ Réponds UNIQUEMENT avec le JSON.`;
     try {
       parsed = JSON.parse(clean);
     } catch {
-      parsed = { transcript: rawText, summary: 'Erreur de parsing.', actions: [] };
+      parsed = { participants: [], subjects: [], decisions: [], summary: rawText, actions: [] };
     }
 
     return res.status(200).json(parsed);
