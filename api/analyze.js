@@ -39,7 +39,7 @@ module.exports = async function handler(req, res) {
     const audioFile = files['audio'];
     if (!audioFile) return res.status(400).json({ error: 'Aucun fichier audio reçu' });
 
-    const title = fields['title'] || 'Réunion';
+    const title    = fields['title']    || 'Réunion';
     const duration = fields['duration'] || 'inconnue';
     const datetime = fields['datetime'] || '';
 
@@ -48,23 +48,27 @@ module.exports = async function handler(req, res) {
 
     const audioBase64 = audioFile.data.toString('base64');
 
-    const prompt = `Tu es un assistant spécialisé dans la synthèse de réunions professionnelles.
+    const prompt = `Tu es un assistant spécialisé dans la synthèse de réunions professionnelles francophones.
 
-Voici un enregistrement audio d'une réunion intitulée "${title}" (durée : ${duration}, date : ${datetime}).
+IMPORTANT : Tu dois OBLIGATOIREMENT répondre entièrement en FRANÇAIS, quelle que soit la langue parlée dans l'enregistrement.
+
+Voici un enregistrement audio d'une réunion intitulée "${title}" (durée : ${duration}${datetime ? ', date : ' + datetime : ''}).
 
 Analyse cet enregistrement et réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans backticks, sans texte avant ou après.
 
-Format JSON attendu :
+Format JSON attendu (TOUT en français) :
 {
   "participants": ["Prénom Nom", "Prénom Nom"],
   "subjects": ["Sujet 1 abordé", "Sujet 2 abordé"],
   "decisions": ["Décision 1 prise", "Décision 2 prise"],
-  "summary": "Synthèse générale de la réunion en 2-3 phrases",
+  "summary": "Synthèse générale de la réunion en 2-3 phrases en français",
   "actions": ["Action 1 avec responsable si mentionné", "Action 2"]
 }
 
-Si une section n'a pas d'information, mets un tableau vide [].
-Réponds UNIQUEMENT avec le JSON.`;
+Règles strictes :
+- Toutes les valeurs du JSON doivent être rédigées en français
+- Si une section n'a pas d'information, mets un tableau vide []
+- Réponds UNIQUEMENT avec le JSON, rien d'autre`;
 
     const result = await model.generateContent([
       { inlineData: { mimeType: 'audio/webm', data: audioBase64 } },
