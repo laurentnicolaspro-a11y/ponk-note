@@ -1,8 +1,8 @@
 {
-  "name": "meetsync",
+  "name": "ponk-note",
   "version": "1.0.0",
   "description": "Synthèse intelligente de réunions avec Gemini",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
     "dev": "vercel dev"
   },
