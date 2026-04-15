@@ -32,8 +32,15 @@
     .logo-text span { color: var(--muted); font-weight: 300; }
     #headerMeta { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; }
 
-    .view { display: none; flex-direction: column; flex: 1; min-height: 0; }
-    .view.active { display: flex; }
+    .view { display: none; }
+    .view.active { display: block; }
+    #viewRecorder.active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+    #viewResults.active {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
 
     /* ── RECORDER ── */
     .recorder {
@@ -124,8 +131,7 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
-      flex: 1;
-      padding-top: 14px;
+      padding: 14px 0 40px;
     }
     .results-nav {
       display: flex; align-items: center; justify-content: space-between;
@@ -152,12 +158,9 @@
     }
 
     .results-scroll {
-      overflow-y: scroll;
-      -webkit-overflow-scrolling: touch;
       display: flex;
       flex-direction: column;
       gap: 8px;
-      padding-bottom: 40px;
     }
 
     /* Blocks */
@@ -452,19 +455,6 @@
     APPEL: '📞 Appel', MEDICAL: '🏥 Médical', COURS: '🎓 Cours', MEMO: '📝 Mémo'
   };
 
-  function fixScrollHeight() {
-    const scroll = document.getElementById('resultsScroll');
-    const view = document.getElementById('viewResults');
-    const nav = view.querySelector('.results-nav');
-    const modes = view.querySelector('.modes-row');
-    const viewH = view.clientHeight;
-    const navH = nav ? nav.offsetHeight : 0;
-    const modesH = modes && modes.children.length > 0 ? modes.offsetHeight + 10 : 0;
-    const available = viewH - navH - modesH - 14 - 20;
-    scroll.style.height = available + 'px';
-    scroll.style.maxHeight = available + 'px';
-  }
-
   function renderResults(data) {
     // Modes badges
     const modes = data.modes || [];
@@ -637,7 +627,6 @@
     }
 
     initProgressBar();
-    setTimeout(fixScrollHeight, 50);
   }
 
   // ── Helpers HTML ──
