@@ -1,3 +1,8 @@
 {
-  "version": 2
+  "version": 2,
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/results.html", "dest": "/results.html" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
 }
