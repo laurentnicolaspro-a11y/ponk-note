@@ -8,32 +8,21 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #ffffff;
-      --surface: #f4f4f4;
-      --border: #e8e8e8;
-      --text: #1c1c1c;
-      --muted: #aaaaaa;
-      --danger: #e02020;
-      --green: #16a34a;
+      --bg: #ffffff; --surface: #f4f4f4; --border: #e8e8e8;
+      --text: #1c1c1c; --muted: #aaaaaa; --danger: #e02020; --green: #16a34a;
     }
-
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     html, body {
-      height: 100%; height: 100dvh;
-      overflow: hidden;
+      height: 100%; height: 100dvh; overflow: hidden;
       background: var(--bg); color: var(--text);
       font-family: 'DM Sans', system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
     }
-
     .app {
       display: flex; flex-direction: column;
-      height: 100%; height: 100dvh;
-      max-width: 430px; margin: 0 auto;
+      height: 100%; height: 100dvh; max-width: 430px; margin: 0 auto;
       padding: env(safe-area-inset-top, 0px) 24px env(safe-area-inset-bottom, 16px);
     }
-
     header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 20px 0 16px; flex-shrink: 0;
@@ -51,39 +40,33 @@
       align-items: center; justify-content: space-between;
       padding: 12px 0 8px;
     }
-
     .title-field { width: 100%; flex-shrink: 0; }
     .title-field input {
       width: 100%; background: none; border: none;
-      border-bottom: 1px solid var(--border);
-      padding: 10px 0; font-family: 'DM Sans', sans-serif;
-      font-size: 15px; color: var(--text); outline: none;
-      transition: border-color 0.2s;
+      border-bottom: 1px solid var(--border); padding: 10px 0;
+      font-family: 'DM Sans', sans-serif; font-size: 15px;
+      color: var(--text); outline: none; transition: border-color 0.2s;
     }
     .title-field input:focus { border-color: var(--text); }
     .title-field input::placeholder { color: var(--muted); }
 
     .btn-zone {
       display: flex; flex-direction: column;
-      align-items: center; gap: 24px;
-      flex: 1; justify-content: center;
+      align-items: center; gap: 24px; flex: 1; justify-content: center;
     }
-
     .record-btn {
       width: 176px; height: 176px; border-radius: 50%;
       border: none; background: none; cursor: pointer;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 8px;
-      transition: transform 0.12s;
-      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.12s; -webkit-tap-highlight-color: transparent;
       position: relative; user-select: none;
     }
     .record-btn:active { transform: scale(0.95); }
-
-    .power-svg { width: 140px; height: 140px; transition: all 0.3s; }
+    .power-svg { width: 140px; height: 140px; }
     .power-ring { fill: none; stroke: var(--text); stroke-width: 8; stroke-linecap: round; transition: stroke 0.3s; }
     .power-line { fill: none; stroke: var(--text); stroke-width: 8; stroke-linecap: round; transition: stroke 0.3s; }
-    .record-btn.is-recording .power-ring { stroke: var(--danger); }
+    .record-btn.is-recording .power-ring,
     .record-btn.is-recording .power-line { stroke: var(--danger); }
 
     .pulse-ring {
@@ -94,30 +77,22 @@
     .pulse-ring-2 { inset: -32px; }
     .record-btn.is-recording .pulse-ring-1 { animation: pulse-out 1.6s ease-out infinite; }
     .record-btn.is-recording .pulse-ring-2 { animation: pulse-out 1.6s ease-out 0.5s infinite; }
-
     @keyframes pulse-out {
-      0%   { opacity: 0.5; transform: scale(0.95); }
-      100% { opacity: 0;   transform: scale(1.08); }
+      0% { opacity: 0.5; transform: scale(0.95); }
+      100% { opacity: 0; transform: scale(1.08); }
     }
-
     .btn-label {
-      font-size: 10px; font-weight: 500;
-      letter-spacing: 2.5px; text-transform: uppercase;
-      color: var(--muted); transition: color 0.3s;
+      font-size: 10px; font-weight: 500; letter-spacing: 2.5px;
+      text-transform: uppercase; color: var(--muted); transition: color 0.3s;
     }
     .record-btn.is-recording .btn-label { color: var(--danger); }
-
     .timer {
       font-family: 'DM Mono', monospace; font-size: 17px;
       letter-spacing: 2.5px; color: var(--muted); transition: color 0.3s;
     }
     .timer.recording { color: var(--danger); }
 
-    .bottom-section {
-      width: 100%; display: flex; flex-direction: column;
-      gap: 10px; flex-shrink: 0;
-    }
-
+    .bottom-section { width: 100%; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; }
     .btn-analyze {
       width: 100%; padding: 15px; border-radius: 12px; border: none;
       background: var(--text); color: var(--bg);
@@ -138,10 +113,9 @@
       width: 6px; height: 6px; border-radius: 50%;
       background: var(--muted); flex-shrink: 0; transition: background 0.3s;
     }
-    .status-dot.active  { background: var(--green); }
-    .status-dot.error   { background: var(--danger); }
+    .status-dot.active { background: var(--green); }
+    .status-dot.error  { background: var(--danger); }
     .status-dot.loading { background: var(--text); animation: blink 0.8s ease-in-out infinite; }
-
     @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
 
     /* ── RESULTS ── */
@@ -149,135 +123,141 @@
       display: flex; flex-direction: column; flex: 1;
       min-height: 0; padding: 14px 0 0; gap: 10px;
     }
-
     .results-nav {
-      flex-wrap: wrap; gap: 4px;
       display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 4px;
       flex-shrink: 0; padding-bottom: 12px; border-bottom: 1px solid var(--border);
     }
-
     .btn-back {
       background: none; border: none; font-family: 'DM Sans', sans-serif;
       font-size: 13px; color: var(--muted); cursor: pointer;
       -webkit-tap-highlight-color: transparent;
     }
-
     .meta-info { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; }
 
-    .results-scroll {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: contain;
-      padding-bottom: 16px;
+    /* Modes badges */
+    .modes-row {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      flex-shrink: 0;
+    }
+    .mode-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 100px;
+      background: var(--surface); border: 1px solid var(--border);
+      font-size: 11px; font-weight: 500; color: var(--muted);
     }
 
+    .results-scroll {
+      flex: 1; min-height: 0; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 8px;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain; padding-bottom: 16px;
+    }
+
+    /* Blocks */
     .result-block {
       border: 1px solid var(--border); border-radius: 12px;
       overflow: hidden; flex-shrink: 0;
     }
-
     .result-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 12px 14px; cursor: pointer; user-select: none;
       -webkit-tap-highlight-color: transparent;
     }
     .result-header:active { background: var(--surface); }
-
     .result-label {
       font-size: 11px; font-weight: 500;
       text-transform: uppercase; letter-spacing: 1px; color: var(--muted);
     }
-
     .result-controls { display: flex; align-items: center; gap: 8px; }
-
     .chevron { font-size: 10px; color: var(--muted); transition: transform 0.2s; }
     .result-block.collapsed .chevron { transform: rotate(-90deg); }
     .result-block.collapsed .result-body { display: none; }
-
     .result-body { padding: 0 14px 14px; border-top: 1px solid var(--border); }
 
-    /* Résumé structuré */
-    .summary-section { padding-top: 12px; }
-    .summary-section + .summary-section { padding-top: 10px; border-top: 1px solid var(--border); margin-top: 10px; }
-    .summary-section-title {
+    /* Summary sections */
+    .section { padding-top: 12px; }
+    .section + .section { margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .section-title {
       font-size: 10px; font-weight: 600; text-transform: uppercase;
       letter-spacing: 1.2px; color: var(--muted); margin-bottom: 6px;
     }
-    .summary-section p {
-      font-size: 14px; line-height: 1.7; color: var(--text);
-    }
+    .section p { font-size: 14px; line-height: 1.7; color: var(--text); }
 
-    .result-body ul {
-      list-style: none; display: flex; flex-direction: column;
-      gap: 6px; padding-top: 10px;
-    }
-    .result-body ul li {
-      display: flex; gap: 8px; padding: 9px 11px;
+    /* Lists */
+    .item-list { list-style: none; display: flex; flex-direction: column; gap: 6px; padding-top: 10px; }
+    .item-list li {
+      display: flex; align-items: flex-start; gap: 8px; padding: 9px 11px;
       background: var(--surface); border-radius: 8px;
       font-size: 13px; line-height: 1.6; color: var(--text);
     }
-    .result-body ul li::before { content: '—'; color: var(--muted); flex-shrink: 0; }
+    .item-list li::before { content: '—'; color: var(--muted); flex-shrink: 0; margin-top: 1px; }
+
+    /* Checkable list */
+    .check-list { list-style: none; display: flex; flex-direction: column; gap: 6px; padding-top: 10px; }
+    .check-list li {
+      display: flex; align-items: center; gap: 10px; padding: 9px 11px;
+      background: var(--surface); border-radius: 8px;
+      font-size: 13px; color: var(--text); cursor: pointer;
+      -webkit-tap-highlight-color: transparent; transition: opacity 0.2s;
+    }
+    .check-list li.done { opacity: 0.45; text-decoration: line-through; }
+    .check-box {
+      width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
+      border: 1.5px solid var(--border); background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .check-list li.done .check-box {
+      background: var(--text); border-color: var(--text); color: white; font-size: 11px;
+    }
+
+    /* Location link */
+    .location-link {
+      display: flex; align-items: center; gap: 8px; padding: 9px 11px;
+      background: var(--surface); border-radius: 8px; margin-top: 6px;
+      font-size: 13px; color: var(--text); text-decoration: none;
+      border: 1px solid var(--border);
+    }
+    .location-link:active { background: var(--border); }
+    .location-icon { font-size: 16px; flex-shrink: 0; }
+    .location-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+    .location-name { font-weight: 500; font-size: 13px; color: var(--text); }
+    .location-addr { font-size: 11px; color: var(--muted); }
+    .location-arrow { color: var(--muted); font-size: 12px; }
+
+    /* Finance table */
+    .finance-table { width: 100%; margin-top: 10px; border-collapse: collapse; }
+    .finance-table td { padding: 8px 0; font-size: 13px; border-bottom: 1px solid var(--border); }
+    .finance-table td:last-child { text-align: right; font-family: 'DM Mono', monospace; color: var(--text); }
+    .finance-table tr:last-child td { border-bottom: none; font-weight: 500; }
 
     /* Audio player */
-    .audio-block {
-      border: 1px solid var(--border); border-radius: 12px;
-      overflow: hidden; flex-shrink: 0;
-    }
-
-    .audio-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 14px;
-    }
-
-    .audio-player {
-      padding: 0 14px 14px;
-      border-top: 1px solid var(--border);
-    }
-
-    .audio-controls {
-      display: flex; align-items: center; gap: 12px;
-      padding-top: 12px;
-    }
-
+    .audio-block { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; flex-shrink: 0; }
+    .audio-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; }
+    .audio-player { padding: 0 14px 14px; border-top: 1px solid var(--border); }
+    .audio-controls { display: flex; align-items: center; gap: 12px; padding-top: 12px; }
     .play-btn {
       width: 40px; height: 40px; border-radius: 50%;
       background: var(--text); border: none; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; -webkit-tap-highlight-color: transparent;
-      transition: transform 0.12s;
+      flex-shrink: 0; -webkit-tap-highlight-color: transparent; transition: transform 0.12s;
     }
     .play-btn:active { transform: scale(0.93); }
     .play-btn svg { fill: white; }
-
     .audio-progress-wrap { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-
     .progress-bar {
       width: 100%; height: 20px; cursor: pointer;
-      position: relative; display: flex; align-items: center;
-      touch-action: none;
+      position: relative; display: flex; align-items: center; touch-action: none;
     }
-    .progress-track {
-      width: 100%; height: 3px; background: var(--border);
-      border-radius: 2px; position: relative; overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%; background: var(--text);
-      border-radius: 2px; width: 0%;
-    }
+    .progress-track { width: 100%; height: 3px; background: var(--border); border-radius: 2px; position: relative; }
+    .progress-fill { height: 100%; background: var(--text); border-radius: 2px; width: 0%; }
     .progress-thumb {
       position: absolute; top: 50%; left: 0%;
       transform: translate(-50%, -50%);
       width: 14px; height: 14px; border-radius: 50%;
       background: var(--text); pointer-events: none;
-      transition: transform 0.1s;
     }
-    .progress-bar:active .progress-thumb { transform: translate(-50%, -50%) scale(1.3); }
-
     .audio-times {
       display: flex; justify-content: space-between;
       font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted);
@@ -302,7 +282,6 @@
 </head>
 <body>
 <div class="app">
-
   <header>
     <span class="logo-text">Ponk <span>Note</span></span>
     <span id="headerMeta"></span>
@@ -311,11 +290,9 @@
   <!-- View 1 : Enregistrement -->
   <div class="view active" id="viewRecorder">
     <div class="recorder">
-
       <div class="title-field">
-        <input type="text" id="meetingTitle" placeholder="Titre de la réunion…" />
+        <input type="text" id="meetingTitle" placeholder="Titre (optionnel)…" />
       </div>
-
       <div class="btn-zone">
         <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
           <div class="pulse-ring pulse-ring-1"></div>
@@ -328,17 +305,15 @@
         </button>
         <div class="timer" id="timer">00:00:00</div>
       </div>
-
       <div class="bottom-section">
         <button class="btn-analyze" id="btnAnalyze" onclick="analyzeRecording()">
-          Analyser la réunion →
+          Analyser →
         </button>
         <div class="status-bar">
           <div class="status-dot" id="statusDot"></div>
           <span id="statusText">Prêt à enregistrer</span>
         </div>
       </div>
-
     </div>
   </div>
 
@@ -348,82 +323,22 @@
       <div class="results-nav">
         <button class="btn-back" onclick="backToRecorder()">← Nouveau</button>
         <span class="meta-info" id="metaDuration"></span>
-        <span class="meta-info" id="metaDatetime" style="font-size:11px;color:var(--muted)"></span>
       </div>
-
-      <div class="results-scroll">
-
-        <!-- Résumé structuré -->
-        <div class="result-block" id="blockSummary">
-          <div class="result-header" onclick="toggleBlock('blockSummary')">
-            <span class="result-label">Résumé</span>
-            <div class="result-controls">
-              <button class="copy-btn" onclick="copyContent('summaryContent',this);event.stopPropagation()">Copier</button>
-              <span class="chevron">▾</span>
-            </div>
-          </div>
-          <div class="result-body" id="summaryContent"></div>
-        </div>
-
-        <!-- Points d'action -->
-        <div class="result-block" id="blockActions">
-          <div class="result-header" onclick="toggleBlock('blockActions')">
-            <span class="result-label">Points d'action</span>
-            <div class="result-controls">
-              <button class="copy-btn" onclick="copyContent('actionsContent',this);event.stopPropagation()">Copier</button>
-              <span class="chevron">▾</span>
-            </div>
-          </div>
-          <div class="result-body" id="actionsContent"></div>
-        </div>
-
-        <!-- Lecteur audio -->
-        <div class="audio-block" id="audioBlock" style="display:none">
-          <div class="audio-header">
-            <span class="result-label">Écouter</span>
-          </div>
-          <div class="audio-player">
-            <div class="audio-controls">
-              <button class="play-btn" id="playBtn" onclick="togglePlay()">
-                <svg id="playIcon" viewBox="0 0 24 24" width="16" height="16">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-              </button>
-              <div class="audio-progress-wrap">
-                <div class="progress-bar" id="progressBar">
-                  <div class="progress-track">
-                    <div class="progress-fill" id="progressFill"></div>
-                  </div>
-                  <div class="progress-thumb" id="progressThumb"></div>
-                </div>
-                <div class="audio-times">
-                  <span id="currentTime">0:00</span>
-                  <span id="totalTime">0:00</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
+      <div class="modes-row" id="modesRow"></div>
+      <div class="results-scroll" id="resultsScroll"></div>
     </div>
   </div>
-
 </div>
 
 <script>
-  let mediaRecorder = null;
-  let audioChunks   = [];
-  let audioBlob     = null;
-  let audioUrl      = null;
-  let audioEl       = null;
-  let timerInterval = null;
-  let seconds       = 0;
-  let isRecording   = false;
+  let mediaRecorder = null, audioChunks = [], audioBlob = null;
+  let audioUrl = null, audioEl = null;
+  let timerInterval = null, seconds = 0, isRecording = false;
+  let progressBarInited = false;
 
+  // ── Recording ──
   function toggleRecording() {
-    if (!isRecording) startRecording();
-    else stopRecording();
+    if (!isRecording) startRecording(); else stopRecording();
   }
 
   function startTimer() {
@@ -436,7 +351,6 @@
       document.getElementById('timer').textContent = `${h}:${m}:${s}`;
     }, 1000);
   }
-
   function stopTimer() { clearInterval(timerInterval); }
 
   async function startRecording() {
@@ -465,45 +379,49 @@
 
   function stopRecording() {
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop();
-      isRecording = false;
-      stopTimer();
+      mediaRecorder.stop(); isRecording = false; stopTimer();
       document.getElementById('recordBtn').classList.remove('is-recording');
       document.getElementById('btnLabel').textContent = 'Appuyer';
       document.getElementById('timer').classList.remove('recording');
     }
   }
 
+  // ── Analyze ──
   async function analyzeRecording() {
     if (!audioBlob) return;
     document.getElementById('btnAnalyze').disabled = true;
-    const title    = document.getElementById('meetingTitle').value || 'Réunion sans titre';
+    const title    = document.getElementById('meetingTitle').value || '';
     const duration = formatDuration(seconds);
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    const datetime = dateStr + ' à ' + timeStr;
+    const now      = new Date();
+    const dateStr  = now.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    const timeStr  = now.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+    const datetime = `${dateStr} à ${timeStr}`;
 
     showView('viewResults');
     document.getElementById('metaDuration').textContent = duration;
-    document.getElementById('metaDatetime').textContent = datetime;
     document.getElementById('headerMeta').textContent   = title;
-    showSkeleton('summaryContent');
-    showSkeleton('actionsContent');
 
-    // Setup audio player
+    // Show skeletons
+    const scroll = document.getElementById('resultsScroll');
+    scroll.innerHTML = `
+      <div class="result-block"><div class="result-header"><span class="result-label">Analyse en cours…</span></div>
+        <div class="result-body">
+          <div class="skeleton-line" style="width:90%"></div>
+          <div class="skeleton-line" style="width:70%"></div>
+          <div class="skeleton-line" style="width:80%"></div>
+        </div>
+      </div>`;
+
+    // Audio player
     if (audioUrl) URL.revokeObjectURL(audioUrl);
     audioUrl = URL.createObjectURL(audioBlob);
     audioEl  = new Audio(audioUrl);
     audioEl.ontimeupdate = updateProgress;
-    audioEl.onended = () => {
-      document.getElementById('playIcon').innerHTML = '<path d="M8 5v14l11-7z"/>';
-    };
+    audioEl.onended = () => { document.getElementById('playIcon').innerHTML = '<path d="M8 5v14l11-7z"/>'; };
     audioEl.onloadedmetadata = () => {
-      document.getElementById('totalTime').textContent = formatAudioTime(audioEl.duration);
+      const el = document.getElementById('totalTime');
+      if (el) el.textContent = formatAudioTime(audioEl.duration);
     };
-    document.getElementById('audioBlock').style.display = 'block';
-    initProgressBar();
 
     const formData = new FormData();
     formData.append('audio', audioBlob, 'recording.webm');
@@ -515,58 +433,226 @@
       const res  = await fetch('/api/analyze', { method: 'POST', body: formData });
       if (!res.ok) throw new Error(`Erreur ${res.status}`);
       const data = await res.json();
-
-      // Résumé structuré
-      renderSummary(data);
-
-      // Actions
-      const actions = data.actions || [];
-      document.getElementById('actionsContent').innerHTML = actions.length
-        ? `<ul>${actions.map(a=>`<li>${a}</li>`).join('')}</ul>`
-        : `<p style="color:var(--muted);padding-top:12px;font-size:14px">Aucun point d'action identifié.</p>`;
-
+      renderResults(data);
     } catch(e) {
-      document.getElementById('summaryContent').innerHTML =
-        `<p style="color:var(--danger);padding-top:12px;font-size:14px">${e.message}</p>`;
+      scroll.innerHTML = `<div class="result-block"><div class="result-body"><p style="color:var(--danger);padding-top:12px;font-size:14px">${e.message}</p></div></div>`;
     }
   }
 
-  function renderSummary(data) {
-    const el = document.getElementById('summaryContent');
-    let html = '';
+  // ── Render ──
+  const MODE_LABELS = {
+    REUNION: '🏢 Réunion', COURSES: '🛒 Courses', CHANTIER: '🔨 Chantier',
+    IDEES: '💡 Idées', DEPLACEMENT: '📍 Déplacement', FINANCE: '💰 Finance',
+    APPEL: '📞 Appel', MEDICAL: '🏥 Médical', COURS: '🎓 Cours', MEMO: '📝 Mémo'
+  };
 
-    if (data.participants && data.participants.length) {
-      html += `<div class="summary-section">
-        <div class="summary-section-title">👥 Participants</div>
-        <p>${data.participants.join(', ')}</p>
-      </div>`;
-    }
+  function renderResults(data) {
+    // Modes badges
+    const modes = data.modes || [];
+    const modesRow = document.getElementById('modesRow');
+    modesRow.innerHTML = modes.map(m =>
+      `<span class="mode-badge">${MODE_LABELS[m] || m}</span>`
+    ).join('');
 
-    if (data.subjects && data.subjects.length) {
-      html += `<div class="summary-section">
-        <div class="summary-section-title">📋 Sujets abordés</div>
-        <p>${data.subjects.join('<br>')}</p>
-      </div>`;
-    }
+    const scroll = document.getElementById('resultsScroll');
+    scroll.innerHTML = '';
 
-    if (data.decisions && data.decisions.length) {
-      html += `<div class="summary-section">
-        <div class="summary-section-title">✅ Décisions prises</div>
-        <p>${data.decisions.join('<br>')}</p>
-      </div>`;
-    }
-
+    // Résumé toujours présent
     if (data.summary) {
-      html += `<div class="summary-section">
-        <div class="summary-section-title">📝 Synthèse</div>
-        <p>${data.summary.replace(/\n/g,'<br>')}</p>
-      </div>`;
+      scroll.appendChild(makeBlock('📝 Synthèse', `<div class="section"><p>${data.summary}</p></div>`, true));
     }
 
-    el.innerHTML = html || `<p style="color:var(--muted);padding-top:12px;font-size:14px">Aucune information extraite.</p>`;
+    // REUNION
+    if (modes.includes('REUNION') && data.reunion) {
+      const r = data.reunion;
+      let html = '';
+      if (r.participants?.length) html += makeSection('👥 Participants', r.participants.join(', '));
+      if (r.decisions?.length)    html += makeSection('✅ Décisions', listItems(r.decisions));
+      if (r.actions?.length)      html += makeSection('⚡ Actions', listItems(r.actions));
+      if (r.prochaine)            html += makeSection('📅 Prochaine réunion', r.prochaine);
+      if (html) scroll.appendChild(makeBlock('🏢 Réunion', html, true, true));
+    }
+
+    // COURSES
+    if (modes.includes('COURSES') && data.courses?.items?.length) {
+      const items = data.courses.items;
+      const html = `<ul class="check-list">${items.map((it, i) =>
+        `<li onclick="toggleCheck(this)" data-i="${i}">
+          <div class="check-box"></div>
+          <span>${it.quantite ? it.quantite + ' ' : ''}${it.nom}</span>
+        </li>`
+      ).join('')}</ul>`;
+      scroll.appendChild(makeBlock('🛒 Liste de courses', html, true, true));
+    }
+
+    // CHANTIER
+    if (modes.includes('CHANTIER') && data.chantier) {
+      const c = data.chantier;
+      let html = '';
+      if (c.lieu)              html += makeSection('📍 Lieu', c.lieu);
+      if (c.materiaux?.length) html += makeSection('🧱 Matériaux', listItems(c.materiaux.map(m => `${m.nom}${m.quantite ? ' — ' + m.quantite : ''}`)));
+      if (c.artisans?.length)  html += makeSection('👷 Artisans', listItems(c.artisans));
+      if (c.budget)            html += makeSection('💰 Budget', c.budget);
+      if (c.planning?.length)  html += makeSection('📋 Planning', listItems(c.planning));
+      if (html) scroll.appendChild(makeBlock('🔨 Chantier', html, true, true));
+    }
+
+    // IDEES
+    if (modes.includes('IDEES') && data.idees) {
+      const id = data.idees;
+      let html = '';
+      if (id.liste?.length)        html += makeSection('💡 Idées', listItems(id.liste));
+      if (id.aApprofondir?.length) html += makeSection('🔍 À approfondir', listItems(id.aApprofondir));
+      if (html) scroll.appendChild(makeBlock('💡 Idées', html, true, true));
+    }
+
+    // DEPLACEMENT
+    if (modes.includes('DEPLACEMENT') && data.deplacement) {
+      const d = data.deplacement;
+      let html = '';
+      if (d.lieux?.length) {
+        html += '<div class="section"><div class="section-title">📍 Lieux</div>';
+        d.lieux.forEach(l => {
+          const addr = encodeURIComponent((l.adresse || l.nom));
+          const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${addr}`;
+          html += `<a class="location-link" href="${mapsUrl}" target="_blank" rel="noopener">
+            <span class="location-icon">📍</span>
+            <div class="location-info">
+              <span class="location-name">${l.nom}</span>
+              ${l.adresse ? `<span class="location-addr">${l.adresse}</span>` : ''}
+            </div>
+            <span class="location-arrow">→</span>
+          </a>`;
+        });
+        html += '</div>';
+      }
+      if (d.horaires?.length)  html += makeSection('🕐 Horaires', listItems(d.horaires));
+      if (d.personnes?.length) html += makeSection('👤 Personnes', listItems(d.personnes));
+      if (html) scroll.appendChild(makeBlock('📍 Déplacement', html, true, true));
+    }
+
+    // FINANCE
+    if (modes.includes('FINANCE') && data.finance) {
+      const f = data.finance;
+      let html = '';
+      if (f.montants?.length) {
+        html += '<div class="section"><div class="section-title">💶 Montants</div>';
+        html += '<table class="finance-table">';
+        f.montants.forEach(m => {
+          html += `<tr><td>${m.description}</td><td>${m.montant}</td></tr>`;
+        });
+        if (f.total) html += `<tr><td><strong>Total</strong></td><td><strong>${f.total}</strong></td></tr>`;
+        html += '</table></div>';
+      }
+      if (html) scroll.appendChild(makeBlock('💰 Finance', html, true, true));
+    }
+
+    // APPEL
+    if (modes.includes('APPEL') && data.appel) {
+      const a = data.appel;
+      let html = '';
+      if (a.interlocuteur) html += makeSection('👤 Interlocuteur', a.interlocuteur);
+      if (a.sujet)         html += makeSection('💬 Sujet', a.sujet);
+      if (a.suite?.length) html += makeSection('⚡ Suite à donner', listItems(a.suite));
+      if (html) scroll.appendChild(makeBlock('📞 Appel', html, true, true));
+    }
+
+    // MEDICAL
+    if (modes.includes('MEDICAL') && data.medical) {
+      const m = data.medical;
+      let html = '';
+      if (m.medicaments?.length) html += makeSection('💊 Médicaments', listItems(m.medicaments.map(med => `${med.nom}${med.dosage ? ' — ' + med.dosage : ''}`)));
+      if (m.symptomes?.length)   html += makeSection('🤒 Symptômes', listItems(m.symptomes));
+      if (m.rdv)                 html += makeSection('📅 Rendez-vous', m.rdv);
+      if (html) scroll.appendChild(makeBlock('🏥 Médical', html, true, true));
+    }
+
+    // COURS
+    if (modes.includes('COURS') && data.cours) {
+      const c = data.cours;
+      let html = '';
+      if (c.matiere)          html += makeSection('📚 Matière', c.matiere);
+      if (c.pointsCles?.length) html += makeSection('🔑 Points clés', listItems(c.pointsCles));
+      if (c.aRetenir?.length)  html += makeSection('⭐ À retenir', listItems(c.aRetenir));
+      if (c.questions?.length) html += makeSection('❓ Questions', listItems(c.questions));
+      if (html) scroll.appendChild(makeBlock('🎓 Cours', html, true, true));
+    }
+
+    // MEMO
+    if (modes.includes('MEMO') && data.memo) {
+      const m = data.memo;
+      let html = '';
+      if (m.rappels?.length) html += makeSection('🔔 Rappels', listItems(m.rappels));
+      if (m.notes)           html += makeSection('📝 Note', m.notes);
+      if (html) scroll.appendChild(makeBlock('📝 Mémo', html, true, true));
+    }
+
+    // Lecteur audio
+    const audioHtml = `
+      <div class="audio-controls">
+        <button class="play-btn" onclick="togglePlay()">
+          <svg id="playIcon" viewBox="0 0 24 24" width="16" height="16"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <div class="audio-progress-wrap">
+          <div class="progress-bar" id="progressBar">
+            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="progress-thumb" id="progressThumb"></div>
+          </div>
+          <div class="audio-times">
+            <span id="currentTime">0:00</span>
+            <span id="totalTime">0:00</span>
+          </div>
+        </div>
+      </div>`;
+
+    const audioBlock = document.createElement('div');
+    audioBlock.className = 'audio-block';
+    audioBlock.innerHTML = `
+      <div class="audio-header"><span class="result-label">🎙 Écouter</span></div>
+      <div class="audio-player">${audioHtml}</div>`;
+    scroll.appendChild(audioBlock);
+
+    // Init audio duration
+    if (audioEl && audioEl.readyState >= 1) {
+      document.getElementById('totalTime').textContent = formatAudioTime(audioEl.duration);
+    }
+
+    initProgressBar();
   }
 
-  // Audio player
+  // ── Helpers HTML ──
+  function makeBlock(title, content, open = true, copyable = false) {
+    const id = 'block_' + Math.random().toString(36).substr(2,6);
+    const div = document.createElement('div');
+    div.className = 'result-block' + (open ? '' : ' collapsed');
+    div.id = id;
+    div.innerHTML = `
+      <div class="result-header" onclick="toggleBlock('${id}')">
+        <span class="result-label">${title}</span>
+        <div class="result-controls">
+          ${copyable ? `<button class="copy-btn" onclick="copyBlock('${id}',this);event.stopPropagation()">Copier</button>` : ''}
+          <span class="chevron">▾</span>
+        </div>
+      </div>
+      <div class="result-body">${content}</div>`;
+    return div;
+  }
+
+  function makeSection(title, content) {
+    return `<div class="section"><div class="section-title">${title}</div><p>${content}</p></div>`;
+  }
+
+  function listItems(arr) {
+    return `<ul class="item-list">${arr.map(i => `<li>${i}</li>`).join('')}</ul>`;
+  }
+
+  function toggleCheck(el) {
+    el.classList.toggle('done');
+    const box = el.querySelector('.check-box');
+    box.textContent = el.classList.contains('done') ? '✓' : '';
+  }
+
+  // ── Audio player ──
   function togglePlay() {
     if (!audioEl) return;
     if (audioEl.paused) {
@@ -581,9 +667,12 @@
   function updateProgress() {
     if (!audioEl || !audioEl.duration) return;
     const pct = (audioEl.currentTime / audioEl.duration) * 100;
-    document.getElementById('progressFill').style.width = pct + '%';
-    document.getElementById('progressThumb').style.left = pct + '%';
-    document.getElementById('currentTime').textContent = formatAudioTime(audioEl.currentTime);
+    const fill  = document.getElementById('progressFill');
+    const thumb = document.getElementById('progressThumb');
+    const cur   = document.getElementById('currentTime');
+    if (fill)  fill.style.width  = pct + '%';
+    if (thumb) thumb.style.left  = pct + '%';
+    if (cur)   cur.textContent   = formatAudioTime(audioEl.currentTime);
   }
 
   function getSeekPct(clientX) {
@@ -595,34 +684,28 @@
   function seekTo(pct) {
     if (!audioEl || !audioEl.duration) return;
     audioEl.currentTime = pct * audioEl.duration;
-    document.getElementById('progressFill').style.width = (pct * 100) + '%';
-    document.getElementById('progressThumb').style.left = (pct * 100) + '%';
-    document.getElementById('currentTime').textContent = formatAudioTime(audioEl.currentTime);
+    updateProgress();
   }
 
-  // Setup drag on progress bar — appelé une seule fois après affichage
-  let progressBarInited = false;
   function initProgressBar() {
-    if (progressBarInited) return;
-    progressBarInited = true;
+    progressBarInited = false;
     const bar = document.getElementById('progressBar');
+    if (!bar) return;
     let dragging = false;
-
     bar.addEventListener('mousedown', e => { dragging = true; seekTo(getSeekPct(e.clientX)); e.preventDefault(); });
     document.addEventListener('mousemove', e => { if (dragging) seekTo(getSeekPct(e.clientX)); });
     document.addEventListener('mouseup', () => { dragging = false; });
-
     bar.addEventListener('touchstart', e => { dragging = true; seekTo(getSeekPct(e.touches[0].clientX)); e.preventDefault(); }, { passive: false });
     document.addEventListener('touchmove', e => { if (dragging) seekTo(getSeekPct(e.touches[0].clientX)); e.preventDefault(); }, { passive: false });
     document.addEventListener('touchend', () => { dragging = false; });
   }
 
   function formatAudioTime(s) {
-    const m = Math.floor(s/60);
-    const sec = Math.floor(s%60);
+    const m = Math.floor(s/60), sec = Math.floor(s%60);
     return `${m}:${String(sec).padStart(2,'0')}`;
   }
 
+  // ── Nav ──
   function showView(id) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(id).classList.add('active');
@@ -640,13 +723,13 @@
     document.getElementById('headerMeta').textContent = '';
     document.getElementById('recordBtn').classList.remove('is-recording');
     document.getElementById('btnLabel').textContent = 'Appuyer';
-    document.getElementById('audioBlock').style.display = 'none';
-    document.getElementById('progressFill').style.width = '0%';
-    document.getElementById('progressThumb').style.left = '0%';
+    document.getElementById('modesRow').innerHTML = '';
+    document.getElementById('resultsScroll').innerHTML = '';
     setStatus('', 'Prêt à enregistrer');
     showView('viewRecorder');
   }
 
+  // ── Utils ──
   function formatDuration(s) {
     const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
     if (h > 0) return `${h}h ${m}m`;
@@ -659,20 +742,11 @@
     document.getElementById('statusText').textContent = text;
   }
 
-  function showSkeleton(id) {
-    document.getElementById(id).innerHTML = `
-      <div class="skeleton-line" style="width:88%"></div>
-      <div class="skeleton-line" style="width:72%"></div>
-      <div class="skeleton-line" style="width:80%"></div>
-      <div class="skeleton-line" style="width:58%"></div>`;
-  }
-
   function toggleBlock(id) { document.getElementById(id).classList.toggle('collapsed'); }
 
-  function copyContent(id, btn) {
-    navigator.clipboard.writeText(
-      document.getElementById(id).innerText || document.getElementById(id).textContent
-    ).then(() => {
+  function copyBlock(id, btn) {
+    const el = document.getElementById(id).querySelector('.result-body');
+    navigator.clipboard.writeText(el.innerText || el.textContent).then(() => {
       btn.textContent = '✓ Copié';
       btn.classList.add('copied');
       setTimeout(() => { btn.textContent = 'Copier'; btn.classList.remove('copied'); }, 2000);
