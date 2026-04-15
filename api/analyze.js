@@ -39,36 +39,95 @@ module.exports = async function handler(req, res) {
     const audioFile = files['audio'];
     if (!audioFile) return res.status(400).json({ error: 'Aucun fichier audio reçu' });
 
-    const title    = fields['title']    || 'Réunion';
-    const duration = fields['duration'] || 'inconnue';
+    const title    = fields['title']    || '';
+    const duration = fields['duration'] || '';
     const datetime = fields['datetime'] || '';
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-
     const audioBase64 = audioFile.data.toString('base64');
 
-    const prompt = `Tu es un assistant spécialisé dans la synthèse de réunions professionnelles francophones.
+    const prompt = `Tu es un assistant intelligent qui analyse des enregistrements audio et en extrait les informations utiles.
 
-IMPORTANT : Tu dois OBLIGATOIREMENT répondre entièrement en FRANÇAIS, quelle que soit la langue parlée dans l'enregistrement.
+IMPORTANT : Réponds OBLIGATOIREMENT en FRANÇAIS, quelle que soit la langue de l'audio.
 
-Voici un enregistrement audio d'une réunion intitulée "${title}" (durée : ${duration}${datetime ? ', date : ' + datetime : ''}).
+Contexte : ${title ? 'Titre : ' + title + '.' : ''} ${duration ? 'Durée : ' + duration + '.' : ''} ${datetime ? 'Date : ' + datetime + '.' : ''}
 
-Analyse cet enregistrement et réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans backticks, sans texte avant ou après.
+Analyse cet audio et détecte automatiquement quels types de contenu sont présents parmi cette liste :
+- REUNION : réunion professionnelle ou personnelle avec plusieurs personnes
+- COURSES : liste de courses ou d'achats à faire
+- CHANTIER : travaux, construction, rénovation, matériaux
+- IDEES : brainstorming, idées, réflexions personnelles
+- DEPLACEMENT : lieux, adresses, rendez-vous, déplacements
+- FINANCE : montants, devis, dépenses, budget
+- APPEL : compte-rendu d'appel téléphonique
+- MEDICAL : santé, médicaments, symptômes, rendez-vous médical
+- COURS : notes de cours, formation, apprentissage
+- MEMO : note personnelle, rappel, mémo divers
 
-Format JSON attendu (TOUT en français) :
+Réponds UNIQUEMENT avec un JSON valide, sans markdown, sans backticks.
+
+Structure JSON :
 {
-  "participants": ["Prénom Nom", "Prénom Nom"],
-  "subjects": ["Sujet 1 abordé", "Sujet 2 abordé"],
-  "decisions": ["Décision 1 prise", "Décision 2 prise"],
-  "summary": "Synthèse générale de la réunion en 2-3 phrases en français",
-  "actions": ["Action 1 avec responsable si mentionné", "Action 2"]
+  "modes": ["MODE1", "MODE2"],
+  "summary": "Résumé général en 2-3 phrases en français",
+  "reunion": {
+    "participants": ["Nom 1", "Nom 2"],
+    "decisions": ["Décision 1"],
+    "actions": ["Action 1 — Responsable si mentionné"],
+    "prochaine": "Date ou info sur la prochaine réunion si mentionnée"
+  },
+  "courses": {
+    "items": [{"nom": "Article", "quantite": "2", "fait": false}]
+  },
+  "chantier": {
+    "lieu": "Adresse ou description du lieu",
+    "materiaux": [{"nom": "Matériau", "quantite": "10m²"}],
+    "artisans": ["Nom — métier"],
+    "budget": "Montant si mentionné",
+    "planning": ["Étape 1", "Étape 2"]
+  },
+  "idees": {
+    "liste": ["Idée 1", "Idée 2"],
+    "aApprofondir": ["Sujet à creuser"]
+  },
+  "deplacement": {
+    "lieux": [{"nom": "Nom du lieu", "adresse": "Adresse complète si possible"}],
+    "horaires": ["Info horaire"],
+    "personnes": ["Personne à rencontrer"]
+  },
+  "finance": {
+    "montants": [{"description": "Quoi", "montant": "Combien"}],
+    "total": "Total si calculable"
+  },
+  "appel": {
+    "interlocuteur": "Nom",
+    "sujet": "Sujet de l'appel",
+    "suite": ["Action à faire suite à l'appel"]
+  },
+  "medical": {
+    "medicaments": [{"nom": "Médicament", "dosage": "Dosage"}],
+    "symptomes": ["Symptôme"],
+    "rdv": "Date/lieu du rdv si mentionné"
+  },
+  "cours": {
+    "matiere": "Matière ou sujet",
+    "pointsCles": ["Point clé 1"],
+    "aRetenir": ["Définition ou formule importante"],
+    "questions": ["Question à poser"]
+  },
+  "memo": {
+    "rappels": ["Rappel 1"],
+    "notes": "Note libre"
+  }
 }
 
-Règles strictes :
-- Toutes les valeurs du JSON doivent être rédigées en français
-- Si une section n'a pas d'information, mets un tableau vide []
-- Réponds UNIQUEMENT avec le JSON, rien d'autre`;
+Règles :
+- Ne mets que les sections correspondant aux modes détectés
+- Les sections non pertinentes peuvent être omises ou avoir des tableaux vides
+- Toujours remplir "modes" et "summary"
+- Tout en français
+- Réponds UNIQUEMENT avec le JSON`;
 
     const result = await model.generateContent([
       { inlineData: { mimeType: 'audio/webm', data: audioBase64 } },
@@ -82,7 +141,7 @@ Règles strictes :
     try {
       parsed = JSON.parse(clean);
     } catch {
-      parsed = { participants: [], subjects: [], decisions: [], summary: rawText, actions: [] };
+      parsed = { modes: ['MEMO'], summary: rawText, memo: { notes: rawText } };
     }
 
     return res.status(200).json(parsed);
