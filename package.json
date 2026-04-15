@@ -1,0 +1,15 @@
+{
+  "name": "meetsync",
+  "version": "1.0.0",
+  "description": "Synthèse intelligente de réunions avec Gemini",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
