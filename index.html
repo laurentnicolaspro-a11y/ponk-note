@@ -20,226 +20,129 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
-      height: 100%;
-      height: 100dvh;
+      height: 100%; height: 100dvh;
       overflow: hidden;
-      background: var(--bg);
-      color: var(--text);
+      background: var(--bg); color: var(--text);
       font-family: 'DM Sans', system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
     }
 
     .app {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      height: 100dvh;
-      max-width: 430px;
-      margin: 0 auto;
+      display: flex; flex-direction: column;
+      height: 100%; height: 100dvh;
+      max-width: 430px; margin: 0 auto;
       padding: env(safe-area-inset-top, 0px) 24px env(safe-area-inset-bottom, 16px);
     }
 
     header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 20px 0 16px;
-      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 0 16px; flex-shrink: 0;
     }
-
     .logo-text { font-size: 15px; font-weight: 500; letter-spacing: -0.2px; }
     .logo-text span { color: var(--muted); font-weight: 300; }
-
-    #headerMeta {
-      font-size: 12px;
-      color: var(--muted);
-      font-family: 'DM Mono', monospace;
-    }
+    #headerMeta { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; }
 
     .view { display: none; flex-direction: column; flex: 1; overflow: hidden; }
     .view.active { display: flex; }
 
     /* ── RECORDER ── */
     .recorder {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      align-items: center;
-      justify-content: space-between;
+      display: flex; flex-direction: column; flex: 1;
+      align-items: center; justify-content: space-between;
       padding: 12px 0 8px;
     }
 
     .title-field { width: 100%; flex-shrink: 0; }
     .title-field input {
-      width: 100%;
-      background: none;
-      border: none;
+      width: 100%; background: none; border: none;
       border-bottom: 1px solid var(--border);
-      padding: 10px 0;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 15px;
-      color: var(--text);
-      outline: none;
+      padding: 10px 0; font-family: 'DM Sans', sans-serif;
+      font-size: 15px; color: var(--text); outline: none;
       transition: border-color 0.2s;
     }
     .title-field input:focus { border-color: var(--text); }
     .title-field input::placeholder { color: var(--muted); }
 
-    /* Center */
     .btn-zone {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 24px;
-      flex: 1;
-      justify-content: center;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 24px;
+      flex: 1; justify-content: center;
     }
 
-    /* Power button */
     .record-btn {
-      width: 180px;
-      height: 180px;
-      border-radius: 50%;
-      border: none;
-      background: none;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      -webkit-tap-highlight-color: transparent;
-      position: relative;
-      user-select: none;
+      width: 176px; height: 176px; border-radius: 50%;
+      border: none; background: none; cursor: pointer;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 8px;
       transition: transform 0.12s;
+      -webkit-tap-highlight-color: transparent;
+      position: relative; user-select: none;
     }
-    .record-btn:active { transform: scale(0.94); }
+    .record-btn:active { transform: scale(0.95); }
 
-    /* SVG power icon */
-    .power-svg {
-      width: 140px;
-      height: 140px;
-      transition: all 0.3s;
-    }
-
-    /* The circle ring of the power icon */
-    .power-ring {
-      fill: none;
-      stroke: var(--text);
-      stroke-width: 8;
-      stroke-linecap: round;
-      transition: stroke 0.3s;
-    }
-
-    /* The top line of the power icon */
-    .power-line {
-      fill: none;
-      stroke: var(--text);
-      stroke-width: 8;
-      stroke-linecap: round;
-      transition: stroke 0.3s;
-    }
-
+    .power-svg { width: 140px; height: 140px; transition: all 0.3s; }
+    .power-ring { fill: none; stroke: var(--text); stroke-width: 8; stroke-linecap: round; transition: stroke 0.3s; }
+    .power-line { fill: none; stroke: var(--text); stroke-width: 8; stroke-linecap: round; transition: stroke 0.3s; }
     .record-btn.is-recording .power-ring { stroke: var(--danger); }
     .record-btn.is-recording .power-line { stroke: var(--danger); }
 
-    /* Pulse rings when recording */
     .pulse-ring {
-      position: absolute;
-      border-radius: 50%;
-      border: 2px solid var(--danger);
-      opacity: 0;
-      pointer-events: none;
+      position: absolute; border-radius: 50%;
+      border: 2px solid var(--danger); opacity: 0; pointer-events: none;
     }
     .pulse-ring-1 { inset: -16px; }
     .pulse-ring-2 { inset: -32px; }
-
-    .record-btn.is-recording .pulse-ring-1 {
-      animation: pulse-out 1.6s ease-out infinite;
-    }
-    .record-btn.is-recording .pulse-ring-2 {
-      animation: pulse-out 1.6s ease-out 0.5s infinite;
-    }
+    .record-btn.is-recording .pulse-ring-1 { animation: pulse-out 1.6s ease-out infinite; }
+    .record-btn.is-recording .pulse-ring-2 { animation: pulse-out 1.6s ease-out 0.5s infinite; }
 
     @keyframes pulse-out {
       0%   { opacity: 0.5; transform: scale(0.95); }
       100% { opacity: 0;   transform: scale(1.08); }
     }
 
-    /* Label under button */
     .btn-label {
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 2.5px;
-      text-transform: uppercase;
-      color: var(--muted);
-      transition: color 0.3s;
+      font-size: 10px; font-weight: 500;
+      letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--muted); transition: color 0.3s;
     }
     .record-btn.is-recording .btn-label { color: var(--danger); }
 
-    /* Timer */
     .timer {
-      font-family: 'DM Mono', monospace;
-      font-size: 17px;
-      letter-spacing: 2.5px;
-      color: var(--muted);
-      transition: color 0.3s;
+      font-family: 'DM Mono', monospace; font-size: 17px;
+      letter-spacing: 2.5px; color: var(--muted); transition: color 0.3s;
     }
     .timer.recording { color: var(--danger); }
 
-    /* Bottom */
     .bottom-section {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      flex-shrink: 0;
+      width: 100%; display: flex; flex-direction: column;
+      gap: 10px; flex-shrink: 0;
     }
 
     .btn-analyze {
-      width: 100%;
-      padding: 15px;
-      border-radius: 12px;
-      border: none;
-      background: var(--text);
-      color: var(--bg);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      transition: opacity 0.15s, transform 0.12s;
-      display: none;
+      width: 100%; padding: 15px; border-radius: 12px; border: none;
+      background: var(--text); color: var(--bg);
+      font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s, transform 0.12s; display: none;
     }
     .btn-analyze.visible { display: block; }
     .btn-analyze:active { transform: scale(0.98); }
     .btn-analyze:disabled { opacity: 0.3; cursor: not-allowed; }
 
     .status-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 14px;
-      background: var(--surface);
-      border-radius: 10px;
-      font-size: 12px;
-      color: var(--muted);
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px; background: var(--surface);
+      border-radius: 10px; font-size: 12px; color: var(--muted);
     }
-
     .status-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--muted);
-      flex-shrink: 0;
-      transition: background 0.3s;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--muted); flex-shrink: 0; transition: background 0.3s;
     }
     .status-dot.active  { background: var(--green); }
     .status-dot.error   { background: var(--danger); }
     .status-dot.loading { background: var(--text); animation: blink 0.8s ease-in-out infinite; }
 
-    @keyframes blink {
-      0%, 100% { opacity: 1; } 50% { opacity: 0.2; }
-    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
 
     /* ── RESULTS ── */
     .results-view {
@@ -265,7 +168,10 @@
       gap: 8px; -webkit-overflow-scrolling: touch; padding-bottom: 8px;
     }
 
-    .result-block { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; flex-shrink: 0; }
+    .result-block {
+      border: 1px solid var(--border); border-radius: 12px;
+      overflow: hidden; flex-shrink: 0;
+    }
 
     .result-header {
       display: flex; align-items: center; justify-content: space-between;
@@ -274,7 +180,11 @@
     }
     .result-header:active { background: var(--surface); }
 
-    .result-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+    .result-label {
+      font-size: 11px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: 1px; color: var(--muted);
+    }
+
     .result-controls { display: flex; align-items: center; gap: 8px; }
 
     .chevron { font-size: 10px; color: var(--muted); transition: transform 0.2s; }
@@ -283,10 +193,21 @@
 
     .result-body { padding: 0 14px 14px; border-top: 1px solid var(--border); }
 
-    .result-body p { font-size: 14px; line-height: 1.75; color: var(--text); padding-top: 12px; }
+    /* Résumé structuré */
+    .summary-section { padding-top: 12px; }
+    .summary-section + .summary-section { padding-top: 10px; border-top: 1px solid var(--border); margin-top: 10px; }
+    .summary-section-title {
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 1.2px; color: var(--muted); margin-bottom: 6px;
+    }
+    .summary-section p {
+      font-size: 14px; line-height: 1.7; color: var(--text);
+    }
 
-    .result-body ul { list-style: none; display: flex; flex-direction: column; gap: 6px; padding-top: 10px; }
-
+    .result-body ul {
+      list-style: none; display: flex; flex-direction: column;
+      gap: 6px; padding-top: 10px;
+    }
     .result-body ul li {
       display: flex; gap: 8px; padding: 9px 11px;
       background: var(--surface); border-radius: 8px;
@@ -294,9 +215,51 @@
     }
     .result-body ul li::before { content: '—'; color: var(--muted); flex-shrink: 0; }
 
-    .transcript-text {
-      font-size: 12px; line-height: 1.9; color: var(--muted);
-      padding-top: 12px; font-family: 'DM Mono', monospace;
+    /* Audio player */
+    .audio-block {
+      border: 1px solid var(--border); border-radius: 12px;
+      overflow: hidden; flex-shrink: 0;
+    }
+
+    .audio-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px;
+    }
+
+    .audio-player {
+      padding: 0 14px 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .audio-controls {
+      display: flex; align-items: center; gap: 12px;
+      padding-top: 12px;
+    }
+
+    .play-btn {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--text); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; -webkit-tap-highlight-color: transparent;
+      transition: transform 0.12s;
+    }
+    .play-btn:active { transform: scale(0.93); }
+    .play-btn svg { fill: white; }
+
+    .audio-progress-wrap { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+
+    .progress-bar {
+      width: 100%; height: 3px; background: var(--border);
+      border-radius: 2px; cursor: pointer; position: relative;
+    }
+    .progress-fill {
+      height: 100%; background: var(--text);
+      border-radius: 2px; width: 0%; transition: width 0.1s linear;
+    }
+
+    .audio-times {
+      display: flex; justify-content: space-between;
+      font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted);
     }
 
     .copy-btn {
@@ -313,9 +276,7 @@
       background-size: 200% 100%; border-radius: 4px;
       animation: shimmer 1.4s infinite; margin-top: 12px;
     }
-    @keyframes shimmer {
-      0% { background-position: 200% 0; } 100% { background-position: -200% 0; }
-    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
   </style>
 </head>
 <body>
@@ -336,23 +297,14 @@
 
       <div class="btn-zone">
         <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
-          <!-- Pulse rings -->
           <div class="pulse-ring pulse-ring-1"></div>
           <div class="pulse-ring pulse-ring-2"></div>
-
-          <!-- Power SVG icon -->
           <svg class="power-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <!-- Circle arc (open at top) -->
-            <path class="power-ring"
-              d="M 30 22 A 32 32 0 1 0 70 22"
-            />
-            <!-- Vertical line at top -->
-            <line class="power-line" x1="50" y1="10" x2="50" y2="42" />
+            <path class="power-ring" d="M 30 22 A 32 32 0 1 0 70 22"/>
+            <line class="power-line" x1="50" y1="10" x2="50" y2="42"/>
           </svg>
-
           <span class="btn-label" id="btnLabel">Appuyer</span>
         </button>
-
         <div class="timer" id="timer">00:00:00</div>
       </div>
 
@@ -376,8 +328,10 @@
         <button class="btn-back" onclick="backToRecorder()">← Nouveau</button>
         <span class="meta-info" id="metaDuration"></span>
       </div>
+
       <div class="results-scroll">
 
+        <!-- Résumé structuré -->
         <div class="result-block" id="blockSummary">
           <div class="result-header" onclick="toggleBlock('blockSummary')">
             <span class="result-label">Résumé</span>
@@ -389,6 +343,7 @@
           <div class="result-body" id="summaryContent"></div>
         </div>
 
+        <!-- Points d'action -->
         <div class="result-block" id="blockActions">
           <div class="result-header" onclick="toggleBlock('blockActions')">
             <span class="result-label">Points d'action</span>
@@ -400,16 +355,28 @@
           <div class="result-body" id="actionsContent"></div>
         </div>
 
-        <div class="result-block collapsed" id="blockTranscript">
-          <div class="result-header" onclick="toggleBlock('blockTranscript')">
-            <span class="result-label">Transcription</span>
-            <div class="result-controls">
-              <button class="copy-btn" onclick="copyContent('transcriptContent',this);event.stopPropagation()">Copier</button>
-              <span class="chevron">▾</span>
-            </div>
+        <!-- Lecteur audio -->
+        <div class="audio-block" id="audioBlock" style="display:none">
+          <div class="audio-header">
+            <span class="result-label">Écouter</span>
           </div>
-          <div class="result-body">
-            <div class="transcript-text" id="transcriptContent"></div>
+          <div class="audio-player">
+            <div class="audio-controls">
+              <button class="play-btn" id="playBtn" onclick="togglePlay()">
+                <svg id="playIcon" viewBox="0 0 24 24" width="16" height="16">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </button>
+              <div class="audio-progress-wrap">
+                <div class="progress-bar" id="progressBar" onclick="seekAudio(event)">
+                  <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="audio-times">
+                  <span id="currentTime">0:00</span>
+                  <span id="totalTime">0:00</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -423,6 +390,8 @@
   let mediaRecorder = null;
   let audioChunks   = [];
   let audioBlob     = null;
+  let audioUrl      = null;
+  let audioEl       = null;
   let timerInterval = null;
   let seconds       = 0;
   let isRecording   = false;
@@ -491,7 +460,19 @@
     document.getElementById('headerMeta').textContent   = title;
     showSkeleton('summaryContent');
     showSkeleton('actionsContent');
-    document.getElementById('transcriptContent').textContent = 'Transcription en cours…';
+
+    // Setup audio player
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    audioUrl = URL.createObjectURL(audioBlob);
+    audioEl  = new Audio(audioUrl);
+    audioEl.ontimeupdate = updateProgress;
+    audioEl.onended = () => {
+      document.getElementById('playIcon').innerHTML = '<path d="M8 5v14l11-7z"/>';
+    };
+    audioEl.onloadedmetadata = () => {
+      document.getElementById('totalTime').textContent = formatAudioTime(audioEl.duration);
+    };
+    document.getElementById('audioBlock').style.display = 'block';
 
     const formData = new FormData();
     formData.append('audio', audioBlob, 'recording.webm');
@@ -503,19 +484,87 @@
       if (!res.ok) throw new Error(`Erreur ${res.status}`);
       const data = await res.json();
 
-      document.getElementById('summaryContent').innerHTML =
-        `<p>${data.summary.replace(/\n/g,'<br>')}</p>`;
+      // Résumé structuré
+      renderSummary(data);
 
+      // Actions
       const actions = data.actions || [];
       document.getElementById('actionsContent').innerHTML = actions.length
         ? `<ul>${actions.map(a=>`<li>${a}</li>`).join('')}</ul>`
-        : `<p style="color:var(--muted)">Aucun point d'action identifié.</p>`;
+        : `<p style="color:var(--muted);padding-top:12px;font-size:14px">Aucun point d'action identifié.</p>`;
 
-      document.getElementById('transcriptContent').textContent = data.transcript;
     } catch(e) {
       document.getElementById('summaryContent').innerHTML =
-        `<p style="color:var(--danger)">${e.message}</p>`;
+        `<p style="color:var(--danger);padding-top:12px;font-size:14px">${e.message}</p>`;
     }
+  }
+
+  function renderSummary(data) {
+    const el = document.getElementById('summaryContent');
+    let html = '';
+
+    if (data.participants && data.participants.length) {
+      html += `<div class="summary-section">
+        <div class="summary-section-title">👥 Participants</div>
+        <p>${data.participants.join(', ')}</p>
+      </div>`;
+    }
+
+    if (data.subjects && data.subjects.length) {
+      html += `<div class="summary-section">
+        <div class="summary-section-title">📋 Sujets abordés</div>
+        <p>${data.subjects.join('<br>')}</p>
+      </div>`;
+    }
+
+    if (data.decisions && data.decisions.length) {
+      html += `<div class="summary-section">
+        <div class="summary-section-title">✅ Décisions prises</div>
+        <p>${data.decisions.join('<br>')}</p>
+      </div>`;
+    }
+
+    if (data.summary) {
+      html += `<div class="summary-section">
+        <div class="summary-section-title">📝 Synthèse</div>
+        <p>${data.summary.replace(/\n/g,'<br>')}</p>
+      </div>`;
+    }
+
+    el.innerHTML = html || `<p style="color:var(--muted);padding-top:12px;font-size:14px">Aucune information extraite.</p>`;
+  }
+
+  // Audio player
+  function togglePlay() {
+    if (!audioEl) return;
+    if (audioEl.paused) {
+      audioEl.play();
+      document.getElementById('playIcon').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+    } else {
+      audioEl.pause();
+      document.getElementById('playIcon').innerHTML = '<path d="M8 5v14l11-7z"/>';
+    }
+  }
+
+  function updateProgress() {
+    if (!audioEl || !audioEl.duration) return;
+    const pct = (audioEl.currentTime / audioEl.duration) * 100;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('currentTime').textContent = formatAudioTime(audioEl.currentTime);
+  }
+
+  function seekAudio(e) {
+    if (!audioEl || !audioEl.duration) return;
+    const bar = document.getElementById('progressBar');
+    const rect = bar.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    audioEl.currentTime = pct * audioEl.duration;
+  }
+
+  function formatAudioTime(s) {
+    const m = Math.floor(s/60);
+    const sec = Math.floor(s%60);
+    return `${m}:${String(sec).padStart(2,'0')}`;
   }
 
   function showView(id) {
@@ -524,6 +573,8 @@
   }
 
   function backToRecorder() {
+    if (audioEl) { audioEl.pause(); audioEl = null; }
+    if (audioUrl) { URL.revokeObjectURL(audioUrl); audioUrl = null; }
     audioBlob = null; audioChunks = []; seconds = 0; isRecording = false;
     document.getElementById('timer').textContent = '00:00:00';
     document.getElementById('timer').classList.remove('recording');
@@ -533,6 +584,8 @@
     document.getElementById('headerMeta').textContent = '';
     document.getElementById('recordBtn').classList.remove('is-recording');
     document.getElementById('btnLabel').textContent = 'Appuyer';
+    document.getElementById('audioBlock').style.display = 'none';
+    document.getElementById('progressFill').style.width = '0%';
     setStatus('', 'Prêt à enregistrer');
     showView('viewRecorder');
   }
