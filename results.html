@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Ponk Note — Résultats</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#fff; --surface:#f4f4f4; --border:#e8e8e8; --text:#1c1c1c; --muted:#aaa; --danger:#e02020; --green:#16a34a; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; -webkit-font-smoothing:antialiased; padding-bottom:60px; }
+    .app { max-width:430px; margin:0 auto; padding:env(safe-area-inset-top,0px) 24px 0; }
+    header { display:flex; align-items:center; justify-content:space-between; padding:20px 0 16px; border-bottom:1px solid var(--border); margin-bottom:16px; }
+    .logo-text { font-size:15px; font-weight:500; }
+    .logo-text span { color:var(--muted); font-weight:300; }
+    .btn-back { background:none; border:none; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--muted); cursor:pointer; }
+    .meta { font-size:12px; color:var(--muted); font-family:'DM Mono',monospace; }
+    .modes-row { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+    .badge { display:inline-flex; align-items:center; padding:4px 10px; border-radius:100px; background:var(--surface); border:1px solid var(--border); font-size:11px; font-weight:500; color:var(--muted); }
+    .block { border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:8px; }
+    .block-header { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+    .block-header:active { background:var(--surface); }
+    .block-label { font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:1px; color:var(--muted); }
+    .block-controls { display:flex; align-items:center; gap:8px; }
+    .chevron { font-size:10px; color:var(--muted); transition:transform 0.2s; }
+    .block.closed .chevron { transform:rotate(-90deg); }
+    .block.closed .block-body { display:none; }
+    .block-body { padding:0 14px 14px; border-top:1px solid var(--border); }
+    .section { padding-top:12px; }
+    .section+.section { margin-top:8px; padding-top:10px; border-top:1px solid var(--border); }
+    .section-title { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin-bottom:6px; }
+    .section p { font-size:14px; line-height:1.7; color:var(--text); }
+    .items { list-style:none; display:flex; flex-direction:column; gap:6px; padding-top:10px; }
+    .items li { display:flex; gap:8px; padding:9px 11px; background:var(--surface); border-radius:8px; font-size:13px; line-height:1.6; }
+    .items li::before { content:'—'; color:var(--muted); flex-shrink:0; }
+    .checklist { list-style:none; display:flex; flex-direction:column; gap:6px; padding-top:10px; }
+    .checklist li { display:flex; align-items:center; gap:10px; padding:9px 11px; background:var(--surface); border-radius:8px; font-size:13px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+    .checklist li.done { opacity:.45; text-decoration:line-through; }
+    .checkbox { width:18px; height:18px; border-radius:5px; border:1.5px solid var(--border); background:var(--bg); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .15s; font-size:11px; }
+    .checklist li.done .checkbox { background:var(--text); border-color:var(--text); color:#fff; }
+    .loc-link { display:flex; align-items:center; gap:8px; padding:9px 11px; background:var(--surface); border-radius:8px; margin-top:6px; font-size:13px; color:var(--text); text-decoration:none; border:1px solid var(--border); }
+    .loc-info { display:flex; flex-direction:column; gap:2px; flex:1; }
+    .loc-name { font-weight:500; }
+    .loc-addr { font-size:11px; color:var(--muted); }
+    .fin-table { width:100%; margin-top:10px; border-collapse:collapse; }
+    .fin-table td { padding:8px 0; font-size:13px; border-bottom:1px solid var(--border); }
+    .fin-table td:last-child { text-align:right; font-family:'DM Mono',monospace; }
+    .fin-table tr:last-child td { border-bottom:none; font-weight:500; }
+    .copy-btn { background:none; border:1px solid var(--border); color:var(--muted); padding:3px 10px; border-radius:5px; font-size:11px; font-family:'DM Sans',sans-serif; cursor:pointer; }
+    .copy-btn.copied { color:var(--green); border-color:var(--green); }
+    /* Audio */
+    .audio-wrap { padding-top:14px; }
+    .audio-controls { display:flex; align-items:center; gap:12px; }
+    .play-btn { width:40px; height:40px; border-radius:50%; background:var(--text); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; -webkit-tap-highlight-color:transparent; }
+    .play-btn svg { fill:white; }
+    .progress-wrap { flex:1; display:flex; flex-direction:column; gap:4px; }
+    .progress-bar { width:100%; height:20px; cursor:pointer; position:relative; display:flex; align-items:center; touch-action:none; }
+    .progress-track { width:100%; height:3px; background:var(--border); border-radius:2px; }
+    .progress-fill { height:100%; background:var(--text); border-radius:2px; width:0%; }
+    .progress-thumb { position:absolute; top:50%; left:0%; transform:translate(-50%,-50%); width:14px; height:14px; border-radius:50%; background:var(--text); pointer-events:none; }
+    .times { display:flex; justify-content:space-between; font-family:'DM Mono',monospace; font-size:10px; color:var(--muted); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <span class="logo-text">Ponk <span>Note</span></span>
+    <button class="btn-back" onclick="window.location.href='/'">← Nouveau</button>
+  </header>
+  <div id="metaRow" style="margin-bottom:8px"></div>
+  <div class="modes-row" id="modesRow"></div>
+  <div id="content"></div>
+</div>
+
+<script>
+  const LABELS = {REUNION:'🏢 Réunion',COURSES:'🛒 Courses',CHANTIER:'🔨 Chantier',IDEES:'💡 Idées',DEPLACEMENT:'📍 Déplacement',FINANCE:'💰 Finance',APPEL:'📞 Appel',MEDICAL:'🏥 Médical',COURS:'🎓 Cours',MEMO:'📝 Mémo'};
+  let audioEl = null;
+
+  window.onload = () => {
+    const raw = localStorage.getItem('ponk_result');
+    const audioData = localStorage.getItem('ponk_audio');
+    const metaRaw = localStorage.getItem('ponk_meta');
+    if (!raw) { window.location.href='/'; return; }
+    const data = JSON.parse(raw);
+    const meta = metaRaw ? JSON.parse(metaRaw) : {};
+
+    // Meta
+    if (meta.datetime || meta.duration) {
+      document.getElementById('metaRow').innerHTML =
+        `<span style="font-size:12px;color:var(--muted);font-family:'DM Mono',monospace">${meta.datetime||''} ${meta.duration ? '· '+meta.duration : ''}</span>`;
+    }
+
+    // Modes
+    const modes = data.modes||[];
+    document.getElementById('modesRow').innerHTML = modes.map(m=>`<span class="badge">${LABELS[m]||m}</span>`).join('');
+
+    const c = document.getElementById('content');
+
+    // Résumé
+    if (data.summary) c.appendChild(makeBlock('📝 Synthèse', `<div class="section"><p>${data.summary}</p></div>`));
+
+    // REUNION
+    if (modes.includes('REUNION') && data.reunion) {
+      const r=data.reunion; let h='';
+      if(r.participants?.length) h+=sec('👥 Participants', r.participants.join(', '));
+      if(r.decisions?.length) h+=sec('✅ Décisions', items(r.decisions));
+      if(r.actions?.length) h+=sec('⚡ Actions', items(r.actions));
+      if(r.prochaine) h+=sec('📅 Prochaine réunion', r.prochaine);
+      if(h) c.appendChild(makeBlock('🏢 Réunion', h, true));
+    }
+
+    // COURSES
+    if (modes.includes('COURSES') && data.courses?.items?.length) {
+      const list = data.courses.items.map((it,i)=>
+        `<li onclick="this.classList.toggle('done');this.querySelector('.checkbox').textContent=this.classList.contains('done')?'✓':''">
+          <div class="checkbox"></div>
+          <span>${it.quantite?it.quantite+' ':''}${it.nom}</span>
+        </li>`).join('');
+      c.appendChild(makeBlock('🛒 Courses', `<ul class="checklist">${list}</ul>`, true));
+    }
+
+    // CHANTIER
+    if (modes.includes('CHANTIER') && data.chantier) {
+      const ch=data.chantier; let h='';
+      if(ch.lieu) h+=sec('📍 Lieu', ch.lieu);
+      if(ch.materiaux?.length) h+=sec('🧱 Matériaux', items(ch.materiaux.map(m=>m.nom+(m.quantite?' — '+m.quantite:''))));
+      if(ch.artisans?.length) h+=sec('👷 Artisans', items(ch.artisans));
+      if(ch.budget) h+=sec('💰 Budget', ch.budget);
+      if(ch.planning?.length) h+=sec('📋 Planning', items(ch.planning));
+      if(h) c.appendChild(makeBlock('🔨 Chantier', h, true));
+    }
+
+    // IDEES
+    if (modes.includes('IDEES') && data.idees) {
+      const id=data.idees; let h='';
+      if(id.liste?.length) h+=sec('💡 Idées', items(id.liste));
+      if(id.aApprofondir?.length) h+=sec('🔍 À approfondir', items(id.aApprofondir));
+      if(h) c.appendChild(makeBlock('💡 Idées', h, true));
+    }
+
+    // DEPLACEMENT
+    if (modes.includes('DEPLACEMENT') && data.deplacement) {
+      const d=data.deplacement; let h='';
+      if(d.lieux?.length) {
+        h+='<div class="section"><div class="section-title">📍 Lieux</div>';
+        d.lieux.forEach(l=>{
+          const q=encodeURIComponent(l.adresse||l.nom);
+          h+=`<a class="loc-link" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank">
+            <span>📍</span>
+            <div class="loc-info"><span class="loc-name">${l.nom}</span>${l.adresse?`<span class="loc-addr">${l.adresse}</span>`:''}</div>
+            <span>→</span></a>`;
+        });
+        h+='</div>';
+      }
+      if(d.horaires?.length) h+=sec('🕐 Horaires', items(d.horaires));
+      if(d.personnes?.length) h+=sec('👤 Personnes', items(d.personnes));
+      if(h) c.appendChild(makeBlock('📍 Déplacement', h, true));
+    }
+
+    // FINANCE
+    if (modes.includes('FINANCE') && data.finance?.montants?.length) {
+      const f=data.finance;
+      let rows=f.montants.map(m=>`<tr><td>${m.description}</td><td>${m.montant}</td></tr>`).join('');
+      if(f.total) rows+=`<tr><td><strong>Total</strong></td><td><strong>${f.total}</strong></td></tr>`;
+      c.appendChild(makeBlock('💰 Finance', `<div class="section"><table class="fin-table">${rows}</table></div>`, true));
+    }
+
+    // APPEL
+    if (modes.includes('APPEL') && data.appel) {
+      const a=data.appel; let h='';
+      if(a.interlocuteur) h+=sec('👤 Interlocuteur', a.interlocuteur);
+      if(a.sujet) h+=sec('💬 Sujet', a.sujet);
+      if(a.suite?.length) h+=sec('⚡ Suite', items(a.suite));
+      if(h) c.appendChild(makeBlock('📞 Appel', h, true));
+    }
+
+    // MEDICAL
+    if (modes.includes('MEDICAL') && data.medical) {
+      const m=data.medical; let h='';
+      if(m.medicaments?.length) h+=sec('💊 Médicaments', items(m.medicaments.map(med=>med.nom+(med.dosage?' — '+med.dosage:''))));
+      if(m.symptomes?.length) h+=sec('🤒 Symptômes', items(m.symptomes));
+      if(m.rdv) h+=sec('📅 Rendez-vous', m.rdv);
+      if(h) c.appendChild(makeBlock('🏥 Médical', h, true));
+    }
+
+    // COURS
+    if (modes.includes('COURS') && data.cours) {
+      const co=data.cours; let h='';
+      if(co.matiere) h+=sec('📚 Matière', co.matiere);
+      if(co.pointsCles?.length) h+=sec('🔑 Points clés', items(co.pointsCles));
+      if(co.aRetenir?.length) h+=sec('⭐ À retenir', items(co.aRetenir));
+      if(co.questions?.length) h+=sec('❓ Questions', items(co.questions));
+      if(h) c.appendChild(makeBlock('🎓 Cours', h, true));
+    }
+
+    // MEMO
+    if (modes.includes('MEMO') && data.memo) {
+      const m=data.memo; let h='';
+      if(m.rappels?.length) h+=sec('🔔 Rappels', items(m.rappels));
+      if(m.notes) h+=sec('📝 Note', m.notes);
+      if(h) c.appendChild(makeBlock('📝 Mémo', h, true));
+    }
+
+    // Audio
+    if (audioData) {
+      audioEl = new Audio(audioData);
+      audioEl.onloadedmetadata = () => { document.getElementById('totalTime').textContent = fmtT(audioEl.duration); };
+      audioEl.ontimeupdate = updateProgress;
+      audioEl.onended = () => { document.getElementById('playIcon').innerHTML='<path d="M8 5v14l11-7z"/>'; };
+
+      const aBlock = makeBlock('🎙 Écouter', `
+        <div class="audio-wrap">
+          <div class="audio-controls">
+            <button class="play-btn" onclick="togglePlay()">
+              <svg id="playIcon" viewBox="0 0 24 24" width="16" height="16"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <div class="progress-wrap">
+              <div class="progress-bar" id="progressBar">
+                <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+                <div class="progress-thumb" id="progressThumb"></div>
+              </div>
+              <div class="times"><span id="currentTime">0:00</span><span id="totalTime">0:00</span></div>
+            </div>
+          </div>
+        </div>`);
+      c.appendChild(aBlock);
+      initProgress();
+    }
+  };
+
+  function makeBlock(title, html, copyable=false) {
+    const id = 'b'+Math.random().toString(36).substr(2,5);
+    const d = document.createElement('div');
+    d.className = 'block';
+    d.id = id;
+    d.innerHTML = `
+      <div class="block-header" onclick="document.getElementById('${id}').classList.toggle('closed')">
+        <span class="block-label">${title}</span>
+        <div class="block-controls">
+          ${copyable?`<button class="copy-btn" onclick="copyBlock('${id}',this);event.stopPropagation()">Copier</button>`:''}
+          <span class="chevron">▾</span>
+        </div>
+      </div>
+      <div class="block-body">${html}</div>`;
+    return d;
+  }
+
+  function sec(title, content) {
+    return `<div class="section"><div class="section-title">${title}</div><p>${content}</p></div>`;
+  }
+
+  function items(arr) {
+    return `<ul class="items">${arr.map(i=>`<li>${i}</li>`).join('')}</ul>`;
+  }
+
+  function togglePlay() {
+    if(!audioEl) return;
+    if(audioEl.paused) {
+      audioEl.play();
+      document.getElementById('playIcon').innerHTML='<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+    } else {
+      audioEl.pause();
+      document.getElementById('playIcon').innerHTML='<path d="M8 5v14l11-7z"/>';
+    }
+  }
+
+  function updateProgress() {
+    if(!audioEl||!audioEl.duration) return;
+    const p=(audioEl.currentTime/audioEl.duration)*100;
+    document.getElementById('progressFill').style.width=p+'%';
+    document.getElementById('progressThumb').style.left=p+'%';
+    document.getElementById('currentTime').textContent=fmtT(audioEl.currentTime);
+  }
+
+  function initProgress() {
+    const bar = document.getElementById('progressBar');
+    if(!bar) return;
+    let drag=false;
+    const seek = x => {
+      if(!audioEl||!audioEl.duration) return;
+      const r=bar.getBoundingClientRect();
+      const p=Math.min(1,Math.max(0,(x-r.left)/r.width));
+      audioEl.currentTime=p*audioEl.duration;
+    };
+    bar.addEventListener('mousedown',e=>{drag=true;seek(e.clientX);e.preventDefault();});
+    document.addEventListener('mousemove',e=>{if(drag)seek(e.clientX);});
+    document.addEventListener('mouseup',()=>drag=false);
+    bar.addEventListener('touchstart',e=>{drag=true;seek(e.touches[0].clientX);e.preventDefault();},{passive:false});
+    document.addEventListener('touchmove',e=>{if(drag)seek(e.touches[0].clientX);e.preventDefault();},{passive:false});
+    document.addEventListener('touchend',()=>drag=false);
+  }
+
+  function fmtT(s) {
+    return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+  }
+
+  function copyBlock(id, btn) {
+    const el = document.getElementById(id).querySelector('.block-body');
+    navigator.clipboard.writeText(el.innerText||el.textContent).then(()=>{
+      btn.textContent='✓ Copié'; btn.classList.add('copied');
+      setTimeout(()=>{btn.textContent='Copier';btn.classList.remove('copied');},2000);
+    });
+  }
+</script>
+</body>
+</html>
