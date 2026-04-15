@@ -45,7 +45,7 @@ module.exports = async function handler(req, res) {
     const duration = fields['duration'] || 'inconnue';
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-preview-04-17' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const audioBase64 = audioFile.data.toString('base64');
 
