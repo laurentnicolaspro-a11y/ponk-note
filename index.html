@@ -42,7 +42,7 @@
     .logo-text span { color: var(--muted); font-weight: 300; }
     #headerMeta { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; }
 
-    .view { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+    .view { display: none; flex-direction: column; flex: 1; min-height: 0; }
     .view.active { display: flex; }
 
     /* ── RECORDER ── */
@@ -147,7 +147,7 @@
     /* ── RESULTS ── */
     .results-view {
       display: flex; flex-direction: column; flex: 1;
-      overflow: hidden; padding: 14px 0 0; gap: 10px;
+      min-height: 0; padding: 14px 0 0; gap: 10px;
     }
 
     .results-nav {
@@ -165,8 +165,15 @@
     .meta-info { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; }
 
     .results-scroll {
-      flex: 1; overflow-y: auto; display: flex; flex-direction: column;
-      gap: 8px; -webkit-overflow-scrolling: touch; padding-bottom: 8px;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      padding-bottom: 16px;
     }
 
     .result-block {
