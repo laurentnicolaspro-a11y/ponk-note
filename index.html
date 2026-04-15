@@ -123,10 +123,9 @@
     .results-view {
       display: flex;
       flex-direction: column;
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      padding: 14px 24px 0;
       gap: 10px;
+      flex: 1;
+      padding-top: 14px;
     }
     .results-nav {
       display: flex; align-items: center; justify-content: space-between;
@@ -153,13 +152,12 @@
     }
 
     .results-scroll {
-      flex: 1;
       overflow-y: scroll;
       -webkit-overflow-scrolling: touch;
       display: flex;
       flex-direction: column;
       gap: 8px;
-      padding-bottom: 24px;
+      padding-bottom: 40px;
     }
 
     /* Blocks */
@@ -326,7 +324,7 @@
   </div>
 
   <!-- View 2 : Résultats -->
-  <div class="view" id="viewResults" style="position:relative;">
+  <div class="view" id="viewResults">
     <div class="results-view">
       <div class="results-nav">
         <button class="btn-back" onclick="backToRecorder()">← Nouveau</button>
@@ -453,6 +451,19 @@
     IDEES: '💡 Idées', DEPLACEMENT: '📍 Déplacement', FINANCE: '💰 Finance',
     APPEL: '📞 Appel', MEDICAL: '🏥 Médical', COURS: '🎓 Cours', MEMO: '📝 Mémo'
   };
+
+  function fixScrollHeight() {
+    const scroll = document.getElementById('resultsScroll');
+    const view = document.getElementById('viewResults');
+    const nav = view.querySelector('.results-nav');
+    const modes = view.querySelector('.modes-row');
+    const viewH = view.clientHeight;
+    const navH = nav ? nav.offsetHeight : 0;
+    const modesH = modes && modes.children.length > 0 ? modes.offsetHeight + 10 : 0;
+    const available = viewH - navH - modesH - 14 - 20;
+    scroll.style.height = available + 'px';
+    scroll.style.maxHeight = available + 'px';
+  }
 
   function renderResults(data) {
     // Modes badges
@@ -626,6 +637,7 @@
     }
 
     initProgressBar();
+    setTimeout(fixScrollHeight, 50);
   }
 
   // ── Helpers HTML ──
