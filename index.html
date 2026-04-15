@@ -496,6 +496,7 @@
       document.getElementById('totalTime').textContent = formatAudioTime(audioEl.duration);
     };
     document.getElementById('audioBlock').style.display = 'block';
+    initProgressBar();
 
     const formData = new FormData();
     formData.append('audio', audioBlob, 'recording.webm');
@@ -592,23 +593,22 @@
     document.getElementById('currentTime').textContent = formatAudioTime(audioEl.currentTime);
   }
 
-  // Setup drag on progress bar
+  // Setup drag on progress bar — appelé une seule fois après affichage
+  let progressBarInited = false;
   function initProgressBar() {
+    if (progressBarInited) return;
+    progressBarInited = true;
     const bar = document.getElementById('progressBar');
     let dragging = false;
 
-    // Mouse
-    bar.addEventListener('mousedown', e => { dragging = true; seekTo(getSeekPct(e.clientX)); });
+    bar.addEventListener('mousedown', e => { dragging = true; seekTo(getSeekPct(e.clientX)); e.preventDefault(); });
     document.addEventListener('mousemove', e => { if (dragging) seekTo(getSeekPct(e.clientX)); });
     document.addEventListener('mouseup', () => { dragging = false; });
 
-    // Touch
     bar.addEventListener('touchstart', e => { dragging = true; seekTo(getSeekPct(e.touches[0].clientX)); e.preventDefault(); }, { passive: false });
-    bar.addEventListener('touchmove', e => { if (dragging) seekTo(getSeekPct(e.touches[0].clientX)); e.preventDefault(); }, { passive: false });
-    bar.addEventListener('touchend', () => { dragging = false; });
+    document.addEventListener('touchmove', e => { if (dragging) seekTo(getSeekPct(e.touches[0].clientX)); e.preventDefault(); }, { passive: false });
+    document.addEventListener('touchend', () => { dragging = false; });
   }
-
-  initProgressBar();
 
   function formatAudioTime(s) {
     const m = Math.floor(s/60);
@@ -635,6 +635,7 @@
     document.getElementById('btnLabel').textContent = 'Appuyer';
     document.getElementById('audioBlock').style.display = 'none';
     document.getElementById('progressFill').style.width = '0%';
+    document.getElementById('progressThumb').style.left = '0%';
     setStatus('', 'Prêt à enregistrer');
     showView('viewRecorder');
   }
