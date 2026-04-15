@@ -2,149 +2,106 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MeetSync — Synthèse de réunions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Ponk Note</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0a0a0f;
-      --surface: #13131a;
-      --surface2: #1c1c28;
-      --border: #2a2a3d;
-      --accent: #6c63ff;
-      --accent2: #ff6b9d;
-      --accent3: #00d9a3;
-      --text: #e8e8f0;
-      --muted: #6b6b8a;
-      --danger: #ff4757;
+      --bg: #ffffff;
+      --surface: #f5f5f5;
+      --border: #e6e6e6;
+      --text: #1a1a1a;
+      --muted: #999999;
+      --danger: #d42020;
+      --green: #22c55e;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    body {
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
       background: var(--bg);
       color: var(--text);
-      font-family: 'Syne', sans-serif;
-      min-height: 100vh;
-      overflow-x: hidden;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* Background grid */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(108,99,255,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(108,99,255,0.04) 1px, transparent 1px);
-      background-size: 48px 48px;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .container {
-      max-width: 860px;
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      height: 100dvh;
+      max-width: 480px;
       margin: 0 auto;
-      padding: 40px 24px 80px;
-      position: relative;
-      z-index: 1;
+      padding-left: 22px;
+      padding-right: 22px;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 12px);
     }
 
-    /* Header */
+    /* ── Header ── */
     header {
       display: flex;
       align-items: center;
-      gap: 16px;
-      margin-bottom: 56px;
-    }
-
-    .logo-mark {
-      width: 44px;
-      height: 44px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
+      justify-content: space-between;
+      padding: 18px 0 14px;
+      border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
 
-    header h1 {
-      font-size: 22px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
+    .logo {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
     }
 
-    header span {
+    #headerMeta {
       font-size: 12px;
       color: var(--muted);
-      font-family: 'DM Mono', monospace;
-      font-weight: 300;
-      display: block;
-      margin-top: 2px;
     }
 
-    /* Recorder Card */
-    .recorder-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 40px;
-      margin-bottom: 32px;
-      position: relative;
+    /* ── Views ── */
+    .view {
+      display: none;
+      flex-direction: column;
+      flex: 1;
       overflow: hidden;
     }
+    .view.active { display: flex; }
 
-    .recorder-card::before {
-      content: '';
-      position: absolute;
-      top: -60px;
-      right: -60px;
-      width: 200px;
-      height: 200px;
-      background: radial-gradient(circle, rgba(108,99,255,0.12) 0%, transparent 70%);
-      pointer-events: none;
+    /* ── RECORDER VIEW ── */
+    .recorder {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      padding: 20px 0 8px;
+      gap: 16px;
     }
 
-    /* Title input */
-    .meeting-title-wrap {
-      margin-bottom: 32px;
-    }
-
-    .meeting-title-wrap label {
-      display: block;
-      font-size: 11px;
-      font-family: 'DM Mono', monospace;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      margin-bottom: 8px;
-    }
-
-    #meetingTitle {
+    .title-field input {
       width: 100%;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 16px;
-      color: var(--text);
-      font-family: 'Syne', sans-serif;
+      background: none;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      padding: 10px 0;
+      font-family: inherit;
       font-size: 15px;
+      color: var(--text);
       outline: none;
       transition: border-color 0.2s;
+      flex-shrink: 0;
     }
+    .title-field input:focus { border-color: var(--text); }
+    .title-field input::placeholder { color: var(--muted); }
 
-    #meetingTitle:focus { border-color: var(--accent); }
-    #meetingTitle::placeholder { color: var(--muted); }
-
-    /* Visualizer */
     .visualizer-wrap {
-      height: 80px;
-      background: var(--surface2);
+      flex: 1;
+      min-height: 56px;
+      background: var(--surface);
       border-radius: 12px;
-      margin-bottom: 28px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -155,122 +112,69 @@
     canvas#visualizer {
       width: 100%;
       height: 100%;
+      display: block;
     }
 
     .viz-idle {
       position: absolute;
-      font-family: 'DM Mono', monospace;
       font-size: 12px;
       color: var(--muted);
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
     }
 
-    /* Timer */
     .timer {
       text-align: center;
-      font-family: 'DM Mono', monospace;
-      font-size: 36px;
-      font-weight: 500;
+      font-size: 40px;
+      font-weight: 300;
+      letter-spacing: 3px;
       color: var(--text);
-      letter-spacing: 4px;
-      margin-bottom: 28px;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
       transition: color 0.3s;
     }
-
     .timer.recording { color: var(--danger); }
 
-    /* Controls */
     .controls {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      flex-shrink: 0;
     }
 
     .btn {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 24px;
+      padding: 14px 8px;
       border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      font-family: 'Syne', sans-serif;
-      font-size: 14px;
-      font-weight: 600;
-      transition: all 0.2s;
-      letter-spacing: 0.3px;
-    }
-
-    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-    .btn-record {
-      background: linear-gradient(135deg, var(--danger), #ff6b35);
-      color: #fff;
-      padding: 14px 32px;
-    }
-
-    .btn-record:not(:disabled):hover {
-      transform: translateY(-1px);
-      box-shadow: 0 8px 24px rgba(255,71,87,0.35);
-    }
-
-    .btn-stop {
-      background: var(--surface2);
-      color: var(--text);
       border: 1px solid var(--border);
-    }
-
-    .btn-stop:not(:disabled):hover {
-      background: var(--border);
-    }
-
-    .btn-analyze {
-      background: linear-gradient(135deg, var(--accent), #9d63ff);
-      color: #fff;
-    }
-
-    .btn-analyze:not(:disabled):hover {
-      transform: translateY(-1px);
-      box-shadow: 0 8px 24px rgba(108,99,255,0.4);
-    }
-
-    .btn-clear {
-      background: transparent;
-      color: var(--muted);
-      border: 1px solid var(--border);
+      background: var(--surface);
+      font-family: inherit;
       font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.12s, opacity 0.12s;
+      -webkit-tap-highlight-color: transparent;
+      white-space: nowrap;
     }
+    .btn:active { background: var(--border); }
+    .btn:disabled { opacity: 0.28; cursor: not-allowed; }
 
-    .btn-clear:hover { color: var(--text); border-color: var(--muted); }
-
-    /* Pulse dot */
-    .rec-dot {
-      width: 8px;
-      height: 8px;
-      background: #fff;
-      border-radius: 50%;
-      animation: pulse-dot 1s ease-in-out infinite;
+    .btn-primary {
+      background: var(--text);
+      color: var(--bg);
+      border-color: var(--text);
     }
+    .btn-primary:active { background: #333; }
 
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.7); }
-    }
-
-    /* Status bar */
     .status-bar {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 16px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      margin-top: 20px;
-      font-family: 'DM Mono', monospace;
+      gap: 8px;
+      padding: 10px 14px;
+      background: var(--surface);
+      border-radius: 9px;
       font-size: 12px;
       color: var(--muted);
-      min-height: 40px;
+      flex-shrink: 0;
     }
 
     .status-dot {
@@ -279,282 +183,265 @@
       border-radius: 50%;
       background: var(--muted);
       flex-shrink: 0;
+      transition: background 0.3s;
     }
-
-    .status-dot.active { background: var(--accent3); box-shadow: 0 0 8px var(--accent3); }
+    .status-dot.active { background: var(--green); }
     .status-dot.error { background: var(--danger); }
     .status-dot.loading {
-      background: var(--accent);
-      animation: pulse-dot 0.8s ease-in-out infinite;
+      background: var(--text);
+      animation: blink 0.8s ease-in-out infinite;
     }
 
-    /* Results */
-    .results {
-      display: none;
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
+    }
+
+    /* ── RESULTS VIEW ── */
+    .results-view {
+      display: flex;
       flex-direction: column;
-      gap: 20px;
+      flex: 1;
+      overflow: hidden;
+      padding: 14px 0 0;
+      gap: 10px;
     }
 
-    .results.visible { display: flex; animation: fadeUp 0.4s ease; }
+    .results-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
 
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to { opacity: 1; transform: translateY(0); }
+    .btn-back {
+      background: none;
+      border: none;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 4px 0;
+      -webkit-tap-highlight-color: transparent;
+      transition: color 0.15s;
+    }
+    .btn-back:active { color: var(--text); }
+
+    .meta-info {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .results-scroll {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 4px;
     }
 
     .result-block {
-      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: 12px;
       overflow: hidden;
+      flex-shrink: 0;
     }
 
     .result-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
+      padding: 11px 14px;
       cursor: pointer;
       user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.12s;
     }
-
-    .result-header:hover { background: rgba(255,255,255,0.02); }
+    .result-header:active { background: var(--surface); }
 
     .result-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+    }
+
+    .result-controls {
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-size: 13px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
+      gap: 8px;
     }
-
-    .tag {
-      display: inline-flex;
-      align-items: center;
-      padding: 3px 10px;
-      border-radius: 100px;
-      font-size: 10px;
-      font-family: 'DM Mono', monospace;
-      font-weight: 400;
-    }
-
-    .tag-summary { background: rgba(108,99,255,0.2); color: var(--accent); }
-    .tag-transcript { background: rgba(0,217,163,0.15); color: var(--accent3); }
-    .tag-actions { background: rgba(255,107,157,0.15); color: var(--accent2); }
 
     .chevron {
-      font-size: 12px;
+      font-size: 10px;
       color: var(--muted);
       transition: transform 0.2s;
+      display: inline-block;
     }
-
     .result-block.collapsed .chevron { transform: rotate(-90deg); }
     .result-block.collapsed .result-body { display: none; }
 
     .result-body {
-      padding: 20px;
+      padding: 0 14px 14px;
+      border-top: 1px solid var(--border);
     }
 
-    .result-body p, .result-body li {
+    .result-body p {
       font-size: 14px;
-      line-height: 1.8;
-      color: #c8c8d8;
+      line-height: 1.7;
+      color: var(--text);
+      padding-top: 12px;
     }
 
     .result-body ul {
       list-style: none;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
+      padding-top: 10px;
     }
 
     .result-body ul li {
       display: flex;
-      gap: 10px;
-      padding: 10px 14px;
-      background: var(--surface2);
+      gap: 8px;
+      padding: 8px 10px;
+      background: var(--surface);
       border-radius: 8px;
-      border-left: 3px solid var(--accent2);
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text);
     }
 
     .result-body ul li::before {
-      content: '→';
-      color: var(--accent2);
+      content: '—';
+      color: var(--muted);
       flex-shrink: 0;
-      font-weight: 700;
     }
 
     .transcript-text {
-      font-family: 'DM Mono', monospace;
       font-size: 13px;
-      line-height: 1.9;
+      line-height: 1.8;
       color: var(--muted);
-      max-height: 260px;
-      overflow-y: auto;
-      padding-right: 8px;
+      padding-top: 12px;
     }
-
-    .transcript-text::-webkit-scrollbar { width: 4px; }
-    .transcript-text::-webkit-scrollbar-track { background: transparent; }
-    .transcript-text::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
     .copy-btn {
       background: none;
       border: 1px solid var(--border);
       color: var(--muted);
-      padding: 4px 12px;
-      border-radius: 6px;
+      padding: 3px 10px;
+      border-radius: 5px;
       font-size: 11px;
-      font-family: 'DM Mono', monospace;
+      font-family: inherit;
       cursor: pointer;
-      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      transition: color 0.15s, border-color 0.15s;
     }
+    .copy-btn:active { color: var(--text); }
+    .copy-btn.copied { color: var(--green); border-color: var(--green); }
 
-    .copy-btn:hover { color: var(--text); border-color: var(--muted); }
-    .copy-btn.copied { color: var(--accent3); border-color: var(--accent3); }
-
-    /* Loading skeleton */
-    .skeleton {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      padding: 20px;
-    }
-
+    /* Skeleton */
     .skeleton-line {
-      height: 14px;
-      background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+      height: 11px;
+      background: linear-gradient(90deg, var(--surface) 25%, var(--border) 50%, var(--surface) 75%);
       background-size: 200% 100%;
       border-radius: 4px;
-      animation: shimmer 1.5s infinite;
+      animation: shimmer 1.4s infinite;
+      margin-top: 12px;
     }
-
     @keyframes shimmer {
       0% { background-position: 200% 0; }
       100% { background-position: -200% 0; }
-    }
-
-    /* Meta info */
-    .meta-row {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-    }
-
-    .meta-chip {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 12px;
-      font-family: 'DM Mono', monospace;
-      color: var(--muted);
     }
   </style>
 </head>
 <body>
 
-<div class="container">
+<div class="app">
   <header>
-    <div class="logo-mark">🎙</div>
-    <div>
-      <h1>MeetSync</h1>
-      <span>Synthèse intelligente de réunions</span>
-    </div>
+    <span class="logo">Ponk Note</span>
+    <span id="headerMeta"></span>
   </header>
 
-  <!-- Recorder Card -->
-  <div class="recorder-card">
-    <div class="meeting-title-wrap">
-      <label>Titre de la réunion</label>
-      <input type="text" id="meetingTitle" placeholder="Ex : Standup équipe produit — 15 avril" />
-    </div>
+  <!-- View 1 : Enregistrement -->
+  <div class="view active" id="viewRecorder">
+    <div class="recorder">
+      <div class="title-field">
+        <input type="text" id="meetingTitle" placeholder="Titre de la réunion…" />
+      </div>
 
-    <div class="visualizer-wrap">
-      <canvas id="visualizer"></canvas>
-      <span class="viz-idle" id="vizIdle">— en attente —</span>
-    </div>
+      <div class="visualizer-wrap">
+        <canvas id="visualizer"></canvas>
+        <span class="viz-idle" id="vizIdle">en attente</span>
+      </div>
 
-    <div class="timer" id="timer">00:00:00</div>
+      <div class="timer" id="timer">00:00:00</div>
 
-    <div class="controls">
-      <button class="btn btn-record" id="btnRecord" onclick="startRecording()">
-        <div class="rec-dot" style="display:none" id="recDot"></div>
-        <span id="btnRecordLabel">● Enregistrer</span>
-      </button>
-      <button class="btn btn-stop" id="btnStop" onclick="stopRecording()" disabled>
-        ■ Arrêter
-      </button>
-      <button class="btn btn-analyze" id="btnAnalyze" onclick="analyzeRecording()" disabled>
-        ✦ Analyser
-      </button>
-      <button class="btn btn-clear" id="btnClear" onclick="clearAll()" style="display:none">
-        ↺ Nouveau
-      </button>
-    </div>
+      <div class="controls">
+        <button class="btn btn-primary" id="btnRecord" onclick="startRecording()">
+          <span id="btnRecordLabel">Enregistrer</span>
+        </button>
+        <button class="btn" id="btnStop" onclick="stopRecording()" disabled>
+          Arrêter
+        </button>
+        <button class="btn" id="btnAnalyze" onclick="analyzeRecording()" disabled>
+          Analyser
+        </button>
+      </div>
 
-    <div class="status-bar">
-      <div class="status-dot" id="statusDot"></div>
-      <span id="statusText">Prêt à enregistrer</span>
+      <div class="status-bar">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Prêt à enregistrer</span>
+      </div>
     </div>
   </div>
 
-  <!-- Results -->
-  <div class="results" id="results">
-    <!-- Meta -->
-    <div class="meta-row" id="metaRow"></div>
-
-    <!-- Résumé -->
-    <div class="result-block" id="blockSummary">
-      <div class="result-header" onclick="toggleBlock('blockSummary')">
-        <div class="result-label">
-          <span class="tag tag-summary">RÉSUMÉ</span>
-          Synthèse de la réunion
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button class="copy-btn" onclick="copyContent('summaryContent', this); event.stopPropagation()">Copier</button>
-          <span class="chevron">▾</span>
-        </div>
+  <!-- View 2 : Résultats -->
+  <div class="view" id="viewResults">
+    <div class="results-view">
+      <div class="results-nav">
+        <button class="btn-back" onclick="backToRecorder()">← Nouveau</button>
+        <span class="meta-info" id="metaDuration"></span>
       </div>
-      <div class="result-body" id="summaryContent"></div>
-    </div>
 
-    <!-- Actions -->
-    <div class="result-block" id="blockActions">
-      <div class="result-header" onclick="toggleBlock('blockActions')">
-        <div class="result-label">
-          <span class="tag tag-actions">ACTIONS</span>
-          Points d'action
+      <div class="results-scroll">
+        <div class="result-block" id="blockSummary">
+          <div class="result-header" onclick="toggleBlock('blockSummary')">
+            <span class="result-label">Résumé</span>
+            <div class="result-controls">
+              <button class="copy-btn" onclick="copyContent('summaryContent', this); event.stopPropagation()">Copier</button>
+              <span class="chevron">▾</span>
+            </div>
+          </div>
+          <div class="result-body" id="summaryContent"></div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button class="copy-btn" onclick="copyContent('actionsContent', this); event.stopPropagation()">Copier</button>
-          <span class="chevron">▾</span>
-        </div>
-      </div>
-      <div class="result-body" id="actionsContent"></div>
-    </div>
 
-    <!-- Transcription -->
-    <div class="result-block collapsed" id="blockTranscript">
-      <div class="result-header" onclick="toggleBlock('blockTranscript')">
-        <div class="result-label">
-          <span class="tag tag-transcript">TRANSCRIPTION</span>
-          Texte brut
+        <div class="result-block" id="blockActions">
+          <div class="result-header" onclick="toggleBlock('blockActions')">
+            <span class="result-label">Points d'action</span>
+            <div class="result-controls">
+              <button class="copy-btn" onclick="copyContent('actionsContent', this); event.stopPropagation()">Copier</button>
+              <span class="chevron">▾</span>
+            </div>
+          </div>
+          <div class="result-body" id="actionsContent"></div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button class="copy-btn" onclick="copyContent('transcriptContent', this); event.stopPropagation()">Copier</button>
-          <span class="chevron">▾</span>
+
+        <div class="result-block collapsed" id="blockTranscript">
+          <div class="result-header" onclick="toggleBlock('blockTranscript')">
+            <span class="result-label">Transcription</span>
+            <div class="result-controls">
+              <button class="copy-btn" onclick="copyContent('transcriptContent', this); event.stopPropagation()">Copier</button>
+              <span class="chevron">▾</span>
+            </div>
+          </div>
+          <div class="result-body">
+            <div class="transcript-text" id="transcriptContent"></div>
+          </div>
         </div>
-      </div>
-      <div class="result-body">
-        <div class="transcript-text" id="transcriptContent"></div>
       </div>
     </div>
   </div>
@@ -607,13 +494,12 @@
       animFrame = requestAnimationFrame(draw);
       analyser.getByteFrequencyData(dataArray);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
       const barWidth = (canvas.width / bufferLength) * 2.2;
       let x = 0;
       for (let i = 0; i < bufferLength; i++) {
-        const barHeight = (dataArray[i] / 255) * canvas.height * 0.9;
-        const hue = 240 + (i / bufferLength) * 80;
-        ctx.fillStyle = `hsla(${hue}, 80%, 65%, 0.85)`;
+        const barHeight = (dataArray[i] / 255) * canvas.height * 0.85;
+        const alpha = 0.4 + (dataArray[i] / 255) * 0.6;
+        ctx.fillStyle = `rgba(26, 26, 26, ${alpha})`;
         ctx.beginPath();
         ctx.roundRect(x, canvas.height - barHeight, barWidth - 1, barHeight, 2);
         ctx.fill();
@@ -628,8 +514,7 @@
     if (audioContext) audioContext.close();
     document.getElementById('vizIdle').style.display = 'block';
     const canvas = document.getElementById('visualizer');
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
   }
 
   // ── Recording ──
@@ -645,7 +530,6 @@
         stopVisualizer();
         setStatus('active', `Enregistrement prêt — ${formatDuration(seconds)}`);
         document.getElementById('btnAnalyze').disabled = false;
-        document.getElementById('btnClear').style.display = 'inline-flex';
       };
       mediaRecorder.start(500);
       startTimer();
@@ -653,11 +537,10 @@
       document.getElementById('timer').classList.add('recording');
       document.getElementById('btnRecord').disabled = true;
       document.getElementById('btnStop').disabled = false;
-      document.getElementById('recDot').style.display = 'block';
-      document.getElementById('btnRecordLabel').textContent = 'Enregistrement…';
+      document.getElementById('btnRecordLabel').textContent = 'En cours…';
       setStatus('loading', 'Enregistrement en cours…');
     } catch (e) {
-      setStatus('error', 'Accès micro refusé — vérifiez les permissions du navigateur');
+      setStatus('error', 'Micro inaccessible — vérifiez les permissions');
     }
   }
 
@@ -668,8 +551,7 @@
       document.getElementById('timer').classList.remove('recording');
       document.getElementById('btnRecord').disabled = false;
       document.getElementById('btnStop').disabled = true;
-      document.getElementById('recDot').style.display = 'none';
-      document.getElementById('btnRecordLabel').textContent = '● Enregistrer';
+      document.getElementById('btnRecordLabel').textContent = 'Enregistrer';
     }
   }
 
@@ -677,16 +559,18 @@
   async function analyzeRecording() {
     if (!audioBlob) return;
     document.getElementById('btnAnalyze').disabled = true;
-    document.getElementById('results').classList.add('visible');
-    setStatus('loading', 'Envoi à l\'IA — analyse en cours…');
-
-    // Show skeletons
-    showSkeleton('summaryContent');
-    showSkeleton('actionsContent');
-    document.getElementById('transcriptContent').textContent = 'Transcription en cours…';
 
     const title = document.getElementById('meetingTitle').value || 'Réunion sans titre';
     const duration = formatDuration(seconds);
+
+    // Passer à la vue résultats
+    showView('viewResults');
+    document.getElementById('metaDuration').textContent = duration;
+    document.getElementById('headerMeta').textContent = title;
+
+    showSkeleton('summaryContent');
+    showSkeleton('actionsContent');
+    document.getElementById('transcriptContent').textContent = 'Transcription en cours…';
 
     const formData = new FormData();
     formData.append('audio', audioBlob, 'recording.webm');
@@ -695,33 +579,38 @@
 
     try {
       const res = await fetch('/api/analyze', { method: 'POST', body: formData });
-      if (!res.ok) throw new Error(`Erreur serveur ${res.status}`);
+      if (!res.ok) throw new Error(`Erreur ${res.status}`);
       const data = await res.json();
 
-      // Meta
-      document.getElementById('metaRow').innerHTML = `
-        <div class="meta-chip">🎙 ${title}</div>
-        <div class="meta-chip">⏱ ${duration}</div>
-        <div class="meta-chip">📅 ${new Date().toLocaleDateString('fr-FR', {day:'numeric',month:'long',year:'numeric'})}</div>
-      `;
-
-      // Summary
       document.getElementById('summaryContent').innerHTML = `<p>${data.summary.replace(/\n/g, '<br>')}</p>`;
 
-      // Actions
       const actions = data.actions || [];
       document.getElementById('actionsContent').innerHTML = actions.length
         ? `<ul>${actions.map(a => `<li>${a}</li>`).join('')}</ul>`
-        : `<p style="color:var(--muted);font-style:italic">Aucun point d'action identifié.</p>`;
+        : `<p style="color:var(--muted)">Aucun point d'action identifié.</p>`;
 
-      // Transcript
       document.getElementById('transcriptContent').textContent = data.transcript;
-
-      setStatus('active', `Analyse terminée avec succès`);
     } catch (e) {
-      setStatus('error', `Erreur : ${e.message}`);
-      document.getElementById('summaryContent').innerHTML = `<p style="color:var(--danger)">Une erreur s'est produite. Réessayez.</p>`;
+      document.getElementById('summaryContent').innerHTML = `<p style="color:var(--danger)">${e.message}</p>`;
     }
+  }
+
+  // ── Navigation ──
+  function showView(id) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function backToRecorder() {
+    audioBlob = null;
+    audioChunks = [];
+    seconds = 0;
+    document.getElementById('timer').textContent = '00:00:00';
+    document.getElementById('btnAnalyze').disabled = true;
+    document.getElementById('meetingTitle').value = '';
+    document.getElementById('headerMeta').textContent = '';
+    setStatus('', 'Prêt à enregistrer');
+    showView('viewRecorder');
   }
 
   // ── Utils ──
@@ -729,25 +618,22 @@
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
     const sec = s % 60;
-    if (h > 0) return `${h}h ${m}m ${sec}s`;
+    if (h > 0) return `${h}h ${m}m`;
     if (m > 0) return `${m}m ${sec}s`;
     return `${sec}s`;
   }
 
   function setStatus(type, text) {
-    const dot = document.getElementById('statusDot');
-    dot.className = 'status-dot ' + type;
+    document.getElementById('statusDot').className = 'status-dot' + (type ? ' ' + type : '');
     document.getElementById('statusText').textContent = text;
   }
 
   function showSkeleton(id) {
     document.getElementById(id).innerHTML = `
-      <div class="skeleton">
-        <div class="skeleton-line" style="width:90%"></div>
-        <div class="skeleton-line" style="width:70%"></div>
-        <div class="skeleton-line" style="width:80%"></div>
-        <div class="skeleton-line" style="width:55%"></div>
-      </div>`;
+      <div class="skeleton-line" style="width:88%"></div>
+      <div class="skeleton-line" style="width:72%"></div>
+      <div class="skeleton-line" style="width:80%"></div>
+      <div class="skeleton-line" style="width:58%"></div>`;
   }
 
   function toggleBlock(id) {
@@ -756,24 +642,11 @@
 
   function copyContent(id, btn) {
     const el = document.getElementById(id);
-    const text = el.innerText || el.textContent;
-    navigator.clipboard.writeText(text).then(() => {
+    navigator.clipboard.writeText(el.innerText || el.textContent).then(() => {
       btn.textContent = '✓ Copié';
       btn.classList.add('copied');
       setTimeout(() => { btn.textContent = 'Copier'; btn.classList.remove('copied'); }, 2000);
     });
-  }
-
-  function clearAll() {
-    audioBlob = null;
-    audioChunks = [];
-    seconds = 0;
-    document.getElementById('timer').textContent = '00:00:00';
-    document.getElementById('results').classList.remove('visible');
-    document.getElementById('btnAnalyze').disabled = true;
-    document.getElementById('btnClear').style.display = 'none';
-    document.getElementById('meetingTitle').value = '';
-    setStatus('', 'Prêt à enregistrer');
   }
 </script>
 </body>
