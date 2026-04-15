@@ -8,7 +8,8 @@
   <style>
     :root { --bg:#fff; --surface:#f4f4f4; --border:#e8e8e8; --text:#1c1c1c; --muted:#aaa; --danger:#e02020; --green:#16a34a; }
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; -webkit-font-smoothing:antialiased; padding-bottom:60px; }
+    html { overflow-y: auto; }
+  body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; -webkit-font-smoothing:antialiased; padding-bottom:60px; overflow-y: auto; touch-action: pan-y; }
     .app { max-width:430px; margin:0 auto; padding:env(safe-area-inset-top,0px) 24px 0; }
     header { display:flex; align-items:center; justify-content:space-between; padding:20px 0 16px; border-bottom:1px solid var(--border); margin-bottom:16px; }
     .logo-text { font-size:15px; font-weight:500; }
@@ -54,7 +55,7 @@
     .play-btn { width:40px; height:40px; border-radius:50%; background:var(--text); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; -webkit-tap-highlight-color:transparent; }
     .play-btn svg { fill:white; }
     .progress-wrap { flex:1; display:flex; flex-direction:column; gap:4px; }
-    .progress-bar { width:100%; height:20px; cursor:pointer; position:relative; display:flex; align-items:center; touch-action:none; }
+    .progress-bar { width:100%; height:20px; cursor:pointer; position:relative; display:flex; align-items:center; touch-action:pan-y; }
     .progress-track { width:100%; height:3px; background:var(--border); border-radius:2px; }
     .progress-fill { height:100%; background:var(--text); border-radius:2px; width:0%; }
     .progress-thumb { position:absolute; top:50%; left:0%; transform:translate(-50%,-50%); width:14px; height:14px; border-radius:50%; background:var(--text); pointer-events:none; }
@@ -77,6 +78,13 @@
   let audioEl = null;
 
   window.onload = () => {
+    // Debug: force scroll
+    document.documentElement.style.height = 'auto';
+    document.documentElement.style.overflowY = 'auto';
+    document.body.style.height = 'auto';
+    document.body.style.overflowY = 'auto';
+    document.body.style.minHeight = '100vh';
+
     const raw = localStorage.getItem('ponk_result');
     const audioData = localStorage.getItem('ponk_audio');
     const metaRaw = localStorage.getItem('ponk_meta');
