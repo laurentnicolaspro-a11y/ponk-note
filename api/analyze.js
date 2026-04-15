@@ -41,6 +41,7 @@ module.exports = async function handler(req, res) {
 
     const title = fields['title'] || 'Réunion';
     const duration = fields['duration'] || 'inconnue';
+    const datetime = fields['datetime'] || '';
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
@@ -49,7 +50,7 @@ module.exports = async function handler(req, res) {
 
     const prompt = `Tu es un assistant spécialisé dans la synthèse de réunions professionnelles.
 
-Voici un enregistrement audio d'une réunion intitulée "${title}" (durée : ${duration}).
+Voici un enregistrement audio d'une réunion intitulée "${title}" (durée : ${duration}, date : ${datetime}).
 
 Analyse cet enregistrement et réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans backticks, sans texte avant ou après.
 
