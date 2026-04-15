@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Ponk Note</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #ffffff;
-      --surface: #f5f5f5;
-      --border: #e6e6e6;
-      --text: #1a1a1a;
-      --muted: #999999;
-      --danger: #d42020;
-      --green: #22c55e;
+      --surface: #f4f4f4;
+      --border: #e8e8e8;
+      --text: #1c1c1c;
+      --muted: #aaaaaa;
+      --danger: #e02020;
+      --green: #16a34a;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -25,7 +25,7 @@
       overflow: hidden;
       background: var(--bg);
       color: var(--text);
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-family: 'DM Sans', system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
     }
 
@@ -34,136 +34,186 @@
       flex-direction: column;
       height: 100%;
       height: 100dvh;
-      max-width: 480px;
+      max-width: 430px;
       margin: 0 auto;
-      padding-left: 22px;
-      padding-right: 22px;
-      padding-top: env(safe-area-inset-top, 0px);
-      padding-bottom: env(safe-area-inset-bottom, 12px);
+      padding: env(safe-area-inset-top, 0px) 24px env(safe-area-inset-bottom, 16px);
     }
 
-    /* ── Header ── */
     header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 18px 0 14px;
-      border-bottom: 1px solid var(--border);
+      padding: 20px 0 16px;
       flex-shrink: 0;
     }
 
-    .logo {
-      font-size: 16px;
-      font-weight: 600;
-      letter-spacing: -0.3px;
-    }
+    .logo-text { font-size: 15px; font-weight: 500; letter-spacing: -0.2px; }
+    .logo-text span { color: var(--muted); font-weight: 300; }
 
     #headerMeta {
       font-size: 12px;
       color: var(--muted);
+      font-family: 'DM Mono', monospace;
     }
 
-    /* ── Views ── */
-    .view {
-      display: none;
-      flex-direction: column;
-      flex: 1;
-      overflow: hidden;
-    }
+    .view { display: none; flex-direction: column; flex: 1; overflow: hidden; }
     .view.active { display: flex; }
 
-    /* ── RECORDER VIEW ── */
+    /* ── RECORDER ── */
     .recorder {
       display: flex;
       flex-direction: column;
       flex: 1;
-      padding: 20px 0 8px;
-      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0 8px;
     }
 
+    .title-field { width: 100%; flex-shrink: 0; }
     .title-field input {
       width: 100%;
       background: none;
       border: none;
       border-bottom: 1px solid var(--border);
       padding: 10px 0;
-      font-family: inherit;
+      font-family: 'DM Sans', sans-serif;
       font-size: 15px;
       color: var(--text);
       outline: none;
       transition: border-color 0.2s;
-      flex-shrink: 0;
     }
     .title-field input:focus { border-color: var(--text); }
     .title-field input::placeholder { color: var(--muted); }
 
-    .visualizer-wrap {
-      flex: 1;
-      min-height: 56px;
-      background: var(--surface);
-      border-radius: 12px;
+    /* Center */
+    .btn-zone {
       display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      flex: 1;
+      justify-content: center;
+    }
+
+    /* Power button */
+    .record-btn {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      border: none;
+      background: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
+      gap: 12px;
+      -webkit-tap-highlight-color: transparent;
       position: relative;
+      user-select: none;
+      transition: transform 0.12s;
+    }
+    .record-btn:active { transform: scale(0.94); }
+
+    /* SVG power icon */
+    .power-svg {
+      width: 140px;
+      height: 140px;
+      transition: all 0.3s;
     }
 
-    canvas#visualizer {
-      width: 100%;
-      height: 100%;
-      display: block;
+    /* The circle ring of the power icon */
+    .power-ring {
+      fill: none;
+      stroke: var(--text);
+      stroke-width: 8;
+      stroke-linecap: round;
+      transition: stroke 0.3s;
     }
 
-    .viz-idle {
+    /* The top line of the power icon */
+    .power-line {
+      fill: none;
+      stroke: var(--text);
+      stroke-width: 8;
+      stroke-linecap: round;
+      transition: stroke 0.3s;
+    }
+
+    .record-btn.is-recording .power-ring { stroke: var(--danger); }
+    .record-btn.is-recording .power-line { stroke: var(--danger); }
+
+    /* Pulse rings when recording */
+    .pulse-ring {
       position: absolute;
-      font-size: 12px;
-      color: var(--muted);
-      letter-spacing: 0.5px;
+      border-radius: 50%;
+      border: 2px solid var(--danger);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .pulse-ring-1 { inset: -16px; }
+    .pulse-ring-2 { inset: -32px; }
+
+    .record-btn.is-recording .pulse-ring-1 {
+      animation: pulse-out 1.6s ease-out infinite;
+    }
+    .record-btn.is-recording .pulse-ring-2 {
+      animation: pulse-out 1.6s ease-out 0.5s infinite;
     }
 
+    @keyframes pulse-out {
+      0%   { opacity: 0.5; transform: scale(0.95); }
+      100% { opacity: 0;   transform: scale(1.08); }
+    }
+
+    /* Label under button */
+    .btn-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      transition: color 0.3s;
+    }
+    .record-btn.is-recording .btn-label { color: var(--danger); }
+
+    /* Timer */
     .timer {
-      text-align: center;
-      font-size: 40px;
-      font-weight: 300;
-      letter-spacing: 3px;
-      color: var(--text);
-      font-variant-numeric: tabular-nums;
-      flex-shrink: 0;
+      font-family: 'DM Mono', monospace;
+      font-size: 17px;
+      letter-spacing: 2.5px;
+      color: var(--muted);
       transition: color 0.3s;
     }
     .timer.recording { color: var(--danger); }
 
-    .controls {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
+    /* Bottom */
+    .bottom-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
       flex-shrink: 0;
     }
 
-    .btn {
-      padding: 14px 8px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      font-family: inherit;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text);
-      cursor: pointer;
-      transition: background 0.12s, opacity 0.12s;
-      -webkit-tap-highlight-color: transparent;
-      white-space: nowrap;
-    }
-    .btn:active { background: var(--border); }
-    .btn:disabled { opacity: 0.28; cursor: not-allowed; }
-
-    .btn-primary {
+    .btn-analyze {
+      width: 100%;
+      padding: 15px;
+      border-radius: 12px;
+      border: none;
       background: var(--text);
       color: var(--bg);
-      border-color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s, transform 0.12s;
+      display: none;
     }
-    .btn-primary:active { background: #333; }
+    .btn-analyze.visible { display: block; }
+    .btn-analyze:active { transform: scale(0.98); }
+    .btn-analyze:disabled { opacity: 0.3; cursor: not-allowed; }
 
     .status-bar {
       display: flex;
@@ -171,231 +221,151 @@
       gap: 8px;
       padding: 10px 14px;
       background: var(--surface);
-      border-radius: 9px;
+      border-radius: 10px;
       font-size: 12px;
       color: var(--muted);
-      flex-shrink: 0;
     }
 
     .status-dot {
-      width: 6px;
-      height: 6px;
+      width: 6px; height: 6px;
       border-radius: 50%;
       background: var(--muted);
       flex-shrink: 0;
       transition: background 0.3s;
     }
-    .status-dot.active { background: var(--green); }
-    .status-dot.error { background: var(--danger); }
-    .status-dot.loading {
-      background: var(--text);
-      animation: blink 0.8s ease-in-out infinite;
-    }
+    .status-dot.active  { background: var(--green); }
+    .status-dot.error   { background: var(--danger); }
+    .status-dot.loading { background: var(--text); animation: blink 0.8s ease-in-out infinite; }
 
     @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.2; }
+      0%, 100% { opacity: 1; } 50% { opacity: 0.2; }
     }
 
-    /* ── RESULTS VIEW ── */
+    /* ── RESULTS ── */
     .results-view {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      overflow: hidden;
-      padding: 14px 0 0;
-      gap: 10px;
+      display: flex; flex-direction: column; flex: 1;
+      overflow: hidden; padding: 14px 0 0; gap: 10px;
     }
 
     .results-nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0; padding-bottom: 12px; border-bottom: 1px solid var(--border);
     }
 
     .btn-back {
-      background: none;
-      border: none;
-      font-family: inherit;
-      font-size: 13px;
-      color: var(--muted);
-      cursor: pointer;
-      padding: 4px 0;
+      background: none; border: none; font-family: 'DM Sans', sans-serif;
+      font-size: 13px; color: var(--muted); cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      transition: color 0.15s;
     }
-    .btn-back:active { color: var(--text); }
 
-    .meta-info {
-      font-size: 12px;
-      color: var(--muted);
-    }
+    .meta-info { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; }
 
     .results-scroll {
-      flex: 1;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      -webkit-overflow-scrolling: touch;
-      padding-bottom: 4px;
+      flex: 1; overflow-y: auto; display: flex; flex-direction: column;
+      gap: 8px; -webkit-overflow-scrolling: touch; padding-bottom: 8px;
     }
 
-    .result-block {
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
+    .result-block { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; flex-shrink: 0; }
 
     .result-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 11px 14px;
-      cursor: pointer;
-      user-select: none;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; cursor: pointer; user-select: none;
       -webkit-tap-highlight-color: transparent;
-      transition: background 0.12s;
     }
     .result-header:active { background: var(--surface); }
 
-    .result-label {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: var(--muted);
-    }
+    .result-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+    .result-controls { display: flex; align-items: center; gap: 8px; }
 
-    .result-controls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .chevron {
-      font-size: 10px;
-      color: var(--muted);
-      transition: transform 0.2s;
-      display: inline-block;
-    }
+    .chevron { font-size: 10px; color: var(--muted); transition: transform 0.2s; }
     .result-block.collapsed .chevron { transform: rotate(-90deg); }
     .result-block.collapsed .result-body { display: none; }
 
-    .result-body {
-      padding: 0 14px 14px;
-      border-top: 1px solid var(--border);
-    }
+    .result-body { padding: 0 14px 14px; border-top: 1px solid var(--border); }
 
-    .result-body p {
-      font-size: 14px;
-      line-height: 1.7;
-      color: var(--text);
-      padding-top: 12px;
-    }
+    .result-body p { font-size: 14px; line-height: 1.75; color: var(--text); padding-top: 12px; }
 
-    .result-body ul {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      padding-top: 10px;
-    }
+    .result-body ul { list-style: none; display: flex; flex-direction: column; gap: 6px; padding-top: 10px; }
 
     .result-body ul li {
-      display: flex;
-      gap: 8px;
-      padding: 8px 10px;
-      background: var(--surface);
-      border-radius: 8px;
-      font-size: 13px;
-      line-height: 1.6;
-      color: var(--text);
+      display: flex; gap: 8px; padding: 9px 11px;
+      background: var(--surface); border-radius: 8px;
+      font-size: 13px; line-height: 1.6; color: var(--text);
     }
-
-    .result-body ul li::before {
-      content: '—';
-      color: var(--muted);
-      flex-shrink: 0;
-    }
+    .result-body ul li::before { content: '—'; color: var(--muted); flex-shrink: 0; }
 
     .transcript-text {
-      font-size: 13px;
-      line-height: 1.8;
-      color: var(--muted);
-      padding-top: 12px;
+      font-size: 12px; line-height: 1.9; color: var(--muted);
+      padding-top: 12px; font-family: 'DM Mono', monospace;
     }
 
     .copy-btn {
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      padding: 3px 10px;
-      border-radius: 5px;
-      font-size: 11px;
-      font-family: inherit;
-      cursor: pointer;
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      padding: 3px 10px; border-radius: 5px; font-size: 11px;
+      font-family: 'DM Sans', sans-serif; cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      transition: color 0.15s, border-color 0.15s;
     }
-    .copy-btn:active { color: var(--text); }
     .copy-btn.copied { color: var(--green); border-color: var(--green); }
 
-    /* Skeleton */
     .skeleton-line {
       height: 11px;
       background: linear-gradient(90deg, var(--surface) 25%, var(--border) 50%, var(--surface) 75%);
-      background-size: 200% 100%;
-      border-radius: 4px;
-      animation: shimmer 1.4s infinite;
-      margin-top: 12px;
+      background-size: 200% 100%; border-radius: 4px;
+      animation: shimmer 1.4s infinite; margin-top: 12px;
     }
     @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
+      0% { background-position: 200% 0; } 100% { background-position: -200% 0; }
     }
   </style>
 </head>
 <body>
-
 <div class="app">
+
   <header>
-    <span class="logo">Ponk Note</span>
+    <span class="logo-text">Ponk <span>Note</span></span>
     <span id="headerMeta"></span>
   </header>
 
   <!-- View 1 : Enregistrement -->
   <div class="view active" id="viewRecorder">
     <div class="recorder">
+
       <div class="title-field">
         <input type="text" id="meetingTitle" placeholder="Titre de la réunion…" />
       </div>
 
-      <div class="visualizer-wrap">
-        <canvas id="visualizer"></canvas>
-        <span class="viz-idle" id="vizIdle">en attente</span>
+      <div class="btn-zone">
+        <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
+          <!-- Pulse rings -->
+          <div class="pulse-ring pulse-ring-1"></div>
+          <div class="pulse-ring pulse-ring-2"></div>
+
+          <!-- Power SVG icon -->
+          <svg class="power-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Circle arc (open at top) -->
+            <path class="power-ring"
+              d="M 30 22 A 32 32 0 1 0 70 22"
+            />
+            <!-- Vertical line at top -->
+            <line class="power-line" x1="50" y1="10" x2="50" y2="42" />
+          </svg>
+
+          <span class="btn-label" id="btnLabel">Appuyer</span>
+        </button>
+
+        <div class="timer" id="timer">00:00:00</div>
       </div>
 
-      <div class="timer" id="timer">00:00:00</div>
-
-      <div class="controls">
-        <button class="btn btn-primary" id="btnRecord" onclick="startRecording()">
-          <span id="btnRecordLabel">Enregistrer</span>
+      <div class="bottom-section">
+        <button class="btn-analyze" id="btnAnalyze" onclick="analyzeRecording()">
+          Analyser la réunion →
         </button>
-        <button class="btn" id="btnStop" onclick="stopRecording()" disabled>
-          Arrêter
-        </button>
-        <button class="btn" id="btnAnalyze" onclick="analyzeRecording()" disabled>
-          Analyser
-        </button>
+        <div class="status-bar">
+          <div class="status-dot" id="statusDot"></div>
+          <span id="statusText">Prêt à enregistrer</span>
+        </div>
       </div>
 
-      <div class="status-bar">
-        <div class="status-dot" id="statusDot"></div>
-        <span id="statusText">Prêt à enregistrer</span>
-      </div>
     </div>
   </div>
 
@@ -406,13 +376,13 @@
         <button class="btn-back" onclick="backToRecorder()">← Nouveau</button>
         <span class="meta-info" id="metaDuration"></span>
       </div>
-
       <div class="results-scroll">
+
         <div class="result-block" id="blockSummary">
           <div class="result-header" onclick="toggleBlock('blockSummary')">
             <span class="result-label">Résumé</span>
             <div class="result-controls">
-              <button class="copy-btn" onclick="copyContent('summaryContent', this); event.stopPropagation()">Copier</button>
+              <button class="copy-btn" onclick="copyContent('summaryContent',this);event.stopPropagation()">Copier</button>
               <span class="chevron">▾</span>
             </div>
           </div>
@@ -423,7 +393,7 @@
           <div class="result-header" onclick="toggleBlock('blockActions')">
             <span class="result-label">Points d'action</span>
             <div class="result-controls">
-              <button class="copy-btn" onclick="copyContent('actionsContent', this); event.stopPropagation()">Copier</button>
+              <button class="copy-btn" onclick="copyContent('actionsContent',this);event.stopPropagation()">Copier</button>
               <span class="chevron">▾</span>
             </div>
           </div>
@@ -434,7 +404,7 @@
           <div class="result-header" onclick="toggleBlock('blockTranscript')">
             <span class="result-label">Transcription</span>
             <div class="result-controls">
-              <button class="copy-btn" onclick="copyContent('transcriptContent', this); event.stopPropagation()">Copier</button>
+              <button class="copy-btn" onclick="copyContent('transcriptContent',this);event.stopPropagation()">Copier</button>
               <span class="chevron">▾</span>
             </div>
           </div>
@@ -442,82 +412,39 @@
             <div class="transcript-text" id="transcriptContent"></div>
           </div>
         </div>
+
       </div>
     </div>
   </div>
+
 </div>
 
 <script>
   let mediaRecorder = null;
-  let audioChunks = [];
-  let audioBlob = null;
+  let audioChunks   = [];
+  let audioBlob     = null;
   let timerInterval = null;
-  let seconds = 0;
-  let audioContext = null;
-  let analyser = null;
-  let animFrame = null;
+  let seconds       = 0;
+  let isRecording   = false;
 
-  // ── Timer ──
+  function toggleRecording() {
+    if (!isRecording) startRecording();
+    else stopRecording();
+  }
+
   function startTimer() {
     seconds = 0;
     timerInterval = setInterval(() => {
       seconds++;
-      const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
-      const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
-      const s = String(seconds % 60).padStart(2, '0');
+      const h = String(Math.floor(seconds/3600)).padStart(2,'0');
+      const m = String(Math.floor((seconds%3600)/60)).padStart(2,'0');
+      const s = String(seconds%60).padStart(2,'0');
       document.getElementById('timer').textContent = `${h}:${m}:${s}`;
     }, 1000);
   }
 
   function stopTimer() { clearInterval(timerInterval); }
 
-  // ── Visualizer ──
-  function startVisualizer(stream) {
-    document.getElementById('vizIdle').style.display = 'none';
-    audioContext = new AudioContext();
-    analyser = audioContext.createAnalyser();
-    analyser.fftSize = 256;
-    const source = audioContext.createMediaStreamSource(stream);
-    source.connect(analyser);
-    drawVisualizer();
-  }
-
-  function drawVisualizer() {
-    const canvas = document.getElementById('visualizer');
-    const ctx = canvas.getContext('2d');
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-    const bufferLength = analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-
-    function draw() {
-      animFrame = requestAnimationFrame(draw);
-      analyser.getByteFrequencyData(dataArray);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const barWidth = (canvas.width / bufferLength) * 2.2;
-      let x = 0;
-      for (let i = 0; i < bufferLength; i++) {
-        const barHeight = (dataArray[i] / 255) * canvas.height * 0.85;
-        const alpha = 0.4 + (dataArray[i] / 255) * 0.6;
-        ctx.fillStyle = `rgba(26, 26, 26, ${alpha})`;
-        ctx.beginPath();
-        ctx.roundRect(x, canvas.height - barHeight, barWidth - 1, barHeight, 2);
-        ctx.fill();
-        x += barWidth;
-      }
-    }
-    draw();
-  }
-
-  function stopVisualizer() {
-    if (animFrame) cancelAnimationFrame(animFrame);
-    if (audioContext) audioContext.close();
-    document.getElementById('vizIdle').style.display = 'block';
-    const canvas = document.getElementById('visualizer');
-    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-  }
-
-  // ── Recording ──
   async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -527,19 +454,17 @@
       mediaRecorder.onstop = () => {
         audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
         stream.getTracks().forEach(t => t.stop());
-        stopVisualizer();
-        setStatus('active', `Enregistrement prêt — ${formatDuration(seconds)}`);
-        document.getElementById('btnAnalyze').disabled = false;
+        setStatus('active', `Prêt — ${formatDuration(seconds)}`);
+        document.getElementById('btnAnalyze').classList.add('visible');
       };
       mediaRecorder.start(500);
+      isRecording = true;
       startTimer();
-      startVisualizer(stream);
+      document.getElementById('recordBtn').classList.add('is-recording');
+      document.getElementById('btnLabel').textContent = 'Stop';
       document.getElementById('timer').classList.add('recording');
-      document.getElementById('btnRecord').disabled = true;
-      document.getElementById('btnStop').disabled = false;
-      document.getElementById('btnRecordLabel').textContent = 'En cours…';
       setStatus('loading', 'Enregistrement en cours…');
-    } catch (e) {
+    } catch(e) {
       setStatus('error', 'Micro inaccessible — vérifiez les permissions');
     }
   }
@@ -547,27 +472,23 @@
   function stopRecording() {
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
       mediaRecorder.stop();
+      isRecording = false;
       stopTimer();
+      document.getElementById('recordBtn').classList.remove('is-recording');
+      document.getElementById('btnLabel').textContent = 'Appuyer';
       document.getElementById('timer').classList.remove('recording');
-      document.getElementById('btnRecord').disabled = false;
-      document.getElementById('btnStop').disabled = true;
-      document.getElementById('btnRecordLabel').textContent = 'Enregistrer';
     }
   }
 
-  // ── Analyze ──
   async function analyzeRecording() {
     if (!audioBlob) return;
     document.getElementById('btnAnalyze').disabled = true;
-
-    const title = document.getElementById('meetingTitle').value || 'Réunion sans titre';
+    const title    = document.getElementById('meetingTitle').value || 'Réunion sans titre';
     const duration = formatDuration(seconds);
 
-    // Passer à la vue résultats
     showView('viewResults');
     document.getElementById('metaDuration').textContent = duration;
-    document.getElementById('headerMeta').textContent = title;
-
+    document.getElementById('headerMeta').textContent   = title;
     showSkeleton('summaryContent');
     showSkeleton('actionsContent');
     document.getElementById('transcriptContent').textContent = 'Transcription en cours…';
@@ -578,53 +499,53 @@
     formData.append('duration', duration);
 
     try {
-      const res = await fetch('/api/analyze', { method: 'POST', body: formData });
+      const res  = await fetch('/api/analyze', { method: 'POST', body: formData });
       if (!res.ok) throw new Error(`Erreur ${res.status}`);
       const data = await res.json();
 
-      document.getElementById('summaryContent').innerHTML = `<p>${data.summary.replace(/\n/g, '<br>')}</p>`;
+      document.getElementById('summaryContent').innerHTML =
+        `<p>${data.summary.replace(/\n/g,'<br>')}</p>`;
 
       const actions = data.actions || [];
       document.getElementById('actionsContent').innerHTML = actions.length
-        ? `<ul>${actions.map(a => `<li>${a}</li>`).join('')}</ul>`
+        ? `<ul>${actions.map(a=>`<li>${a}</li>`).join('')}</ul>`
         : `<p style="color:var(--muted)">Aucun point d'action identifié.</p>`;
 
       document.getElementById('transcriptContent').textContent = data.transcript;
-    } catch (e) {
-      document.getElementById('summaryContent').innerHTML = `<p style="color:var(--danger)">${e.message}</p>`;
+    } catch(e) {
+      document.getElementById('summaryContent').innerHTML =
+        `<p style="color:var(--danger)">${e.message}</p>`;
     }
   }
 
-  // ── Navigation ──
   function showView(id) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(id).classList.add('active');
   }
 
   function backToRecorder() {
-    audioBlob = null;
-    audioChunks = [];
-    seconds = 0;
+    audioBlob = null; audioChunks = []; seconds = 0; isRecording = false;
     document.getElementById('timer').textContent = '00:00:00';
-    document.getElementById('btnAnalyze').disabled = true;
+    document.getElementById('timer').classList.remove('recording');
+    document.getElementById('btnAnalyze').classList.remove('visible');
+    document.getElementById('btnAnalyze').disabled = false;
     document.getElementById('meetingTitle').value = '';
     document.getElementById('headerMeta').textContent = '';
+    document.getElementById('recordBtn').classList.remove('is-recording');
+    document.getElementById('btnLabel').textContent = 'Appuyer';
     setStatus('', 'Prêt à enregistrer');
     showView('viewRecorder');
   }
 
-  // ── Utils ──
   function formatDuration(s) {
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const sec = s % 60;
+    const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
     if (h > 0) return `${h}h ${m}m`;
     if (m > 0) return `${m}m ${sec}s`;
     return `${sec}s`;
   }
 
   function setStatus(type, text) {
-    document.getElementById('statusDot').className = 'status-dot' + (type ? ' ' + type : '');
+    document.getElementById('statusDot').className = 'status-dot' + (type ? ' '+type : '');
     document.getElementById('statusText').textContent = text;
   }
 
@@ -636,13 +557,12 @@
       <div class="skeleton-line" style="width:58%"></div>`;
   }
 
-  function toggleBlock(id) {
-    document.getElementById(id).classList.toggle('collapsed');
-  }
+  function toggleBlock(id) { document.getElementById(id).classList.toggle('collapsed'); }
 
   function copyContent(id, btn) {
-    const el = document.getElementById(id);
-    navigator.clipboard.writeText(el.innerText || el.textContent).then(() => {
+    navigator.clipboard.writeText(
+      document.getElementById(id).innerText || document.getElementById(id).textContent
+    ).then(() => {
       btn.textContent = '✓ Copié';
       btn.classList.add('copied');
       setTimeout(() => { btn.textContent = 'Copier'; btn.classList.remove('copied'); }, 2000);
