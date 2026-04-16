@@ -44,11 +44,18 @@ module.exports = async function handler(req, res) {
     const datetime = fields['datetime'] || '';
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    let model;
+    try {
+      model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    } catch {
+      model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+    }
     const audioBase64 = audioFile.data.toString('base64');
 
     // ── APPEL 1 : Transcription brute ──
-    const transcriptResult = await model.generateContent([
+    let transcriptResult;
+    try {
+      transcriptResult = await model.generateContent([
       { inlineData: { mimeType: 'audio/webm', data: audioBase64 } },
       { text: `Transcris cet audio mot par mot en français. 
 Sois fidèle à ce qui est dit, garde les hésitations naturelles.
@@ -56,6 +63,13 @@ Si l'audio est dans une autre langue, traduis en français.
 Réponds UNIQUEMENT avec le texte transcrit, sans commentaire, sans introduction.` }
     ]);
 
+    } catch {
+      model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+      transcriptResult = await model.generateContent([
+        { inlineData: { mimeType: 'audio/webm', data: audioBase64 } },
+        { text: 'Transcris cet audio mot par mot en français. Réponds UNIQUEMENT avec le texte transcrit.' }
+      ]);
+    }
     const transcript = transcriptResult.response.text().trim();
 
     // ── APPEL 2 : Analyse structurée ──
