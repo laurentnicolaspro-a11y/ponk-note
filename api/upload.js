@@ -50,8 +50,10 @@ module.exports = async function handler(req, res) {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
+          'apikey': process.env.SUPABASE_SERVICE_KEY,
           'Content-Type': 'audio/webm',
-          'x-upsert': 'true'
+          'x-upsert': 'true',
+          'cache-control': '3600'
         },
         body: audioFile.data
       }
