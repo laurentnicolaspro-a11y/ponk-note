@@ -399,7 +399,7 @@ async function handleAnalyze(fileName, btn) {
   }
 
   btn.disabled = true;
-  btn.textContent = '⏳ Analyse…';
+  btn.innerHTML = '<div class="spinner-sm"><svg viewBox="0 0 24 24" width="20" height="20"><circle class="spinner-arc-sm" cx="12" cy="12" r="9"/></svg></div>';
 
   try {
     // Fetch audio from Supabase
@@ -433,7 +433,7 @@ async function handleAnalyze(fileName, btn) {
 
   } catch(e) {
     btn.disabled = false;
-    btn.textContent = 'Analyser';
+    btn.innerHTML = 'Analyser';
     alert('Erreur : ' + e.message);
   }
 }
