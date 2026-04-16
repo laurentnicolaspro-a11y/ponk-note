@@ -303,6 +303,32 @@
     document.getElementById('dot').className='dot'+(type?' '+type:'');
     document.getElementById('status').textContent=text;
   }
+
+  // ── Profile ──
+  function initProfile() {
+    const profile = localStorage.getItem('ponk_profile');
+    if (profile) showApp(profile);
+    else document.getElementById('profileScreen').classList.remove('hidden');
+  }
+
+  function selectProfile(name) {
+    localStorage.setItem('ponk_profile', name);
+    showApp(name);
+  }
+
+  function showApp(name) {
+    document.getElementById('profileScreen').classList.add('hidden');
+    const avatar = document.getElementById('headerAvatar');
+    avatar.textContent = name[0];
+    avatar.className = 'header-avatar ' + (name === 'Nicolas' ? 'avatar-n' : 'avatar-c');
+  }
+
+  function changeProfile() {
+    localStorage.removeItem('ponk_profile');
+    document.getElementById('profileScreen').classList.remove('hidden');
+  }
+
+  initProfile();
 </script>
   <!-- Loading overlay -->
   <div class="overlay" id="overlay">
