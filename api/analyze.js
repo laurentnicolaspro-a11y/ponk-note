@@ -46,9 +46,9 @@ module.exports = async function handler(req, res) {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     let model;
     try {
-      model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
     } catch {
-      model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+      model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
     }
     const audioBase64 = audioFile.data.toString('base64');
 
@@ -64,7 +64,7 @@ Réponds UNIQUEMENT avec le texte transcrit, sans commentaire, sans introduction
     ]);
 
     } catch {
-      model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+      model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
       transcriptResult = await model.generateContent([
         { inlineData: { mimeType: 'audio/webm', data: audioBase64 } },
         { text: 'Transcris cet audio mot par mot en français. Réponds UNIQUEMENT avec le texte transcrit.' }
@@ -151,7 +151,7 @@ Règles :
     try {
       analysisResult = await model.generateContent(analysisPrompt);
     } catch {
-      model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+      model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
       analysisResult = await model.generateContent(analysisPrompt);
     }
     const rawText = analysisResult.response.text();
