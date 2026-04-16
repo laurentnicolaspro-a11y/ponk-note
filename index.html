@@ -27,7 +27,6 @@
       font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
     }
 
-    /* ── Profile screen ── */
     .profile-screen {
       position: fixed; inset: 0;
       background: var(--bg);
@@ -37,326 +36,104 @@
       animation: fadeIn 0.4s ease;
     }
     .profile-screen.hidden { display: none; }
-
     @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-
-    .profile-logo {
-      display: flex; flex-direction: column; align-items: center; gap: 12px;
-    }
-
-    .profile-icon {
-      width: 72px; height: 72px; border-radius: 18px;
-      background: var(--text);
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-    }
-
+    .profile-logo { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .profile-icon { width: 72px; height: 72px; border-radius: 18px; background: var(--text); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
     .profile-icon svg { fill: white; width: 36px; height: 36px; }
-
-    .profile-app-name {
-      font-size: 28px; font-weight: 600; letter-spacing: -0.5px;
-      color: var(--text);
-    }
-
-    .profile-welcome {
-      text-align: center;
-    }
-    .profile-welcome p:first-child {
-      font-size: 22px; font-weight: 600; letter-spacing: -0.3px; margin-bottom: 6px;
-    }
+    .profile-app-name { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; color: var(--text); }
+    .profile-welcome { text-align: center; }
+    .profile-welcome p:first-child { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; margin-bottom: 6px; }
     .profile-welcome p:last-child { font-size: 15px; color: var(--muted); }
-
     .profile-input-wrap { width: 100%; display: flex; flex-direction: column; gap: 10px; }
-
-    .profile-input {
-      width: 100%; padding: 14px 16px; border-radius: 12px;
-      border: none; background: var(--surface);
-      box-shadow: 0 1px 0 rgba(0,0,0,0.04), inset 0 0 0 1px var(--border);
-      font-family: inherit; font-size: 16px; color: var(--text);
-      outline: none; text-align: center; transition: box-shadow 0.2s;
-    }
-    .profile-input:focus {
-      box-shadow: 0 0 0 3px rgba(0,122,255,0.25), inset 0 0 0 1px var(--accent);
-    }
+    .profile-input { width: 100%; padding: 14px 16px; border-radius: 12px; border: none; background: var(--surface); box-shadow: 0 1px 0 rgba(0,0,0,0.04), inset 0 0 0 1px var(--border); font-family: inherit; font-size: 16px; color: var(--text); outline: none; text-align: center; transition: box-shadow 0.2s; }
+    .profile-input:focus { box-shadow: 0 0 0 3px rgba(0,122,255,0.25), inset 0 0 0 1px var(--accent); }
     .profile-input::placeholder { color: var(--muted); }
-
-    .profile-submit {
-      width: 100%; padding: 15px; border-radius: 14px; border: none;
-      background: var(--accent); color: #fff;
-      font-family: inherit; font-size: 17px; font-weight: 600;
-      cursor: pointer; letter-spacing: -0.2px;
-      transition: opacity 0.15s, transform 0.1s;
-      box-shadow: 0 4px 16px rgba(0,122,255,0.35);
-    }
+    .profile-submit { width: 100%; padding: 15px; border-radius: 14px; border: none; background: var(--accent); color: #fff; font-family: inherit; font-size: 17px; font-weight: 600; cursor: pointer; letter-spacing: -0.2px; transition: opacity 0.15s, transform 0.1s; box-shadow: 0 4px 16px rgba(0,122,255,0.35); }
     .profile-submit:active { opacity: 0.85; transform: scale(0.98); }
 
-    /* ── App ── */
-    .app {
-      display: flex; flex-direction: column;
-      height: 100dvh; max-width: 430px; margin: 0 auto;
-      padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 16px);
-    }
+    .app { display: flex; flex-direction: column; height: 100dvh; max-width: 430px; margin: 0 auto; padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 16px); }
 
-    /* ── Header ── */
-    header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 24px 12px;
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      flex-shrink: 0;
-    }
-
-    .logo-text {
-      font-size: 17px; font-weight: 600; letter-spacing: -0.3px;
-    }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px 12px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); flex-shrink: 0; }
+    .logo-text { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
     .logo-text span { color: var(--muted); font-weight: 400; }
-
-    .header-avatar {
-      width: 32px; height: 32px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 13px; font-weight: 600; color: #fff;
-      cursor: pointer; flex-shrink: 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-      transition: transform 0.1s;
-    }
+    .header-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: #fff; cursor: pointer; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: transform 0.1s; }
     .header-avatar:active { transform: scale(0.93); }
 
-    /* ── Recorder ── */
-    .recorder {
-      display: flex; flex-direction: column; flex: 1;
-      align-items: center; justify-content: space-between;
-      padding: 12px 24px 8px;
-    }
-
-    /* Title */
-    .title-wrap {
-      width: 100%;
-      background: var(--surface);
-      border-radius: 14px;
-      box-shadow: 0 1px 0 rgba(0,0,0,0.04), inset 0 0 0 1px var(--border);
-      overflow: hidden;
-    }
-    .title-wrap input {
-      width: 100%; background: none; border: none;
-      padding: 13px 16px;
-      font-family: inherit; font-size: 15px; color: var(--text);
-      outline: none;
-    }
+    .recorder { display: flex; flex-direction: column; flex: 1; align-items: center; justify-content: space-between; padding: 12px 24px 8px; }
+    .title-wrap { width: 100%; background: var(--surface); border-radius: 14px; box-shadow: 0 1px 0 rgba(0,0,0,0.04), inset 0 0 0 1px var(--border); overflow: hidden; }
+    .title-wrap input { width: 100%; background: none; border: none; padding: 13px 16px; font-family: inherit; font-size: 15px; color: var(--text); outline: none; }
     .title-wrap input::placeholder { color: var(--muted); }
 
-    /* Center */
-    .btn-zone {
-      display: flex; flex-direction: column;
-      align-items: center; gap: 20px;
-      flex: 1; justify-content: center;
-    }
+    .btn-zone { display: flex; flex-direction: column; align-items: center; gap: 20px; flex: 1; justify-content: center; }
 
-    /* Power button */
-    .record-btn {
-      width: 180px; height: 180px; border-radius: 50%;
-      border: none; background: var(--surface);
-      cursor: pointer; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 10px;
-      position: relative; -webkit-tap-highlight-color: transparent;
-      box-shadow:
-        0 2px 8px rgba(0,0,0,0.06),
-        0 8px 32px rgba(0,0,0,0.08),
-        inset 0 1px 0 rgba(255,255,255,0.8);
-      transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.15s;
-    }
-    .record-btn:active {
-      transform: scale(0.94);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06);
-    }
-
+    .record-btn { width: 180px; height: 180px; border-radius: 50%; border: none; background: var(--surface); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; position: relative; -webkit-tap-highlight-color: transparent; box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8); transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.15s; }
+    .record-btn:active { transform: scale(0.94); box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06); }
     .power-svg { width: 80px; height: 80px; transition: all 0.3s; }
     .power-ring { fill: none; stroke: var(--text); stroke-width: 5; stroke-linecap: round; transition: stroke 0.3s; }
     .power-line { fill: none; stroke: var(--text); stroke-width: 5; stroke-linecap: round; transition: stroke 0.3s; }
-
-    .record-btn.is-recording .power-ring,
-    .record-btn.is-recording .power-line { stroke: var(--danger); }
-
-    .record-btn.is-recording {
-      box-shadow:
-        0 2px 8px rgba(255,59,48,0.1),
-        0 8px 40px rgba(255,59,48,0.2),
-        inset 0 1px 0 rgba(255,255,255,0.8);
-    }
-
-    /* Pulse */
-    .pulse-ring {
-      position: absolute; border-radius: 50%;
-      border: 1.5px solid var(--danger); opacity: 0; pointer-events: none;
-    }
+    .record-btn.is-recording .power-ring, .record-btn.is-recording .power-line { stroke: var(--danger); }
+    .record-btn.is-recording { box-shadow: 0 2px 8px rgba(255,59,48,0.1), 0 8px 40px rgba(255,59,48,0.2), inset 0 1px 0 rgba(255,255,255,0.8); }
+    .pulse-ring { position: absolute; border-radius: 50%; border: 1.5px solid var(--danger); opacity: 0; pointer-events: none; }
     .pulse-ring-1 { inset: -14px; }
     .pulse-ring-2 { inset: -28px; }
     .record-btn.is-recording .pulse-ring-1 { animation: pulse 1.8s ease-out infinite; }
     .record-btn.is-recording .pulse-ring-2 { animation: pulse 1.8s ease-out 0.6s infinite; }
-    @keyframes pulse {
-      0% { opacity: 0.5; transform: scale(0.96); }
-      100% { opacity: 0; transform: scale(1.06); }
-    }
-
-    .btn-label {
-      font-size: 12px; font-weight: 500; letter-spacing: 0.3px;
-      color: var(--muted); transition: color 0.3s;
-    }
+    @keyframes pulse { 0% { opacity: 0.5; transform: scale(0.96); } 100% { opacity: 0; transform: scale(1.06); } }
+    .btn-label { font-size: 12px; font-weight: 500; letter-spacing: 0.3px; color: var(--muted); transition: color 0.3s; }
     .record-btn.is-recording .btn-label { color: var(--danger); }
 
-    /* Timer */
-    .timer {
-      font-size: 46px; font-weight: 200; letter-spacing: -1px;
-      color: var(--text); font-variant-numeric: tabular-nums;
-      transition: color 0.3s;
-    }
+    .timer { font-size: 46px; font-weight: 200; letter-spacing: -1px; color: var(--text); font-variant-numeric: tabular-nums; transition: color 0.3s; }
     .timer.recording { color: var(--danger); }
 
-    /* Bottom */
     .bottom { width: 100%; display: flex; flex-direction: column; gap: 10px; }
-
-    .btn-analyze {
-      width: 100%; padding: 16px; border-radius: 14px; border: none;
-      background: var(--accent); color: #fff;
-      font-family: inherit; font-size: 17px; font-weight: 600;
-      cursor: pointer; letter-spacing: -0.2px;
-      box-shadow: 0 4px 16px rgba(0,122,255,0.3);
-      transition: opacity 0.15s, transform 0.1s;
-      display: none;
-    }
+    .btn-analyze { width: 100%; padding: 16px; border-radius: 14px; border: none; background: var(--accent); color: #fff; font-family: inherit; font-size: 17px; font-weight: 600; cursor: pointer; letter-spacing: -0.2px; box-shadow: 0 4px 16px rgba(0,122,255,0.3); transition: opacity 0.15s, transform 0.1s; display: none; }
     .btn-analyze.visible { display: block; }
     .btn-analyze:active { opacity: 0.85; transform: scale(0.98); }
     .btn-analyze:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
-    /* Status */
-    .status-bar {
-      display: flex; align-items: center; gap: 8px;
-      padding: 11px 16px;
-      background: var(--surface);
-      border-radius: 12px;
-      box-shadow: 0 1px 0 rgba(0,0,0,0.04), inset 0 0 0 1px var(--border);
-      font-size: 13px; color: var(--muted);
-    }
-    .dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: var(--muted); flex-shrink: 0; transition: background 0.3s;
-    }
+    .status-bar { display: flex; align-items: center; gap: 8px; padding: 11px 16px; background: var(--surface); border-radius: 12px; box-shadow: 0 1px 0 rgba(0,0,0,0.04), inset 0 0 0 1px var(--border); font-size: 13px; color: var(--muted); }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background 0.3s; }
     .dot.active  { background: var(--green); box-shadow: 0 0 6px var(--green); }
     .dot.error   { background: var(--danger); }
     .dot.loading { background: var(--accent); animation: blink .8s ease-in-out infinite; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
 
-    /* ── Assistant toggle ── */
-    .assistant-toggle {
-      display: flex; align-items: center; gap: 10px;
-      padding: 0 4px;
-    }
+    /* Assistant toggle */
+    .assistant-toggle { display: flex; align-items: center; gap: 10px; padding: 0 4px; }
     .toggle-label { font-size: 13px; color: var(--muted); }
-    .toggle-switch {
-      width: 44px; height: 26px; border-radius: 13px;
-      background: var(--border); border: none; cursor: pointer;
-      position: relative; transition: background 0.2s;
-      flex-shrink: 0; -webkit-tap-highlight-color: transparent;
-    }
+    .toggle-switch { width: 44px; height: 26px; border-radius: 13px; background: #c7c7cc; border: none; cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
     .toggle-switch.on { background: var(--green); }
-    .toggle-switch::after {
-      content: ''; position: absolute;
-      width: 20px; height: 20px; border-radius: 50%;
-      background: #fff; top: 3px; left: 3px;
-      transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
-      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-    }
+    .toggle-switch::after { content: ''; position: absolute; width: 20px; height: 20px; border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1); box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
     .toggle-switch.on::after { transform: translateX(18px); }
 
-    /* ── Assistant response zone ── */
-    .assistant-zone {
-      flex: 1; display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 12px; padding: 8px 0;
-      display: none;
-    }
+    /* Assistant zone */
+    .assistant-zone { width: 100%; display: none; flex-direction: column; align-items: center; gap: 12px; padding: 4px 0; }
     .assistant-zone.visible { display: flex; }
-
-    .assistant-response {
-      background: var(--surface); border-radius: 16px;
-      padding: 16px 20px; width: 100%;
-      box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06);
-      animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
-    }
-    @keyframes popIn {
-      from { opacity:0; transform:scale(0.92) translateY(8px); }
-      to { opacity:1; transform:scale(1) translateY(0); }
-    }
-
-    .assistant-response p {
-      font-size: 16px; line-height: 1.5; color: var(--text);
-      font-weight: 400;
-    }
-
-    .assistant-question {
-      font-size: 12px; color: var(--muted); margin-bottom: 6px;
-      font-style: italic;
-    }
-
-    /* History pills */
-    .assistant-history {
-      display: flex; gap: 6px; flex-wrap: wrap;
-      justify-content: center; width: 100%;
-    }
-    .history-pill {
-      background: var(--surface); border-radius: 100px;
-      padding: 4px 12px; font-size: 11px; color: var(--muted);
-      cursor: pointer; border: 1px solid var(--border);
-      max-width: 120px; overflow: hidden;
-      text-overflow: ellipsis; white-space: nowrap;
-      -webkit-tap-highlight-color: transparent;
-      transition: background 0.15s;
-    }
+    .assistant-response { background: var(--surface); border-radius: 16px; padding: 16px 20px; width: 100%; box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06); animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes popIn { from { opacity:0; transform:scale(0.92) translateY(8px); } to { opacity:1; transform:scale(1) translateY(0); } }
+    .assistant-response p { font-size: 15px; line-height: 1.5; color: var(--text); }
+    .assistant-question { font-size: 11px; color: var(--muted); margin-bottom: 6px; font-style: italic; }
+    .assistant-history { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; width: 100%; }
+    .history-pill { background: var(--surface); border-radius: 100px; padding: 4px 12px; font-size: 11px; color: var(--muted); cursor: pointer; border: 1px solid var(--border); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
     .history-pill:active { background: var(--border); }
+    .assistant-listening { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+    .listening-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: blink 1.2s ease-in-out infinite; }
 
-    .assistant-listening {
-      font-size: 12px; color: var(--muted);
-      display: flex; align-items: center; gap: 6px;
-    }
-    .listening-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: var(--green);
-      animation: blink 1.2s ease-in-out infinite;
-    }
-
-    /* ── Overlay ── */
-    .overlay {
-      display: none; position: fixed; inset: 0; z-index: 100;
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
-      background: rgba(245,245,247,0.8);
-      flex-direction: column; align-items: center; justify-content: center; gap: 28px;
-    }
+    /* Overlay */
+    .overlay { display: none; position: fixed; inset: 0; z-index: 100; backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); background: rgba(245,245,247,0.8); flex-direction: column; align-items: center; justify-content: center; gap: 28px; }
     .overlay.active { display: flex; animation: fadeIn 0.25s ease; }
-
     .spinner { width: 56px; height: 56px; }
     .spinner svg { animation: spin 1s cubic-bezier(0.4,0,0.2,1) infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner-arc {
-      fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round;
-      stroke-dasharray: 100 200;
-      animation: arc 1s cubic-bezier(0.4,0,0.2,1) infinite;
-    }
-    @keyframes arc {
-      0%   { stroke-dashoffset: 0; }
-      50%  { stroke-dashoffset: -70; }
-      100% { stroke-dashoffset: -180; }
-    }
-    .overlay-text {
-      font-size: 15px; font-weight: 500; color: var(--text);
-      letter-spacing: -0.2px; min-height: 22px;
-    }
+    .spinner-arc { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 100 200; animation: arc 1s cubic-bezier(0.4,0,0.2,1) infinite; }
+    @keyframes arc { 0% { stroke-dashoffset: 0; } 50% { stroke-dashoffset: -70; } 100% { stroke-dashoffset: -180; } }
+    .overlay-text { font-size: 15px; font-weight: 500; color: var(--text); letter-spacing: -0.2px; min-height: 22px; }
     .overlay-text::after { content: '▎'; animation: cursor .8s step-end infinite; opacity: 0.5; }
     @keyframes cursor { 0%,100%{opacity:.5} 50%{opacity:0} }
   </style>
 </head>
 <body>
 
-<!-- Profile screen -->
 <div class="profile-screen" id="profileScreen">
   <div class="profile-logo">
     <div class="profile-icon">
@@ -387,6 +164,13 @@
     </div>
 
     <div class="btn-zone">
+
+      <!-- Assistant toggle -->
+      <div class="assistant-toggle">
+        <span class="toggle-label">Assistant IA</span>
+        <button class="toggle-switch" id="assistantToggle" onclick="toggleAssistant()"></button>
+      </div>
+
       <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
         <div class="pulse-ring pulse-ring-1"></div>
         <div class="pulse-ring pulse-ring-2"></div>
@@ -396,6 +180,22 @@
         </svg>
         <span class="btn-label" id="btnLabel">Appuyer pour enregistrer</span>
       </button>
+
+      <!-- Assistant response zone -->
+      <div class="assistant-zone" id="assistantZone">
+        <div class="assistant-listening">
+          <div class="listening-dot"></div>
+          <span>En écoute…</span>
+        </div>
+        <div id="assistantResponse" style="display:none;width:100%">
+          <div class="assistant-response">
+            <div class="assistant-question" id="assistantQuestion"></div>
+            <p id="assistantAnswer"></p>
+          </div>
+        </div>
+        <div class="assistant-history" id="assistantHistory"></div>
+      </div>
+
       <div class="timer" id="timer">00:00</div>
     </div>
 
@@ -409,7 +209,6 @@
   </div>
 </div>
 
-<!-- Overlay -->
 <div class="overlay" id="overlay">
   <div class="spinner">
     <svg viewBox="0 0 56 56" width="56" height="56">
@@ -477,7 +276,7 @@
         setStatus('active', 'Audio sauvegardé ☁️ — ' + fmt(seconds));
       }
     } catch(e) {
-      console.warn('Upload Drive échoué:', e.message);
+      console.warn('Upload échoué:', e.message);
     }
   }
 
@@ -512,16 +311,13 @@
     const duration = fmt(seconds);
     const now      = new Date();
     const datetime = now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) + ' à ' + now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-
     const formData = new FormData();
     formData.append('audio', blob, 'rec.webm');
     formData.append('title', title);
     formData.append('duration', duration);
     formData.append('datetime', datetime);
     formData.append('profile', localStorage.getItem('ponk_profile') || 'user');
-
     try {
-      // Analyse
       const res = await fetch('/api/analyze', {method:'POST', body:formData});
       if(!res.ok) throw new Error('Erreur '+res.status);
       const data = await res.json();
@@ -569,19 +365,14 @@
     speechRecognition.continuous = true;
     speechRecognition.interimResults = false;
     speechRecognition.lang = 'fr-FR';
-
     speechRecognition.onresult = (e) => {
       const transcript = e.results[e.results.length - 1][0].transcript.trim();
-      if (isQuestion(transcript)) {
-        askGemini(transcript);
-      }
+      if (isQuestion(transcript)) askGemini(transcript);
     };
-
     speechRecognition.onerror = () => {};
     speechRecognition.onend = () => {
       if (assistantActive && recording) speechRecognition.start();
     };
-
     speechRecognition.start();
   }
 
@@ -605,23 +396,16 @@
       });
       if (!res.ok) return;
       const data = await res.json();
-      if (data.answer && data.answer !== 'IGNORE') {
-        showAssistantResponse(question, data.answer);
-      }
+      if (data.answer && data.answer !== 'IGNORE') showAssistantResponse(question, data.answer);
     } catch(e) {}
   }
 
   function showAssistantResponse(question, answer) {
-    // Add to history
     assistantHistory.unshift({ question, answer });
     if (assistantHistory.length > MAX_HISTORY) assistantHistory.pop();
-
-    // Show current response
     document.getElementById('assistantQuestion').textContent = question;
     document.getElementById('assistantAnswer').textContent = answer;
     document.getElementById('assistantResponse').style.display = 'block';
-
-    // Update history pills
     const histEl = document.getElementById('assistantHistory');
     histEl.innerHTML = assistantHistory.slice(1).map((h, i) =>
       `<div class="history-pill" onclick="showHistoryItem(${i+1})" title="${h.question}">${h.question.substring(0,20)}…</div>`
