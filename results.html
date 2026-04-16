@@ -302,6 +302,18 @@ function render(data, meta) {
       (meta.datetime||'') + (meta.duration ? ' · ' + meta.duration : '');
   }
 
+  // Drive file link
+  const driveFile = localStorage.getItem('ponk_drive_file');
+  if (driveFile) {
+    try {
+      const df = JSON.parse(driveFile);
+      const driveDiv = document.createElement('div');
+      driveDiv.style.cssText = 'font-size:12px;color:var(--muted);padding:0 4px;display:flex;align-items:center;gap:6px;';
+      driveDiv.innerHTML = `<span>☁️</span><a href="${df.link}" target="_blank" style="color:var(--accent);text-decoration:none;">Audio sauvegardé sur Drive</a>`;
+      document.getElementById('meta').after(driveDiv);
+    } catch(e) {}
+  }
+
   document.getElementById('modes').innerHTML =
     modes.map(m => `<span class="badge">${LABELS[m]||m}</span>`).join('');
 
