@@ -300,7 +300,7 @@
 <div class="app">
   <header>
     <span class="logo-text">Ponk <span>Note</span></span>
-    <div class="header-avatar" id="headerAvatar" onclick="changeProfile()"></div>
+    <div class="header-avatar" id="headerAvatar" onclick="window.location.href='/library.html'"></div>
   </header>
 
   <div class="recorder">
@@ -477,6 +477,10 @@
 
   function initProfile() {
     const profile = localStorage.getItem('ponk_profile');
+    // Generate UID if not exists
+    if (!localStorage.getItem('ponk_uid')) {
+      localStorage.setItem('ponk_uid', crypto.randomUUID());
+    }
     if (profile) showApp(profile);
     else document.getElementById('profileScreen').classList.remove('hidden');
   }
