@@ -359,21 +359,35 @@
   }
 
   function startSpeechRecognition() {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return;
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      setStatus('error', 'Reconnaissance vocale non supportée');
+      return;
+    }
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    speechRecognition = new SR();
-    speechRecognition.continuous = true;
-    speechRecognition.interimResults = false;
-    speechRecognition.lang = 'fr-FR';
-    speechRecognition.onresult = (e) => {
-      const transcript = e.results[e.results.length - 1][0].transcript.trim();
-      if (isQuestion(transcript)) askGemini(transcript);
-    };
-    speechRecognition.onerror = () => {};
-    speechRecognition.onend = () => {
-      if (assistantActive && recording) speechRecognition.start();
-    };
-    speechRecognition.start();
+
+    function createAndStart() {
+      speechRecognition = new SR();
+      speechRecognition.continuous = false;
+      speechRecognition.interimResults = false;
+      speechRecognition.lang = 'fr-FR';
+      speechRecognition.onresult = (e) => {
+        const transcript = e.results[0][0].transcript.trim();
+        if (isQuestion(transcript)) askGemini(transcript);
+      };
+      speechRecognition.onerror = (e) => {
+        if (e.error !== 'aborted' && assistantActive && recording) {
+          setTimeout(createAndStart, 500);
+        }
+      };
+      speechRecognition.onend = () => {
+        if (assistantActive && recording) {
+          setTimeout(createAndStart, 300);
+        }
+      };
+      try { speechRecognition.start(); } catch(e) {}
+    }
+
+    createAndStart();
   }
 
   function stopSpeechRecognition() {
