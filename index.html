@@ -48,28 +48,32 @@
       position: fixed; inset: 0; background: #fff;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      gap: 40px; z-index: 200; padding: 40px;
+      gap: 32px; z-index: 200; padding: 40px;
     }
     .profile-screen.hidden { display: none; }
     .profile-title { font-size: 22px; font-weight: 500; text-align: center; }
     .profile-title span { color: #aaa; font-weight: 300; }
-    .profile-subtitle { font-size: 14px; color: #aaa; margin-top: -32px; }
-    .profile-choices { display: flex; gap: 32px; }
-    .profile-btn {
-      display: flex; flex-direction: column; align-items: center; gap: 12px;
-      background: none; border: none; cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
+    .profile-welcome { text-align: center; }
+    .profile-welcome p:first-child { font-size: 20px; font-weight: 500; margin-bottom: 8px; }
+    .profile-welcome p:last-child { font-size: 15px; color: #aaa; }
+    .profile-input-wrap { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+    .profile-input {
+      width: 100%; padding: 14px 16px; border-radius: 12px;
+      border: 1.5px solid #e8e8e8; background: #f4f4f4;
+      font-family: 'DM Sans', sans-serif; font-size: 16px;
+      color: #1c1c1c; outline: none; text-align: center;
+      transition: border-color 0.2s;
     }
-    .profile-btn:active .avatar { transform: scale(0.93); }
-    .avatar {
-      width: 72px; height: 72px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 28px; font-weight: 500; color: #fff;
-      transition: transform 0.12s;
+    .profile-input:focus { border-color: #1c1c1c; background: #fff; }
+    .profile-input::placeholder { color: #aaa; }
+    .profile-submit {
+      width: 100%; padding: 15px; border-radius: 12px; border: none;
+      background: #1c1c1c; color: #fff;
+      font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s;
     }
-    .avatar-n { background: #4f46e5; }
-    .avatar-c { background: #db2777; }
-    .profile-name { font-size: 14px; font-weight: 500; color: #1c1c1c; }
+    .profile-submit:active { opacity: 0.8; }
 
     /* Avatar in header */
     .header-avatar {
@@ -141,19 +145,15 @@
 <body>
 <!-- Profile screen -->
 <div class="profile-screen" id="profileScreen">
-  <div>
-    <div class="profile-title">Ponk <span>Note</span></div>
+  <div class="profile-title">Ponk <span>Note</span></div>
+  <div class="profile-welcome">
+    <p>Bienvenue !</p>
+    <p>Quel est ton prénom ?</p>
   </div>
-  <div class="profile-subtitle">Qui êtes-vous ?</div>
-  <div class="profile-choices">
-    <button class="profile-btn" onclick="selectProfile('Nicolas')">
-      <div class="avatar avatar-n">N</div>
-      <span class="profile-name">Nicolas</span>
-    </button>
-    <button class="profile-btn" onclick="selectProfile('Carmen')">
-      <div class="avatar avatar-c">C</div>
-      <span class="profile-name">Carmen</span>
-    </button>
+  <div class="profile-input-wrap">
+    <input type="text" id="profileName" class="profile-input" placeholder="Ton prénom…" maxlength="20" autocomplete="off" />
+    <input type="email" id="profileEmail" class="profile-input" placeholder="Ton adresse email…" autocomplete="email" />
+    <button class="profile-submit" onclick="submitProfile()">C'est parti →</button>
   </div>
 </div>
 
@@ -305,27 +305,47 @@
   }
 
   // ── Profile ──
+  const COLORS = ['#4f46e5','#db2777','#059669','#d97706','#dc2626','#7c3aed','#0284c7','#0d9488'];
+
+  function getColor(name) {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return COLORS[Math.abs(hash) % COLORS.length];
+  }
+
   function initProfile() {
     const profile = localStorage.getItem('ponk_profile');
     if (profile) showApp(profile);
     else document.getElementById('profileScreen').classList.remove('hidden');
   }
 
-  function selectProfile(name) {
+  function submitProfile() {
+    const name = document.getElementById('profileName').value.trim();
+    const email = document.getElementById('profileEmail').value.trim();
+    if (!name) { document.getElementById('profileName').focus(); return; }
+    if (!email) { document.getElementById('profileEmail').focus(); return; }
     localStorage.setItem('ponk_profile', name);
+    localStorage.setItem('ponk_email', email);
     showApp(name);
   }
+
+  // Allow Enter key
+  document.getElementById('profileName').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitProfile();
+  });
 
   function showApp(name) {
     document.getElementById('profileScreen').classList.add('hidden');
     const avatar = document.getElementById('headerAvatar');
-    avatar.textContent = name[0];
-    avatar.className = 'header-avatar ' + (name === 'Nicolas' ? 'avatar-n' : 'avatar-c');
+    avatar.textContent = name[0].toUpperCase();
+    avatar.style.background = getColor(name);
   }
 
   function changeProfile() {
-    localStorage.removeItem('ponk_profile');
-    document.getElementById('profileScreen').classList.remove('hidden');
+    if (confirm('Changer de profil ?')) {
+      localStorage.removeItem('ponk_profile');
+      document.getElementById('profileScreen').classList.remove('hidden');
+    }
   }
 
   initProfile();
