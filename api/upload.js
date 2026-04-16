@@ -54,11 +54,6 @@ module.exports = async function handler(req, res) {
     const title = (fields['title'] || 'enregistrement').replace(/\s+/g, '_');
     const fileName = `${profile}-${title}-${dateStr}.webm`;
 
-    // Stream
-    const stream = new Readable();
-    stream.push(audioFile.data);
-    stream.push(null);
-
     // Créer dans le Drive du compte de service
     const created = await drive.files.create({
       requestBody: {
@@ -66,7 +61,10 @@ module.exports = async function handler(req, res) {
         mimeType: 'audio/webm',
         parents: [process.env.GOOGLE_DRIVE_FOLDER_ID]
       },
-      media: { mimeType: 'audio/webm', body: stream },
+      media: {
+        mimeType: 'audio/webm',
+        body: Readable.from(audioFile.data)
+      },
       fields: 'id, name'
     });
 
