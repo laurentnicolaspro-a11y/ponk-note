@@ -348,7 +348,15 @@
   let assistantHistory = [];
   const MAX_HISTORY = 5;
 
+  function isAndroid() {
+    return /Android/i.test(navigator.userAgent);
+  }
+
   function toggleAssistant() {
+    if (isAndroid()) {
+      alert('L'assistant IA est disponible sur PC et iPhone uniquement.');
+      return;
+    }
     assistantActive = !assistantActive;
     const toggle = document.getElementById('assistantToggle');
     const zone = document.getElementById('assistantZone');
@@ -357,6 +365,16 @@
     if (assistantActive && recording) startSpeechRecognition();
     else stopSpeechRecognition();
   }
+
+  // Disable toggle visually on Android
+  window.addEventListener('DOMContentLoaded', () => {
+    if (isAndroid()) {
+      const toggle = document.getElementById('assistantToggle');
+      const label = document.querySelector('.toggle-label');
+      if (toggle) toggle.style.opacity = '0.35';
+      if (label) label.textContent = 'Assistant IA (PC & iPhone)';
+    }
+  });
 
   let assistantStream = null;
 
