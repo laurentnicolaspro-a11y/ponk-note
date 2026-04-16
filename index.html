@@ -220,14 +220,10 @@
       if(!res.ok) throw new Error('Erreur '+res.status);
       const data = await res.json();
       // Store audio as base64
-      const reader = new FileReader();
-      reader.onload = () => {
-        localStorage.setItem('ponk_result', JSON.stringify(data));
-        localStorage.setItem('ponk_audio', reader.result);
-        localStorage.setItem('ponk_meta', JSON.stringify({title, duration:fmt(seconds), datetime}));
-        window.location.href = '/results.html';
-      };
-      reader.readAsDataURL(blob);
+      // Store blob as object URL in sessionStorage workaround
+      localStorage.setItem('ponk_result', JSON.stringify(data));
+      localStorage.setItem('ponk_meta', JSON.stringify({title, duration:fmt(seconds), datetime}));
+      window.location.href = '/results.html';
     } catch(e) {
       hideOverlay();
       setStatus('error', e.message);
