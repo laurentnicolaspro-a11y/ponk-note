@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Ponk Note — Bibliothèque</title>
+  <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f5f7; --surface: #fff; --border: rgba(0,0,0,0.07);
+      --text: #1d1d1f; --muted: #86868b; --accent: #007AFF;
+      --danger: #ff3b30; --green: #34c759; --wave: #ff3b30;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+    body { background:var(--bg); color:var(--text); font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif; padding-bottom:60px; }
+
+    header {
+      position:sticky; top:0; z-index:10;
+      backdrop-filter:blur(20px) saturate(180%);
+      -webkit-backdrop-filter:blur(20px) saturate(180%);
+      background:rgba(245,245,247,0.85);
+      border-bottom:1px solid var(--border);
+      padding:env(safe-area-inset-top,0px) 20px 0;
+    }
+    .header-inner {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 0; max-width:430px; margin:0 auto;
+    }
+    .logo { font-size:17px; font-weight:600; letter-spacing:-0.3px; }
+    .logo span { color:var(--muted); font-weight:400; }
+    .back-btn {
+      background:rgba(0,122,255,0.1); border:none; color:var(--accent);
+      padding:6px 14px; border-radius:100px; font-family:inherit;
+      font-size:14px; font-weight:500; cursor:pointer;
+    }
+    .header-avatar {
+      width:32px; height:32px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:13px; font-weight:600; color:#fff;
+      box-shadow:0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .content { max-width:430px; margin:0 auto; padding:20px 20px 0; }
+
+    /* Profile info */
+    .profile-info {
+      display:flex; align-items:center; gap:14px;
+      margin-bottom:20px;
+    }
+    .profile-avatar-lg {
+      width:52px; height:52px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:22px; font-weight:600; color:#fff;
+      box-shadow:0 4px 12px rgba(0,0,0,0.15); flex-shrink:0;
+    }
+    .profile-details { flex:1; }
+    .profile-name { font-size:18px; font-weight:600; letter-spacing:-0.3px; }
+    .profile-email { font-size:13px; color:var(--muted); margin-top:2px; }
+
+    /* Quota */
+    .quota-wrap {
+      background:var(--surface); border-radius:14px; padding:16px;
+      margin-bottom:20px;
+      box-shadow:0 1px 0 rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .quota-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .quota-label { font-size:13px; font-weight:500; color:var(--text); }
+    .quota-count { font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; }
+    .quota-dots { display:flex; gap:6px; }
+    .quota-dot {
+      width:32px; height:6px; border-radius:3px;
+      background:var(--border); transition:background 0.3s;
+    }
+    .quota-dot.filled { background:var(--accent); }
+    .quota-dot.filled.danger { background:var(--danger); }
+
+    /* Section title */
+    .section-title {
+      font-size:13px; font-weight:600; color:var(--muted);
+      text-transform:uppercase; letter-spacing:0.8px;
+      margin-bottom:10px; padding:0 4px;
+    }
+
+    /* Recording card */
+    .card {
+      background:var(--surface); border-radius:16px; margin-bottom:10px;
+      box-shadow:0 1px 0 rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.04);
+      overflow:hidden; transition:box-shadow 0.2s;
+    }
+
+    .card-main { padding:14px 16px 12px; }
+    .card-title { font-size:15px; font-weight:500; letter-spacing:-0.2px; margin-bottom:3px; }
+    .card-meta { font-size:12px; color:var(--muted); margin-bottom:12px; }
+
+    /* Waveform player */
+    .player {
+      display:flex; align-items:center; gap:10px; cursor:pointer;
+    }
+    .play-btn-sm {
+      width:34px; height:34px; border-radius:50%; background:var(--text);
+      border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
+      flex-shrink:0; -webkit-tap-highlight-color:transparent;
+      transition:transform 0.1s;
+    }
+    .play-btn-sm:active { transform:scale(0.92); }
+    .play-btn-sm svg { fill:white; }
+
+    .waveform {
+      flex:1; height:36px; display:flex; align-items:center;
+      gap:2px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+    }
+    .wave-bar {
+      flex:1; border-radius:2px; background:var(--wave);
+      opacity:0.3; transition:opacity 0.15s;
+      min-height:3px;
+    }
+    .wave-bar.active { opacity:1; }
+
+    /* Actions */
+    .card-actions {
+      display:none; padding:0 16px 14px;
+      gap:8px;
+      animation:slideDown 0.2s ease;
+    }
+    .card-actions.visible { display:flex; }
+
+    @keyframes slideDown {
+      from { opacity:0; transform:translateY(-6px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+
+    .btn-analyze {
+      flex:1; padding:11px; border-radius:10px; border:none;
+      background:var(--accent); color:#fff;
+      font-family:inherit; font-size:14px; font-weight:600;
+      cursor:pointer; -webkit-tap-highlight-color:transparent;
+      transition:opacity 0.15s;
+    }
+    .btn-analyze:active { opacity:0.8; }
+    .btn-analyze.analyzed { background:var(--green); }
+
+    .btn-delete {
+      width:42px; padding:11px; border-radius:10px; border:none;
+      background:rgba(255,59,48,0.1); color:var(--danger);
+      font-family:inherit; font-size:16px;
+      cursor:pointer; -webkit-tap-highlight-color:transparent;
+      transition:background 0.15s;
+    }
+    .btn-delete:active { background:rgba(255,59,48,0.2); }
+
+    /* Empty state */
+    .empty {
+      text-align:center; padding:60px 20px;
+      color:var(--muted);
+    }
+    .empty-icon { font-size:48px; margin-bottom:16px; }
+    .empty p { font-size:15px; line-height:1.6; }
+
+    /* Change profile */
+    .change-profile {
+      margin-top:32px; text-align:center;
+    }
+    .change-profile button {
+      background:none; border:none; color:var(--muted);
+      font-family:inherit; font-size:14px; cursor:pointer;
+      padding:8px 16px; border-radius:8px;
+    }
+    .change-profile button:active { background:var(--border); }
+
+    .loading { text-align:center; padding:40px; color:var(--muted); font-size:14px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <span class="logo">Ponk <span>Note</span></span>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="back-btn" onclick="window.location.href='/'">← Retour</button>
+      <div class="header-avatar" id="headerAvatar"></div>
+    </div>
+  </div>
+</header>
+
+<div class="content">
+  <!-- Profile -->
+  <div class="profile-info">
+    <div class="profile-avatar-lg" id="profileAvatarLg"></div>
+    <div class="profile-details">
+      <div class="profile-name" id="profileName">—</div>
+      <div class="profile-email" id="profileEmail">—</div>
+    </div>
+  </div>
+
+  <!-- Quota -->
+  <div class="quota-wrap">
+    <div class="quota-header">
+      <span class="quota-label">Enregistrements</span>
+      <span class="quota-count" id="quotaCount">0/5</span>
+    </div>
+    <div class="quota-dots" id="quotaDots">
+      <div class="quota-dot"></div>
+      <div class="quota-dot"></div>
+      <div class="quota-dot"></div>
+      <div class="quota-dot"></div>
+      <div class="quota-dot"></div>
+    </div>
+  </div>
+
+  <!-- List -->
+  <div class="section-title">En attente</div>
+  <div id="recordingsList">
+    <div class="loading">Chargement…</div>
+  </div>
+
+  <!-- Change profile -->
+  <div class="change-profile">
+    <button onclick="changeProfile()">Changer de profil</button>
+  </div>
+</div>
+
+<script>
+const COLORS = ['#007AFF','#ff3b30','#34c759','#ff9500','#af52de','#ff2d55','#5ac8fa','#4cd964'];
+const MAX = 5;
+
+function getColor(name) {
+  let hash = 0;
+  for (let i=0; i<name.length; i++) hash = name.charCodeAt(i) + ((hash<<5)-hash);
+  return COLORS[Math.abs(hash) % COLORS.length];
+}
+
+// Init profile
+const profile = localStorage.getItem('ponk_profile');
+const email   = localStorage.getItem('ponk_email');
+const uid     = localStorage.getItem('ponk_uid');
+
+if (!profile) { window.location.href = '/'; }
+
+const color = getColor(profile);
+
+// Header avatar
+const av = document.getElementById('headerAvatar');
+av.textContent = profile[0].toUpperCase();
+av.style.background = color;
+
+// Profile section
+const avLg = document.getElementById('profileAvatarLg');
+avLg.textContent = profile[0].toUpperCase();
+avLg.style.background = color;
+document.getElementById('profileName').textContent = profile;
+document.getElementById('profileEmail').textContent = email || '';
+
+// Load recordings
+loadRecordings();
+
+async function loadRecordings() {
+  try {
+    const res = await fetch(`/api/list?uid=${encodeURIComponent(uid || profile)}`);
+    const data = await res.json();
+    const files = (data.files || []).filter(f => f.name && f.name !== '.emptyFolderPlaceholder');
+
+    updateQuota(files.length);
+    renderList(files);
+  } catch(e) {
+    document.getElementById('recordingsList').innerHTML =
+      `<div class="loading">Erreur de chargement</div>`;
+  }
+}
+
+function updateQuota(count) {
+  document.getElementById('quotaCount').textContent = `${count}/${MAX}`;
+  const dots = document.querySelectorAll('.quota-dot');
+  dots.forEach((dot, i) => {
+    dot.classList.toggle('filled', i < count);
+    dot.classList.toggle('danger', i < count && count === MAX);
+  });
+}
+
+function renderList(files) {
+  const container = document.getElementById('recordingsList');
+
+  if (!files.length) {
+    container.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">🎙</div>
+        <p>Aucun enregistrement<br>en attente d'analyse</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = '';
+  files.forEach(file => {
+    const card = makeCard(file);
+    container.appendChild(card);
+  });
+}
+
+function makeCard(file) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.dataset.path = `${uid || profile}/${file.name}`;
+
+  // Parse name
+  const nameParts = file.name.replace('.webm','').split('-');
+  const title = nameParts.slice(3).join(' ') || 'Enregistrement';
+  const dateRaw = nameParts.slice(0,3).join('-');
+  const dateDisplay = formatDate(file.created_at || dateRaw);
+
+  // Check if already analyzed
+  const analyzed = localStorage.getItem(`ponk_analyzed_${file.name}`);
+
+  // Generate waveform bars
+  const bars = Array.from({length: 40}, () => {
+    const h = Math.random() * 80 + 20;
+    return `<div class="wave-bar" style="height:${h}%"></div>`;
+  }).join('');
+
+  card.innerHTML = `
+    <div class="card-main">
+      <div class="card-title">${title}</div>
+      <div class="card-meta">${dateDisplay}</div>
+      <div class="player" onclick="toggleActions(this.closest('.card'))">
+        <button class="play-btn-sm" id="play_${file.name}" onclick="toggleAudio('${file.name}', event)">
+          <svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <div class="waveform">${bars}</div>
+      </div>
+    </div>
+    <div class="card-actions" id="actions_${file.name}">
+      <button class="btn-analyze ${analyzed ? 'analyzed' : ''}" 
+        onclick="handleAnalyze('${file.name}', this)">
+        ${analyzed ? '✓ Voir l\'analyse' : 'Analyser'}
+      </button>
+      <button class="btn-delete" onclick="handleDelete('${file.name}', this)">🗑</button>
+    </div>`;
+
+  return card;
+}
+
+function toggleActions(card) {
+  const actions = card.querySelector('.card-actions');
+  actions.classList.toggle('visible');
+}
+
+// Audio players
+const audioPlayers = {};
+
+async function toggleAudio(fileName, e) {
+  e.stopPropagation();
+  const btn = document.getElementById(`play_${fileName}`);
+  const path = `${uid || profile}/${fileName}`;
+
+  if (audioPlayers[fileName]) {
+    const audio = audioPlayers[fileName];
+    if (audio.paused) {
+      audio.play();
+      btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+    } else {
+      audio.pause();
+      btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg>';
+    }
+    return;
+  }
+
+  // Load audio from Supabase
+  const url = `${getSupabaseUrl()}/storage/v1/object/public/audio/${path}`;
+  const audio = new Audio(url);
+  audioPlayers[fileName] = audio;
+  audio.onended = () => {
+    btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg>';
+  };
+  audio.play();
+  btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+}
+
+async function handleAnalyze(fileName, btn) {
+  // Check if already analyzed
+  const analyzed = localStorage.getItem(`ponk_analyzed_${fileName}`);
+  if (analyzed) {
+    localStorage.setItem('ponk_result', analyzed);
+    window.location.href = '/results.html';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Analyse…';
+
+  try {
+    // Fetch audio from Supabase
+    const path = `${uid || profile}/${fileName}`;
+    const url = `${getSupabaseUrl()}/storage/v1/object/public/audio/${path}`;
+    const audioRes = await fetch(url);
+    if (!audioRes.ok) throw new Error('Audio introuvable');
+    const audioBlob = await audioRes.blob();
+
+    // Parse title/datetime from filename
+    const parts = fileName.replace('.webm','').split('-');
+    const title = parts.slice(6).join(' ') || '';
+    const datetime = parts.slice(0,6).join('-');
+
+    const formData = new FormData();
+    formData.append('audio', audioBlob, fileName);
+    formData.append('title', title);
+    formData.append('duration', '');
+    formData.append('datetime', datetime);
+
+    const res = await fetch('/api/analyze', {method:'POST', body:formData});
+    if (!res.ok) throw new Error('Erreur analyse');
+    const data = await res.json();
+
+    // Save result
+    localStorage.setItem('ponk_result', JSON.stringify(data));
+    localStorage.setItem('ponk_meta', JSON.stringify({title, datetime}));
+    localStorage.setItem(`ponk_analyzed_${fileName}`, JSON.stringify(data));
+
+    window.location.href = '/results.html';
+
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Analyser';
+    alert('Erreur : ' + e.message);
+  }
+}
+
+async function handleDelete(fileName, btn) {
+  if (!confirm('Supprimer cet enregistrement ?')) return;
+
+  btn.disabled = true;
+  const path = `${uid || profile}/${fileName}`;
+
+  try {
+    const res = await fetch('/api/delete', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({path})
+    });
+    if (!res.ok) throw new Error('Erreur suppression');
+
+    // Remove analyzed cache
+    localStorage.removeItem(`ponk_analyzed_${fileName}`);
+
+    // Reload list
+    loadRecordings();
+  } catch(e) {
+    btn.disabled = false;
+    alert('Erreur : ' + e.message);
+  }
+}
+
+function getSupabaseUrl() {
+  // We use a public URL for reading
+  return 'https://nnppmsomwigihidjpwnp.supabase.co';
+}
+
+function formatDate(str) {
+  if (!str) return '';
+  try {
+    const d = new Date(str);
+    return d.toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'});
+  } catch { return str; }
+}
+
+function changeProfile() {
+  if (confirm('Changer de profil ?')) {
+    localStorage.removeItem('ponk_profile');
+    localStorage.removeItem('ponk_email');
+    window.location.href = '/';
+  }
+}
+</script>
+</body>
+</html>
