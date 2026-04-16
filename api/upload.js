@@ -68,7 +68,7 @@ module.exports = async function handler(req, res) {
     });
 
   } catch (err) {
-    console.error('[upload] Error:', err.message);
-    return res.status(500).json({ error: err.message });
+    console.error('[upload] Error:', err.message, err.stack);
+    return res.status(500).json({ error: err.message, stack: err.stack });
   }
 };
