@@ -188,6 +188,34 @@
       font-variant-numeric:tabular-nums;
     }
 
+    /* Actions IA */
+    .actions-ia-wrap { display:flex; flex-direction:column; gap:8px; }
+    .action-ia-card {
+      display:flex; align-items:center; gap:14px;
+      background:var(--glass); border:1.5px solid var(--glass-border);
+      backdrop-filter:blur(20px); border-radius:16px;
+      padding:14px 16px; cursor:pointer;
+      -webkit-tap-highlight-color:transparent;
+      transition:background 0.15s;
+      text-decoration:none; color:var(--text);
+    }
+    .action-ia-card:active { background:rgba(255,255,255,0.7); }
+    .action-ia-icon {
+      width:42px; height:42px; border-radius:12px;
+      background:rgba(255,255,255,0.6); border:1px solid rgba(255,255,255,0.8);
+      display:flex; align-items:center; justify-content:center;
+      font-size:20px; flex-shrink:0;
+    }
+    .action-ia-info { flex:1; }
+    .action-ia-titre { font-size:14px; font-weight:600; color:var(--text); margin-bottom:3px; }
+    .action-ia-desc { font-size:12px; color:var(--muted); }
+    .action-ia-arrow {
+      width:28px; height:28px; border-radius:50%;
+      background:var(--accent); display:flex; align-items:center; justify-content:center;
+      flex-shrink:0; box-shadow:0 2px 8px rgba(74,127,212,0.3);
+    }
+    .action-ia-arrow svg { fill:white; }
+
     .copy-btn {
       background:rgba(255,255,255,0.4); border:1px solid rgba(255,255,255,0.6);
       color:var(--muted); padding:5px 12px; border-radius:100px;
@@ -256,6 +284,12 @@ function render(data, meta) {
   document.getElementById('modes').innerHTML = modes.filter(m=>m!=='MEMO').map(m=>`<span class="badge">${LABELS[m]||m}</span>`).join('');
 
   if (data.summary) c.appendChild(makeCard('📝 Synthèse', `<div class="sec"><p>${data.summary}</p></div>`));
+
+  // Actions IA
+  if (data.actions_ia && data.actions_ia.length > 0) {
+    const actionsHTML = `<div class="actions-ia-wrap">${data.actions_ia.map(a => buildActionCard(a)).join('')}</div>`;
+    c.appendChild(makeCard('✨ Actions IA', actionsHTML));
+  }
 
   if (modes.includes('REUNION') && data.reunion) {
     const r=data.reunion; let h='';
@@ -376,6 +410,44 @@ function render(data, meta) {
     tCard.querySelector('.card-bd').classList.add('hidden');
     tCard.querySelector('.chevron').classList.add('closed');
     c.appendChild(tCard);
+  }
+}
+
+function buildActionCard(a) {
+  const url = getActionUrl(a);
+  return `<a class="action-ia-card" href="${url}" target="_blank" rel="noopener">
+    <div class="action-ia-icon">${a.icone}</div>
+    <div class="action-ia-info">
+      <div class="action-ia-titre">${a.titre}</div>
+      <div class="action-ia-desc">${a.description}</div>
+    </div>
+    <div class="action-ia-arrow">
+      <svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg>
+    </div>
+  </a>`;
+}
+
+function getActionUrl(a) {
+  switch(a.type) {
+    case 'EMAIL':
+      const corps = encodeURIComponent(a.corps || '');
+      const sujet = encodeURIComponent(a.sujet || '');
+      return `mailto:?subject=${sujet}&body=${corps}`;
+    case 'WHATSAPP':
+      return `https://wa.me/?text=${encodeURIComponent(a.message || a.description)}`;
+    case 'CALENDRIER':
+      const titre = encodeURIComponent(a.evenement || a.titre);
+      return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&details=${encodeURIComponent(a.description||'')}`;
+    case 'MAPS':
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.adresse || a.description)}`;
+    case 'RAPPEL':
+      return `javascript:navigator.clipboard.writeText(${JSON.stringify(a.texte || a.description)}).then(()=>alert('Copié dans le presse-papier !'))`;
+    case 'RECHERCHE':
+      return `https://www.google.com/search?q=${encodeURIComponent(a.query || a.description)}`;
+    case 'COMMANDE':
+      return `https://www.google.com/search?q=${encodeURIComponent(a.query || a.description)}&tbm=shop`;
+    default:
+      return '#';
   }
 }
 
