@@ -47,48 +47,54 @@ module.exports = async function handler(req, res) {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const audioBase64 = audioFile.data.toString('base64');
 
-    const prompt = `Tu es un assistant intelligent qui analyse des enregistrements audio et en extrait les informations utiles.
+    // ── APPEL 1 : Transcription brute ──
+    const transcriptResult = await model.generateContent([
+      { inlineData: { mimeType: 'audio/webm', data: audioBase64 } },
+      { text: `Transcris cet audio mot par mot en français. 
+Sois fidèle à ce qui est dit, garde les hésitations naturelles.
+Si l'audio est dans une autre langue, traduis en français.
+Réponds UNIQUEMENT avec le texte transcrit, sans commentaire, sans introduction.` }
+    ]);
 
-IMPORTANT : Réponds OBLIGATOIREMENT en FRANÇAIS, quelle que soit la langue de l'audio.
+    const transcript = transcriptResult.response.text().trim();
+
+    // ── APPEL 2 : Analyse structurée ──
+    const analysisPrompt = `Tu es un assistant intelligent qui analyse des retranscriptions audio et en extrait les informations utiles.
+IMPORTANT : Réponds OBLIGATOIREMENT en FRANÇAIS.
 
 Contexte : ${title ? 'Titre : ' + title + '.' : ''} ${duration ? 'Durée : ' + duration + '.' : ''} ${datetime ? 'Date : ' + datetime + '.' : ''}
 
-Analyse cet audio et détecte automatiquement quels types de contenu sont présents parmi cette liste :
-- REUNION : réunion professionnelle ou personnelle avec plusieurs personnes
-- COURSES : liste de courses ou d'achats à faire
-- CHANTIER : travaux, construction, rénovation, matériaux
-- IDEES : brainstorming, idées, réflexions personnelles
-- DEPLACEMENT : lieux, adresses, rendez-vous, déplacements
-- FINANCE : montants, devis, dépenses, budget
-- APPEL : compte-rendu d'appel téléphonique
-- MEDICAL : santé, médicaments, symptômes, rendez-vous médical
-- COURS : notes de cours, formation, apprentissage
-- MEMO : note personnelle, rappel, mémo divers
+Voici la transcription :
+"""
+${transcript}
+"""
+
+Détecte automatiquement quels types de contenu sont présents parmi :
+REUNION, COURSES, CHANTIER, IDEES, DEPLACEMENT, FINANCE, APPEL, MEDICAL, COURS, MEMO
 
 Réponds UNIQUEMENT avec un JSON valide, sans markdown, sans backticks.
 
-Structure JSON :
 {
   "modes": ["MODE1", "MODE2"],
   "summary": "Résumé général en 2-3 phrases en français",
   "reunion": {
-    "participants": ["Nom 1", "Nom 2"],
+    "participants": ["Nom 1"],
     "decisions": ["Décision 1"],
     "actions": ["Action 1 — Responsable si mentionné"],
-    "prochaine": "Date ou info sur la prochaine réunion si mentionnée"
+    "prochaine": "Info prochaine réunion si mentionnée"
   },
   "courses": {
     "items": [{"nom": "Article", "quantite": "2", "fait": false}]
   },
   "chantier": {
-    "lieu": "Adresse ou description du lieu",
+    "lieu": "Adresse ou description",
     "materiaux": [{"nom": "Matériau", "quantite": "10m²"}],
     "artisans": ["Nom — métier"],
     "budget": "Montant si mentionné",
-    "planning": ["Étape 1", "Étape 2"]
+    "planning": ["Étape 1"]
   },
   "idees": {
-    "liste": ["Idée 1", "Idée 2"],
+    "liste": ["Idée 1"],
     "aApprofondir": ["Sujet à creuser"]
   },
   "deplacement": {
@@ -102,18 +108,18 @@ Structure JSON :
   },
   "appel": {
     "interlocuteur": "Nom",
-    "sujet": "Sujet de l'appel",
-    "suite": ["Action à faire suite à l'appel"]
+    "sujet": "Sujet",
+    "suite": ["Action à faire"]
   },
   "medical": {
     "medicaments": [{"nom": "Médicament", "dosage": "Dosage"}],
     "symptomes": ["Symptôme"],
-    "rdv": "Date/lieu du rdv si mentionné"
+    "rdv": "Date/lieu si mentionné"
   },
   "cours": {
     "matiere": "Matière ou sujet",
     "pointsCles": ["Point clé 1"],
-    "aRetenir": ["Définition ou formule importante"],
+    "aRetenir": ["Définition importante"],
     "questions": ["Question à poser"]
   },
   "memo": {
@@ -124,25 +130,22 @@ Structure JSON :
 
 Règles :
 - Ne mets que les sections correspondant aux modes détectés
-- Les sections non pertinentes peuvent être omises ou avoir des tableaux vides
-- Toujours remplir "modes" et "summary"
 - Tout en français
 - Réponds UNIQUEMENT avec le JSON`;
 
-    const result = await model.generateContent([
-      { inlineData: { mimeType: 'audio/webm', data: audioBase64 } },
-      { text: prompt }
-    ]);
-
-    const rawText = result.response.text();
+    const analysisResult = await model.generateContent(analysisPrompt);
+    const rawText = analysisResult.response.text();
     const clean = rawText.replace(/```json|```/g, '').trim();
 
     let parsed;
     try {
       parsed = JSON.parse(clean);
     } catch {
-      parsed = { modes: ['MEMO'], summary: rawText, memo: { notes: rawText } };
+      parsed = { modes: ['MEMO'], summary: clean, memo: { notes: clean } };
     }
+
+    // Ajoute la transcription au résultat
+    parsed.transcript = transcript;
 
     return res.status(200).json(parsed);
 
