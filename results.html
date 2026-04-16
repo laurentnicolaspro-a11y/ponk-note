@@ -161,7 +161,18 @@ else {
       document.getElementById('pi').innerHTML='<path d="M8 5v14l11-7z"/>';
     };
 
-    // Update progress via interval (more reliable on mobile)
+
+
+    const ac = card('🎙 Écouter', `<div class="audio-wrap"><div class="audio-row">
+      <button class="play" onclick="togglePlay()"><svg id="pi" viewBox="0 0 24 24" width="16" height="16"><path d="M8 5v14l11-7z"/></svg></button>
+      <div class="prog-wrap">
+        <div class="prog-bar" id="pb"><div class="prog-track"><div class="prog-fill" id="pf"></div></div><div class="prog-thumb" id="pt"></div></div>
+        <div class="times"><span id="cur">0:00</span><span id="tot">0:00</span></div>
+      </div>
+    </div></div>`);
+    c.appendChild(ac);
+
+    // Start progress interval AFTER DOM is ready
     setInterval(() => {
       if(!audioEl || !audioEl.duration) return;
       const p = (audioEl.currentTime / audioEl.duration) * 100;
@@ -172,15 +183,6 @@ else {
       if(pt) pt.style.left = p + '%';
       if(cur) cur.textContent = ft(audioEl.currentTime);
     }, 200);
-
-    const ac = card('🎙 Écouter', `<div class="audio-wrap"><div class="audio-row">
-      <button class="play" onclick="togglePlay()"><svg id="pi" viewBox="0 0 24 24" width="16" height="16"><path d="M8 5v14l11-7z"/></svg></button>
-      <div class="prog-wrap">
-        <div class="prog-bar" id="pb"><div class="prog-track"><div class="prog-fill" id="pf"></div></div><div class="prog-thumb" id="pt"></div></div>
-        <div class="times"><span id="cur">0:00</span><span id="tot">0:00</span></div>
-      </div>
-    </div></div>`);
-    c.appendChild(ac);
 
     const pb = document.getElementById('pb');
     let drag = false;
