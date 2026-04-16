@@ -59,6 +59,16 @@
       .chevron { display: none; }
       .badge { border: 1px solid #ccc; }
     }
+    .email-btn {
+      display: block; width: 100%; padding: 14px;
+      border-radius: 12px; border: none;
+      background: #1c1c1c; color: #fff;
+      font-family: 'DM Sans', sans-serif; font-size: 14px;
+      font-weight: 500; cursor: pointer; margin-top: 10px;
+      text-align: center; -webkit-tap-highlight-color: transparent;
+    }
+    .email-btn:active { opacity: 0.8; }
+    .email-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .export-btn {
       display: block; width: 100%; padding: 14px;
       border-radius: 12px; border: 1px solid #e8e8e8;
@@ -73,8 +83,7 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 13px; font-weight: 500; color: #fff; flex-shrink: 0;
     }
-    .avatar-n { background: #4f46e5; }
-    .avatar-c { background: #db2777; }
+
   </style>
 </head>
 <body>
@@ -104,8 +113,12 @@ let audioEl = null;
 const profile = localStorage.getItem('ponk_profile');
 if (profile) {
   const av = document.getElementById('headerAvatar');
-  av.textContent = profile[0];
-  av.className = 'header-avatar ' + (profile === 'Nicolas' ? 'avatar-n' : 'avatar-c');
+  const COLORS = ['#4f46e5','#db2777','#059669','#d97706','#dc2626','#7c3aed','#0284c7','#0d9488'];
+  let hash = 0;
+  for (let i = 0; i < profile.length; i++) hash = profile.charCodeAt(i) + ((hash << 5) - hash);
+  av.textContent = profile[0].toUpperCase();
+  av.style.background = COLORS[Math.abs(hash) % COLORS.length];
+  av.className = 'header-avatar';
 }
 
 const rawResult = localStorage.getItem('ponk_result');
@@ -341,6 +354,110 @@ function togglePlay() {
   }
 }
 
+async function sendByEmail() {
+  const email = localStorage.getItem('ponk_email');
+  const name  = localStorage.getItem('ponk_profile');
+  
+  if (!email) {
+    alert('Aucune adresse email dans ton profil. Recréer ton profil pour en ajouter une.');
+    return;
+  }
+
+  const btn = document.getElementById('emailBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Génération du PDF…';
+
+  try {
+    // Generate PDF with jsPDF
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const margin = 20;
+    let y = 20;
+    const maxW = 170;
+
+    function addText(text, fontSize, bold, color) {
+      doc.setFontSize(fontSize || 11);
+      doc.setFont('helvetica', bold ? 'bold' : 'normal');
+      doc.setTextColor(color || '#1c1c1c');
+      const lines = doc.splitTextToSize(String(text || ''), maxW);
+      if (y + lines.length * (fontSize || 11) * 0.45 > 270) { doc.addPage(); y = 20; }
+      doc.text(lines, margin, y);
+      y += lines.length * (fontSize || 11) * 0.45 + 3;
+    }
+
+    const rawResult = localStorage.getItem('ponk_result');
+    const rawMeta   = localStorage.getItem('ponk_meta');
+    if (!rawResult) throw new Error('Aucun résultat');
+    const data = JSON.parse(rawResult);
+    const meta = JSON.parse(rawMeta || '{}');
+    const modes = data.modes || [];
+    const LABELS = {REUNION:'Réunion',COURSES:'Courses',CHANTIER:'Chantier',IDEES:'Idées',DEPLACEMENT:'Déplacement',FINANCE:'Finance',APPEL:'Appel',MEDICAL:'Médical',COURS:'Cours',MEMO:'Mémo'};
+
+    // Header
+    addText('Ponk Note', 20, true);
+    if (meta.datetime || meta.duration) addText((meta.datetime||'') + (meta.duration?' · '+meta.duration:''), 9, false, '#aaaaaa');
+    if (meta.title) addText(meta.title, 13, true);
+    y += 4;
+    doc.setDrawColor(200,200,200); doc.line(margin, y, margin+maxW, y); y += 6;
+
+    if (modes.length) addText('Modes : ' + modes.map(m=>LABELS[m]||m).join(', '), 9, false, '#aaaaaa');
+    y += 2;
+
+    if (data.summary) { addText('SYNTHÈSE', 8, true, '#aaaaaa'); addText(data.summary, 11); y += 2; }
+
+    if (data.reunion) {
+      addText('RÉUNION', 8, true, '#aaaaaa');
+      if (data.reunion.participants?.length) addText('Participants : ' + data.reunion.participants.join(', '), 11);
+      if (data.reunion.actions?.length) { addText('Actions :', 10, true); data.reunion.actions.forEach(a => addText('→ ' + a, 10)); }
+      y += 2;
+    }
+
+    if (data.memo) {
+      addText('MÉMO', 8, true, '#aaaaaa');
+      if (data.memo.rappels?.length) data.memo.rappels.forEach(r => addText('• ' + r, 11));
+      if (data.memo.notes) addText(data.memo.notes, 11);
+      y += 2;
+    }
+
+    if (data.idees?.liste?.length) {
+      addText('IDÉES', 8, true, '#aaaaaa');
+      data.idees.liste.forEach(i => addText('→ ' + i, 11));
+      y += 2;
+    }
+
+    if (data.finance?.montants?.length) {
+      addText('FINANCE', 8, true, '#aaaaaa');
+      data.finance.montants.forEach(m => addText(m.description + ' : ' + m.montant, 11));
+      if (data.finance.total) addText('Total : ' + data.finance.total, 11, true);
+    }
+
+    const pdfBase64 = doc.output('datauristring');
+
+    btn.textContent = '⏳ Envoi en cours…';
+
+    const res = await fetch('/api/sendmail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email, name,
+        pdfBase64,
+        title: meta.title || 'Analyse',
+        datetime: meta.datetime || ''
+      })
+    });
+
+    if (!res.ok) throw new Error('Erreur serveur ' + res.status);
+
+    btn.textContent = '✅ Email envoyé !';
+    setTimeout(() => { btn.disabled = false; btn.textContent = '✉ Envoyer par email'; }, 3000);
+
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '✉ Envoyer par email';
+    alert('Erreur : ' + e.message);
+  }
+}
+
 function copyCard(btn) {
   const bd = btn.closest('.card').querySelector('.card-bd');
   navigator.clipboard.writeText(bd.innerText || bd.textContent).then(() => {
@@ -412,8 +529,12 @@ function exportPDF() {
 const profile = localStorage.getItem('ponk_profile');
 if (profile) {
   const av = document.getElementById('headerAvatar');
-  av.textContent = profile[0];
-  av.className = 'header-avatar ' + (profile === 'Nicolas' ? 'avatar-n' : 'avatar-c');
+  const COLORS = ['#4f46e5','#db2777','#059669','#d97706','#dc2626','#7c3aed','#0284c7','#0d9488'];
+  let hash = 0;
+  for (let i = 0; i < profile.length; i++) hash = profile.charCodeAt(i) + ((hash << 5) - hash);
+  av.textContent = profile[0].toUpperCase();
+  av.style.background = COLORS[Math.abs(hash) % COLORS.length];
+  av.className = 'header-avatar';
 }
 
 const rawResult = localStorage.getItem('ponk_result');
