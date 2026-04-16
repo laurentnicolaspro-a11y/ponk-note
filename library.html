@@ -68,8 +68,12 @@
     .play-btn-sm { width:34px; height:34px; border-radius:50%; background:var(--text); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; -webkit-tap-highlight-color:transparent; transition:transform 0.1s; }
     .play-btn-sm:active { transform:scale(0.92); }
     .play-btn-sm svg { fill:white; }
-    .waveform { flex:1; height:36px; display:flex; align-items:center; gap:2px; cursor:pointer; }
-    .wave-bar { flex:1; border-radius:2px; background:var(--wave); opacity:0.4; min-height:3px; }
+    .waveform { flex:1; height:40px; display:flex; align-items:center; gap:1.5px; cursor:pointer; }
+    .wave-bar {
+      flex:1; border-radius:3px;
+      background: linear-gradient(180deg, rgba(224,85,85,0.9) 0%, rgba(224,85,85,0.4) 100%);
+      min-height:3px; transition: opacity 0.15s;
+    }
 
     /* Actions */
     .card-actions { display:none; padding:0 16px 14px; gap:8px; animation:slideDown 0.2s ease; }
@@ -200,7 +204,15 @@ function makeCard(file) {
   const title = nameParts.slice(3).join(' ') || 'Enregistrement';
   const dateDisplay = formatDate(file.created_at);
   const analyzed = localStorage.getItem(`ponk_analyzed_${file.name}`);
-  const bars = Array.from({length:40}, ()=>`<div class="wave-bar" style="height:${Math.random()*80+20}%"></div>`).join('');
+  const bars = Array.from({length:40}, (_,i) => {
+    // Natural voice wave shape - bell curve with randomness
+    const center = 20;
+    const dist = Math.abs(i - center) / center;
+    const base = Math.max(15, 90 * (1 - dist * dist * 0.7));
+    const h = base * (0.5 + Math.random() * 0.6);
+    const opacity = 0.35 + (1 - dist) * 0.45;
+    return `<div class="wave-bar" style="height:${h}%;opacity:${opacity.toFixed(2)}"></div>`;
+  }).join('');
 
   card.innerHTML = `
     <div class="card-main">
