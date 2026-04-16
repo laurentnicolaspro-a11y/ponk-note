@@ -168,6 +168,22 @@
     .change-profile button:active { background:var(--border); }
 
     .loading { text-align:center; padding:40px; color:var(--muted); font-size:14px; }
+
+    .spinner-sm {
+      width:20px; height:20px; flex-shrink:0;
+    }
+    .spinner-sm svg { animation:spin 1s cubic-bezier(0.4,0,0.2,1) infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spinner-arc-sm {
+      fill:none; stroke:#fff; stroke-width:3; stroke-linecap:round;
+      stroke-dasharray:40 80;
+      animation:arc-sm 1s cubic-bezier(0.4,0,0.2,1) infinite;
+    }
+    @keyframes arc-sm {
+      0%   { stroke-dashoffset:0; }
+      50%  { stroke-dashoffset:-28; }
+      100% { stroke-dashoffset:-80; }
+    }
   </style>
 </head>
 <body>
