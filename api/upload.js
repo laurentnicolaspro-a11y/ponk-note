@@ -1,5 +1,5 @@
 const { google } = require('googleapis');
-const { Readable } = require('stream');
+const { PassThrough } = require('stream');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -62,7 +62,7 @@ module.exports = async function handler(req, res) {
       },
       media: {
         mimeType: 'audio/webm',
-        body: Readable.from(audioFile.data)
+        body: (() => { const pt = new PassThrough(); pt.end(audioFile.data); return pt; })()
       },
       fields: 'id, name'
     });
