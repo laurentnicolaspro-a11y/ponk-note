@@ -46,6 +46,27 @@
     .transcript-text { font-size: 12px; line-height: 1.9; color: #aaa; font-family: 'DM Mono', monospace; padding-top: 12px; white-space: pre-wrap; }
     .play-simple { width: 40px; height: 40px; border-radius: 50%; background: #1c1c1c; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-top: 12px; -webkit-tap-highlight-color: transparent; }
     .play-simple svg { fill: white; }
+    /* Print / PDF */
+    @media print {
+      body { padding: 20px; }
+      header { border-bottom: 2px solid #000; margin-bottom: 20px; }
+      .back, .copy-btn, .export-btn { display: none !important; }
+      .card { border: 1px solid #ccc; margin-bottom: 12px; break-inside: avoid; }
+      .card-hd { background: #f4f4f4 !important; }
+      .card-bd { display: block !important; }
+      .card-bd.hidden { display: block !important; }
+      .chevron { display: none; }
+      .badge { border: 1px solid #ccc; }
+    }
+    .export-btn {
+      display: block; width: 100%; padding: 14px;
+      border-radius: 12px; border: 1px solid #e8e8e8;
+      background: #f4f4f4; color: #1c1c1c;
+      font-family: 'DM Sans', sans-serif; font-size: 14px;
+      font-weight: 500; cursor: pointer; margin-top: 16px;
+      text-align: center;
+    }
+    .export-btn:active { background: #e8e8e8; }
   </style>
 </head>
 <body>
@@ -56,6 +77,7 @@
 <div id="meta" class="meta"></div>
 <div id="modes" class="modes"></div>
 <div id="content"></div>
+<button class="export-btn" onclick="window.print()">⬇ Exporter en PDF</button>
 
 <script>
 const LABELS = {
