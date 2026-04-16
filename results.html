@@ -10,7 +10,7 @@
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
     :root {
-      --grad: linear-gradient(145deg, #d8eef8 0%, #e8d8f0 40%, #f0e8d8 100%);
+      --grad: linear-gradient(145deg, #d8f0e8 0%, #c8e8f0 40%, #d8eef8 100%);
       --glass: rgba(255,255,255,0.5);
       --glass-border: rgba(255,255,255,0.75);
       --text: #2a2a3a;
@@ -20,7 +20,7 @@
       --green: #3db87a;
     }
     html, body { min-height:100%; font-family:'Inter',-apple-system,sans-serif; color:var(--text); }
-    body { background:var(--grad); padding-bottom:120px; }
+    body { background:var(--grad); padding-bottom:40px; }
 
     /* Fixed bg */
     body::before {
@@ -33,7 +33,7 @@
       position:sticky; top:0; z-index:10;
       backdrop-filter:blur(24px) saturate(180%);
       -webkit-backdrop-filter:blur(24px) saturate(180%);
-      background:rgba(220,235,248,0.7);
+      background:rgba(200,235,220,0.7);
       border-bottom:1px solid var(--glass-border);
       padding:env(safe-area-inset-top,0px) 20px 0;
     }
@@ -138,13 +138,8 @@
     .play-simple svg { fill:white; }
 
     .action-btns {
-      position:fixed; bottom:0; left:0; right:0;
-      padding:12px 20px env(safe-area-inset-bottom,16px);
-      backdrop-filter:blur(24px);
-      background:rgba(220,235,248,0.8);
-      border-top:1px solid var(--glass-border);
+      padding:16px 0 0;
       display:flex; flex-direction:column; gap:8px;
-      max-width:430px; margin:0 auto;
     }
 
     .btn-action {
@@ -181,11 +176,10 @@
   <div id="meta" class="meta"></div>
   <div id="modes" class="modes"></div>
   <div id="cards"></div>
-</div>
-
-<div class="action-btns">
-  <button class="btn-action btn-email" id="emailBtn" onclick="sendByEmail()">✉ Envoyer par email</button>
-  <button class="btn-action btn-pdf" onclick="exportPDF()">↓ Exporter en PDF</button>
+  <div class="action-btns">
+    <button class="btn-action btn-email" id="emailBtn" onclick="sendByEmail()">✉ Envoyer par email</button>
+    <button class="btn-action btn-pdf" onclick="exportPDF()">↓ Exporter en PDF</button>
+  </div>
 </div>
 
 <script>
@@ -297,12 +291,7 @@ function render(data, meta) {
     if (co.questions?.length) h+=sec('❓ Questions',items(co.questions));
     if (h) c.appendChild(makeCard('🎓 Cours',h,true));
   }
-  if (modes.includes('MEMO') && data.memo) {
-    const m=data.memo; let h='';
-    if (m.rappels?.length) h+=sec('🔔 Rappels',items(m.rappels));
-    if (m.notes) h+=sec('📝 Note',m.notes);
-    if (h) c.appendChild(makeCard('📝 Mémo',h,true));
-  }
+
   if (audioData) {
     audioEl = new Audio(audioData);
     audioEl.onended = () => { const b=document.getElementById('playBtn'); if(b) b.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18"><path d="M8 5v14l11-7z"/></svg>'; };
