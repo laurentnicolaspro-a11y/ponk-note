@@ -156,7 +156,23 @@ else {
 
   if (audioData) {
     audioEl = new Audio(audioData);
-    audioEl.onloadedmetadata = () => { document.getElementById('tot').textContent = ft(audioEl.duration); };
+    
+    // Fix WebM duration NaN - seek to end to force duration calculation
+    audioEl.addEventListener('loadedmetadata', () => {
+      if (!isFinite(audioEl.duration)) {
+        audioEl.currentTime = 1e101; // seek to "end"
+      } else {
+        document.getElementById('tot').textContent = ft(audioEl.duration);
+      }
+    });
+    
+    audioEl.addEventListener('timeupdate', () => {
+      if (!isFinite(audioEl.duration)) return;
+      // Duration is now known, reset and update display
+      document.getElementById('tot').textContent = ft(audioEl.duration);
+      audioEl.currentTime = 0;
+    });
+
     audioEl.onended = () => { 
       document.getElementById('pi').innerHTML='<path d="M8 5v14l11-7z"/>';
     };
