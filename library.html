@@ -399,7 +399,7 @@ async function handleAnalyze(fileName, btn) {
   }
 
   btn.disabled = true;
-  btn.innerHTML = '<div class="spinner-sm"><svg viewBox="0 0 24 24" width="20" height="20"><circle class="spinner-arc-sm" cx="12" cy="12" r="9"/></svg></div>';
+  btn.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:8px"><div class="spinner-sm"><svg viewBox="0 0 24 24" width="16" height="16"><circle class="spinner-arc-sm" cx="12" cy="12" r="9"/></svg></div><span>Analyse en cours…</span></div>';
 
   try {
     // Fetch audio from Supabase
