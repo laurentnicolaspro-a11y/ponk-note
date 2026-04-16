@@ -477,10 +477,6 @@
 
   function initProfile() {
     const profile = localStorage.getItem('ponk_profile');
-    // Generate UID if not exists
-    if (!localStorage.getItem('ponk_uid')) {
-      localStorage.setItem('ponk_uid', crypto.randomUUID());
-    }
     if (profile) showApp(profile);
     else document.getElementById('profileScreen').classList.remove('hidden');
   }
