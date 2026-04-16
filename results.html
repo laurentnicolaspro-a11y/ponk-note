@@ -181,9 +181,9 @@ else {
     pb.addEventListener('mousedown',e=>{drag=true;seek(e.clientX);e.preventDefault();});
     document.addEventListener('mousemove',e=>{if(drag)seek(e.clientX);});
     document.addEventListener('mouseup',()=>drag=false);
-    pb.addEventListener('touchstart',e=>{drag=true;seek(e.touches[0].clientX);},{passive:true});
-    document.addEventListener('touchmove',e=>{if(drag)seek(e.touches[0].clientX);},{passive:true});
-    document.addEventListener('touchend',()=>drag=false);
+    pb.addEventListener('touchstart',e=>{drag=true;seek(e.touches[0].clientX);e.preventDefault();},{passive:false});
+    document.addEventListener('touchmove',e=>{if(drag){seek(e.touches[0].clientX);e.preventDefault();}},{passive:false});
+    document.addEventListener('touchend',()=>{drag=false;});
   }
 }
 
