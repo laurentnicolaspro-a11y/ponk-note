@@ -31,7 +31,7 @@
 
     /* ── Background ── */
     #bg {
-      position:fixed; inset:0; z-index:0;
+      position:fixed; inset:0; z-index:-1;
       background: var(--grad-idle);
       transition: background 1.2s ease;
     }
@@ -49,14 +49,16 @@
 
     /* ── Profile screen ── */
     .profile-screen {
-      position:fixed; inset:0; z-index:200;
-      display:flex; flex-direction:column;
+      position:fixed; inset:0; z-index:9999;
+      display:none; flex-direction:column;
       align-items:center; justify-content:center;
       gap:28px; padding:40px 32px;
+      background: linear-gradient(145deg, #dce8f8 0%, #e8d8f0 40%, #f5e6d8 100%);
+    }
+    .profile-screen.visible {
+      display:flex;
       animation:fadeUp 0.4s ease;
     }
-    .profile-screen { display:none; }
-    .profile-screen.visible { display:flex; }
 
     @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
 
@@ -103,6 +105,7 @@
       height:100dvh; max-width:430px; margin:0 auto;
       padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,16px);
     }
+    .app.hidden { display:none !important; }
 
     /* ── Header ── */
     header {
@@ -353,7 +356,7 @@
   </div>
 </div>
 
-<div class="app">
+<div class="app hidden" id="mainApp">
   <header>
     <span class="logo-text">Ponk <span>Note</span></span>
     <div class="header-right">
@@ -678,7 +681,6 @@
     if (profile) showApp(profile);
     else {
       document.getElementById('profileScreen').classList.add('visible');
-      document.querySelector('.app').classList.add('hidden');
     }
   }
 
@@ -697,7 +699,7 @@
 
   function showApp(name) {
     document.getElementById('profileScreen').classList.remove('visible');
-    document.querySelector('.app').classList.remove('hidden');
+    document.getElementById('mainApp').classList.remove('hidden');
     const av = document.getElementById('headerAvatar');
     av.textContent = name[0].toUpperCase();
     av.style.background = getColor(name);
