@@ -147,7 +147,13 @@ Règles :
 - Tout en français
 - Réponds UNIQUEMENT avec le JSON`;
 
-    const analysisResult = await model.generateContent(analysisPrompt);
+    let analysisResult;
+    try {
+      analysisResult = await model.generateContent(analysisPrompt);
+    } catch {
+      model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+      analysisResult = await model.generateContent(analysisPrompt);
+    }
     const rawText = analysisResult.response.text();
     const clean = rawText.replace(/```json|```/g, '').trim();
 
