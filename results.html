@@ -157,14 +157,21 @@ else {
   if (audioData) {
     audioEl = new Audio(audioData);
     audioEl.onloadedmetadata = () => { document.getElementById('tot').textContent = ft(audioEl.duration); };
-    audioEl.ontimeupdate = () => {
-      if(!audioEl.duration) return;
-      const p=(audioEl.currentTime/audioEl.duration)*100;
-      document.getElementById('pf').style.width=p+'%';
-      document.getElementById('pt').style.left=p+'%';
-      document.getElementById('cur').textContent=ft(audioEl.currentTime);
+    audioEl.onended = () => { 
+      document.getElementById('pi').innerHTML='<path d="M8 5v14l11-7z"/>';
     };
-    audioEl.onended = () => { document.getElementById('pi').innerHTML='<path d="M8 5v14l11-7z"/>'; };
+
+    // Update progress via interval (more reliable on mobile)
+    setInterval(() => {
+      if(!audioEl || !audioEl.duration) return;
+      const p = (audioEl.currentTime / audioEl.duration) * 100;
+      const pf = document.getElementById('pf');
+      const pt = document.getElementById('pt');
+      const cur = document.getElementById('cur');
+      if(pf) pf.style.width = p + '%';
+      if(pt) pt.style.left = p + '%';
+      if(cur) cur.textContent = ft(audioEl.currentTime);
+    }, 200);
 
     const ac = card('🎙 Écouter', `<div class="audio-wrap"><div class="audio-row">
       <button class="play" onclick="togglePlay()"><svg id="pi" viewBox="0 0 24 24" width="16" height="16"><path d="M8 5v14l11-7z"/></svg></button>
