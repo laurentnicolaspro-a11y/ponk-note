@@ -44,7 +44,7 @@ module.exports = async function handler(req, res) {
     const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
     const auth = new google.auth.GoogleAuth({
       credentials: serviceAccount,
-      scopes: ['https://www.googleapis.com/auth/drive.file']
+      scopes: ['https://www.googleapis.com/auth/drive']
     });
 
     const drive = google.drive({ version: 'v3', auth });
