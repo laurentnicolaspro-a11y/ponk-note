@@ -50,8 +50,7 @@ const LABELS = {REUNION:'🏢 Réunion',COURSES:'🛒 Courses',CHANTIER:'🔨 Ch
 const raw = localStorage.getItem('ponk_result');
 const audioData = localStorage.getItem('ponk_audio');
 const metaRaw = localStorage.getItem('ponk_meta');
-if (!raw) { window.location.href='/'; }
-else {
+if (raw) {
   const data = JSON.parse(raw);
   const meta = metaRaw ? JSON.parse(metaRaw) : {};
   const modes = data.modes || [];
@@ -154,7 +153,7 @@ else {
 
 
   else { audioEl.pause(); document.getElementById('pi').innerHTML='<path d="M8 5v14l11-7z"/>'; }
-}
+} else { window.location.href='/'; }
 
 function togglePlaySimple() {
   if (!audioEl) return;
