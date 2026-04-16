@@ -62,23 +62,41 @@ module.exports = async function handler(req, res) {
     stream.push(audioFile.data);
     stream.push(null);
 
+    // Créer le fichier dans le Drive du compte de service
     const response = await drive.files.create({
       requestBody: {
         name: fileName,
-        parents: [process.env.GOOGLE_DRIVE_FOLDER_ID],
         mimeType: 'audio/webm'
       },
       media: {
         mimeType: 'audio/webm',
         body: stream
       },
-      fields: 'id, name, webViewLink'
+      fields: 'id, name'
     });
 
+    const fileId = response.data.id;
+
+    // Déplacer dans le dossier partagé
+    await drive.files.update({
+      fileId: fileId,
+      addParents: process.env.GOOGLE_DRIVE_FOLDER_ID,
+      fields: 'id, parents'
+    });
+
+    // Récupérer le lien
+    const fileInfo = await drive.files.get({
+      fileId: fileId,
+      fields: 'id, name, webViewLink'
+    });
+    
+    response.data.webViewLink = fileInfo.data.webViewLink;
+    response.data.id = fileId;
+
     return res.status(200).json({
-      fileId: response.data.id,
-      fileName: response.data.name,
-      link: response.data.webViewLink
+      fileId: fileId,
+      fileName: fileName,
+      link: fileInfo.data.webViewLink
     });
 
   } catch (err) {
