@@ -223,7 +223,12 @@
       // Store blob as object URL in sessionStorage workaround
       localStorage.setItem('ponk_result', JSON.stringify(data));
       localStorage.setItem('ponk_meta', JSON.stringify({title, duration:fmt(seconds), datetime}));
-      window.location.href = '/results.html';
+      const reader = new FileReader();
+      reader.onload = () => {
+        localStorage.setItem('ponk_audio', reader.result);
+        window.location.href = '/results.html';
+      };
+      reader.readAsDataURL(blob);
     } catch(e) {
       hideOverlay();
       setStatus('error', e.message);
