@@ -55,7 +55,8 @@
       gap:28px; padding:40px 32px;
       animation:fadeUp 0.4s ease;
     }
-    .profile-screen.hidden { display:none; }
+    .profile-screen { display:none; }
+    .profile-screen.visible { display:flex; }
 
     @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
 
@@ -487,8 +488,20 @@
 
   async function uploadAudio() {
     if (!blob) return;
-    const title   = document.getElementById('title').value || 'enregistrement';
     const profile = localStorage.getItem('ponk_profile') || 'user';
+
+    // Check quota before upload
+    try {
+      const checkRes = await fetch('/api/list?uid=' + encodeURIComponent(profile));
+      const checkData = await checkRes.json();
+      const count = (checkData.files || []).filter(f => f.name && f.name !== '.emptyFolderPlaceholder').length;
+      if (count >= 5) {
+        setStatus('error', 'Bibliothèque pleine (5/5) — supprime un enregistrement');
+        return;
+      }
+    } catch(e) { console.warn('Quota check failed:', e.message); }
+
+    const title = document.getElementById('title').value || 'enregistrement';
     const fd = new FormData();
     fd.append('audio', blob, 'rec.webm');
     fd.append('title', title);
@@ -663,7 +676,7 @@
     initAssistantUI();
     const profile = localStorage.getItem('ponk_profile');
     if (profile) showApp(profile);
-    else document.getElementById('profileScreen').classList.remove('hidden');
+    else document.getElementById('profileScreen').classList.add('visible');
   }
 
   function submitProfile() {
@@ -680,7 +693,7 @@
   document.getElementById('profileEmail').addEventListener('keydown', e => { if(e.key==='Enter') submitProfile(); });
 
   function showApp(name) {
-    document.getElementById('profileScreen').classList.add('hidden');
+    document.getElementById('profileScreen').classList.remove('visible');
     const av = document.getElementById('headerAvatar');
     av.textContent = name[0].toUpperCase();
     av.style.background = getColor(name);
@@ -690,7 +703,7 @@
     if (confirm('Changer de profil ?')) {
       localStorage.removeItem('ponk_profile');
       localStorage.removeItem('ponk_email');
-      document.getElementById('profileScreen').classList.remove('hidden');
+      document.getElementById('profileScreen').classList.add('visible');
     }
   }
 
