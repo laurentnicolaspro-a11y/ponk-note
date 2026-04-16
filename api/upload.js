@@ -1,10 +1,10 @@
 const { google } = require('googleapis');
+const { Readable } = require('stream');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    // Parse multipart
     const chunks = [];
     await new Promise((resolve, reject) => {
       req.on('data', chunk => chunks.push(chunk));
@@ -31,7 +31,7 @@ module.exports = async function handler(req, res) {
       const filenameMatch = rawHeaders.match(/filename="([^"]+)"/);
       if (!nameMatch) continue;
       if (filenameMatch) {
-        files[nameMatch[1]] = { filename: filenameMatch[1], data: Buffer.from(bodyStr, 'binary') };
+        files[nameMatch[1]] = { data: Buffer.from(bodyStr, 'binary') };
       } else {
         fields[nameMatch[1]] = bodyStr.trim();
       }
@@ -40,67 +40,56 @@ module.exports = async function handler(req, res) {
     const audioFile = files['audio'];
     if (!audioFile) return res.status(400).json({ error: 'Aucun fichier audio' });
 
-    // Auth Google
+    // Auth
     const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
     const auth = new google.auth.GoogleAuth({
       credentials: serviceAccount,
       scopes: ['https://www.googleapis.com/auth/drive']
     });
-
     const drive = google.drive({ version: 'v3', auth });
 
-    // Nom du fichier avec date
     const now = new Date();
-    const dateStr = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const dateStr = now.toISOString().slice(0, 19).replace(/[:.]/g, '-');
     const profile = fields['profile'] || 'user';
-    const title = fields['title'] || 'enregistrement';
-    const fileName = `${profile}-${title}-${dateStr}.webm`.replace(/\s+/g, '_');
+    const title = (fields['title'] || 'enregistrement').replace(/\s+/g, '_');
+    const fileName = `${profile}-${title}-${dateStr}.webm`;
 
-    // Upload sur Drive
-    const { Readable } = require('stream');
+    // Stream
     const stream = new Readable();
     stream.push(audioFile.data);
     stream.push(null);
 
-    // Créer le fichier dans le Drive du compte de service
-    const response = await drive.files.create({
+    // Créer dans le Drive du compte de service
+    const created = await drive.files.create({
       requestBody: {
         name: fileName,
-        mimeType: 'audio/webm'
-      },
-      media: {
         mimeType: 'audio/webm',
-        body: stream
+        parents: [process.env.GOOGLE_DRIVE_FOLDER_ID]
       },
+      media: { mimeType: 'audio/webm', body: stream },
       fields: 'id, name'
     });
 
-    const fileId = response.data.id;
+    const fileId = created.data.id;
 
-    // Déplacer dans le dossier partagé
-    await drive.files.update({
-      fileId: fileId,
-      addParents: process.env.GOOGLE_DRIVE_FOLDER_ID,
-      fields: 'id, parents'
+    // Partager avec l'owner du Drive
+    await drive.permissions.create({
+      fileId,
+      requestBody: {
+        role: 'writer',
+        type: 'user',
+        emailAddress: process.env.GOOGLE_OWNER_EMAIL
+      },
+      sendNotificationEmail: false
     });
 
-    // Récupérer le lien
-    const fileInfo = await drive.files.get({
-      fileId: fileId,
-      fields: 'id, name, webViewLink'
-    });
-    
-    response.data.webViewLink = fileInfo.data.webViewLink;
-    response.data.id = fileId;
+    // Lien direct
+    const link = `https://drive.google.com/file/d/${fileId}/view`;
 
-    return res.status(200).json({
-      fileId: fileId,
-      fileName: fileName,
-      link: fileInfo.data.webViewLink
-    });
+    return res.status(200).json({ fileId, fileName, link });
 
   } catch (err) {
-    console.error('[upload] Error:', err);
-    return res.status(500).json({ error: err.message || 'Erreur upload' });
+    console.error('[upload] Error:', err.message);
+    return res.status(500).json({ error: err.message });
   }
 };
