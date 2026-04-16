@@ -676,7 +676,10 @@
     initAssistantUI();
     const profile = localStorage.getItem('ponk_profile');
     if (profile) showApp(profile);
-    else document.getElementById('profileScreen').classList.add('visible');
+    else {
+      document.getElementById('profileScreen').classList.add('visible');
+      document.querySelector('.app').classList.add('hidden');
+    }
   }
 
   function submitProfile() {
@@ -694,6 +697,7 @@
 
   function showApp(name) {
     document.getElementById('profileScreen').classList.remove('visible');
+    document.querySelector('.app').classList.remove('hidden');
     const av = document.getElementById('headerAvatar');
     av.textContent = name[0].toUpperCase();
     av.style.background = getColor(name);
