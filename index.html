@@ -366,15 +366,15 @@
     else stopSpeechRecognition();
   }
 
-  // Disable toggle visually on Android
-  window.addEventListener('DOMContentLoaded', () => {
+  // Disable toggle visually on Android - called from initProfile
+  function initAssistantUI() {
     if (isAndroid()) {
       const toggle = document.getElementById('assistantToggle');
       const label = document.querySelector('.toggle-label');
       if (toggle) toggle.style.opacity = '0.35';
       if (label) label.textContent = 'Assistant IA (PC & iPhone)';
     }
-  });
+  }
 
   let assistantStream = null;
 
@@ -474,6 +474,7 @@
   }
 
   function initProfile() {
+    initAssistantUI();
     const profile = localStorage.getItem('ponk_profile');
     if (profile) showApp(profile);
     else document.getElementById('profileScreen').classList.remove('hidden');
