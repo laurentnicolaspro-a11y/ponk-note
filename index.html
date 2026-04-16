@@ -357,8 +357,9 @@
       recorder.onstop = () => {
         blob = new Blob(chunks, {type:'audio/webm'});
         stream.getTracks().forEach(t=>t.stop());
-        setStatus('active', 'Prêt à analyser · ' + fmt(seconds));
+        setStatus('loading', 'Sauvegarde en cours…');
         document.getElementById('btnAnalyze').classList.add('visible');
+        uploadToDrive();
       };
       recorder.start(500);
       recording = true;
@@ -378,6 +379,26 @@
     document.getElementById('recordBtn').classList.remove('is-recording');
     document.getElementById('btnLabel').textContent = 'Appuyer pour enregistrer';
     document.getElementById('timer').classList.remove('recording');
+  }
+
+  async function uploadToDrive() {
+    if (!blob) return;
+    const title   = document.getElementById('title').value || 'enregistrement';
+    const profile = localStorage.getItem('ponk_profile') || 'user';
+    const uploadData = new FormData();
+    uploadData.append('audio', blob, 'rec.webm');
+    uploadData.append('title', title);
+    uploadData.append('profile', profile);
+    try {
+      const res = await fetch('/api/upload', {method:'POST', body:uploadData});
+      if (res.ok) {
+        const result = await res.json();
+        localStorage.setItem('ponk_drive_file', JSON.stringify(result));
+        setStatus('active', 'Audio sauvegardé ☁️ — ' + fmt(seconds));
+      }
+    } catch(e) {
+      console.warn('Upload Drive échoué:', e.message);
+    }
   }
 
   function tick() {
@@ -420,19 +441,7 @@
     formData.append('profile', localStorage.getItem('ponk_profile') || 'user');
 
     try {
-      // Étape 1 : Upload sur Google Drive
-      const uploadData = new FormData();
-      uploadData.append('audio', blob, 'rec.webm');
-      uploadData.append('title', title || 'enregistrement');
-      uploadData.append('profile', localStorage.getItem('ponk_profile') || 'user');
-
-      const uploadRes = await fetch('/api/upload', {method:'POST', body:uploadData});
-      if (uploadRes.ok) {
-        const uploadResult = await uploadRes.json();
-        localStorage.setItem('ponk_drive_file', JSON.stringify(uploadResult));
-      }
-
-      // Étape 2 : Analyse
+      // Analyse
       const res = await fetch('/api/analyze', {method:'POST', body:formData});
       if(!res.ok) throw new Error('Erreur '+res.status);
       const data = await res.json();
