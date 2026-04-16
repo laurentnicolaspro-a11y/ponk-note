@@ -1,6 +1,3 @@
-const { google } = require('googleapis');
-const { PassThrough } = require('stream');
-
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -40,50 +37,35 @@ module.exports = async function handler(req, res) {
     const audioFile = files['audio'];
     if (!audioFile) return res.status(400).json({ error: 'Aucun fichier audio' });
 
-    // Auth
-    const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
-    const auth = new google.auth.GoogleAuth({
-      credentials: serviceAccount,
-      scopes: ['https://www.googleapis.com/auth/drive']
-    });
-    const drive = google.drive({ version: 'v3', auth });
-
     const now = new Date();
     const dateStr = now.toISOString().slice(0, 19).replace(/[:.]/g, '-');
     const profile = fields['profile'] || 'user';
     const title = (fields['title'] || 'enregistrement').replace(/\s+/g, '_');
-    const fileName = `${profile}-${title}-${dateStr}.webm`;
+    const fileName = `${profile}/${dateStr}-${title}.webm`;
 
-    // Créer dans le Drive du compte de service (sans parent)
-    const created = await drive.files.create({
-      requestBody: {
-        name: fileName,
-        mimeType: 'audio/webm'
-      },
-      media: {
-        mimeType: 'audio/webm',
-        body: (() => { const pt = new PassThrough(); pt.end(audioFile.data); return pt; })()
-      },
-      fields: 'id, name'
+    // Upload vers Supabase Storage
+    const uploadRes = await fetch(
+      `${process.env.SUPABASE_URL}/storage/v1/object/audio/${fileName}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
+          'Content-Type': 'audio/webm',
+          'x-upsert': 'true'
+        },
+        body: audioFile.data
+      }
+    );
+
+    if (!uploadRes.ok) {
+      const err = await uploadRes.text();
+      throw new Error(`Supabase upload failed: ${err}`);
+    }
+
+    return res.status(200).json({
+      fileName,
+      path: `audio/${fileName}`
     });
-
-    const fileId = created.data.id;
-
-    // Partager avec l'owner du Drive
-    await drive.permissions.create({
-      fileId,
-      requestBody: {
-        role: 'writer',
-        type: 'user',
-        emailAddress: process.env.GOOGLE_OWNER_EMAIL
-      },
-      sendNotificationEmail: false
-    });
-
-    // Lien direct
-    const link = `https://drive.google.com/file/d/${fileId}/view`;
-
-    return res.status(200).json({ fileId, fileName, link });
 
   } catch (err) {
     console.error('[upload] Error:', err.message);
