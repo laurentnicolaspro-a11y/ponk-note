@@ -232,7 +232,7 @@ function getColor(name) {
 // Init profile
 const profile = localStorage.getItem('ponk_profile');
 const email   = localStorage.getItem('ponk_email');
-const uid     = localStorage.getItem('ponk_uid') || localStorage.getItem('ponk_profile');
+const uid     = localStorage.getItem('ponk_profile');
 
 if (!profile) { window.location.href = '/'; }
 
