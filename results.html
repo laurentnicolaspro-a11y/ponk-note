@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ponk Note — Résultats</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'DM Sans', sans-serif; background: #fff; color: #1c1c1c; margin: 0; padding: 0 20px 80px; }
@@ -77,7 +78,7 @@
 <div id="meta" class="meta"></div>
 <div id="modes" class="modes"></div>
 <div id="content"></div>
-<button class="export-btn" onclick="window.print()">⬇ Exporter en PDF</button>
+<button class="export-btn" onclick="exportPDF()">⬇ Exporter en PDF</button>
 
 <script>
 const LABELS = {
@@ -328,6 +329,169 @@ function copyCard(btn) {
     btn.textContent = '✓ Copié';
     setTimeout(() => btn.textContent = 'Copier', 2000);
   });
+}
+
+function exportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  
+  const margin = 20;
+  let y = 20;
+  const pageW = 210;
+  const maxW = pageW - margin * 2;
+  
+  // Helper: add text with word wrap
+  function addText(text, x, fontSize, bold, color) {
+    doc.setFontSize(fontSize || 11);
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    doc.setTextColor(color || '#1c1c1c');
+    const lines = doc.splitTextToSize(String(text || ''), maxW - (x - margin));
+    doc.text(lines, x, y);
+    y += lines.length * (fontSize || 11) * 0.45 + 2;
+  }
+  
+  function checkPage() {
+    if (y > 270) { doc.addPage(); y = 20; }
+  }
+  
+  function addSection(title, content) {
+    checkPage();
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor('#999999');
+    doc.text(title.toUpperCase(), margin, y);
+    y += 6;
+    doc.setTextColor('#1c1c1c');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    const lines = doc.splitTextToSize(String(content || ''), maxW - 4);
+    lines.forEach(line => {
+      checkPage();
+      doc.text(line, margin + 4, y);
+      y += 5.5;
+    });
+    y += 2;
+  }
+  
+  function addBlock(title, fn) {
+    checkPage();
+    // Block title
+    doc.setFillColor(244, 244, 244);
+    doc.roundedRect(margin, y - 4, maxW, 10, 2, 2, 'F');
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor('#aaaaaa');
+    doc.text(title.toUpperCase(), margin + 4, y + 2);
+    y += 10;
+    fn();
+    y += 4;
+    doc.setDrawColor(232, 232, 232);
+    doc.line(margin, y, margin + maxW, y);
+    y += 6;
+  }
+
+  const rawResult = localStorage.getItem('ponk_result');
+  const rawMeta = localStorage.getItem('ponk_meta');
+  if (!rawResult) return;
+  
+  const data = JSON.parse(rawResult);
+  const meta = JSON.parse(rawMeta || '{}');
+  const modes = data.modes || [];
+
+  // Header
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor('#1c1c1c');
+  doc.text('Ponk Note', margin, y);
+  y += 8;
+  
+  if (meta.datetime || meta.duration) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor('#aaaaaa');
+    doc.text((meta.datetime || '') + (meta.duration ? ' · ' + meta.duration : ''), margin, y);
+    y += 6;
+  }
+  
+  if (meta.title) {
+    doc.setFontSize(11);
+    doc.setTextColor('#1c1c1c');
+    doc.text(meta.title, margin, y);
+    y += 6;
+  }
+
+  doc.setDrawColor(28, 28, 28);
+  doc.line(margin, y, margin + maxW, y);
+  y += 8;
+
+  // Modes
+  if (modes.length) {
+    const LABELS = {REUNION:'Réunion',COURSES:'Courses',CHANTIER:'Chantier',IDEES:'Idées',DEPLACEMENT:'Déplacement',FINANCE:'Finance',APPEL:'Appel',MEDICAL:'Médical',COURS:'Cours',MEMO:'Mémo'};
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor('#aaaaaa');
+    doc.text('Modes : ' + modes.map(m => LABELS[m] || m).join(', '), margin, y);
+    y += 8;
+  }
+
+  // Summary
+  if (data.summary) {
+    addBlock('📝 Synthèse', () => addText(data.summary, margin + 2, 11));
+  }
+
+  // Reunion
+  if (modes.includes('REUNION') && data.reunion) {
+    addBlock('🏢 Réunion', () => {
+      const r = data.reunion;
+      if (r.participants && r.participants.length) addSection('Participants', r.participants.join(', '));
+      if (r.decisions    && r.decisions.length)    r.decisions.forEach(d => addSection('✅', d));
+      if (r.actions      && r.actions.length)      r.actions.forEach(a => addSection('⚡', a));
+      if (r.prochaine)                             addSection('Prochaine réunion', r.prochaine);
+    });
+  }
+
+  // Courses
+  if (modes.includes('COURSES') && data.courses && data.courses.items) {
+    addBlock('🛒 Courses', () => {
+      data.courses.items.forEach(it => {
+        checkPage();
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor('#1c1c1c');
+        doc.text('☐  ' + (it.quantite ? it.quantite + ' ' : '') + it.nom, margin + 2, y);
+        y += 6;
+      });
+    });
+  }
+
+  // Finance
+  if (modes.includes('FINANCE') && data.finance && data.finance.montants) {
+    addBlock('💰 Finance', () => {
+      data.finance.montants.forEach(m => addSection(m.description, m.montant));
+      if (data.finance.total) addSection('TOTAL', data.finance.total);
+    });
+  }
+
+  // Memo
+  if (modes.includes('MEMO') && data.memo) {
+    addBlock('📝 Mémo', () => {
+      const m = data.memo;
+      if (m.rappels && m.rappels.length) m.rappels.forEach(r => addSection('🔔', r));
+      if (m.notes) addSection('Note', m.notes);
+    });
+  }
+
+  // Idées
+  if (modes.includes('IDEES') && data.idees) {
+    addBlock('💡 Idées', () => {
+      const id = data.idees;
+      if (id.liste && id.liste.length) id.liste.forEach(i => addSection('→', i));
+    });
+  }
+
+  // Save
+  const filename = (meta.title || 'ponk-note') + '-' + new Date().toISOString().slice(0,10) + '.pdf';
+  doc.save(filename);
 }
 </script>
 </body>
