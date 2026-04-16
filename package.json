@@ -2,7 +2,8 @@
   "name": "ponk-note",
   "version": "1.0.0",
   "dependencies": {
-    "@google/generative-ai": "^0.24.0"
+    "@google/generative-ai": "^0.24.0",
+    "resend": "^3.2.0"
   },
   "engines": {
     "node": ">=18"
