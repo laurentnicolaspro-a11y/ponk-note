@@ -68,12 +68,22 @@
       text-align: center;
     }
     .export-btn:active { background: #e8e8e8; }
+    .header-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 500; color: #fff; flex-shrink: 0;
+    }
+    .avatar-n { background: #4f46e5; }
+    .avatar-c { background: #db2777; }
   </style>
 </head>
 <body>
 <header>
   <span class="logo">Ponk <span>Note</span></span>
-  <button class="back" onclick="window.location.href='/'">← Nouveau</button>
+  <div style="display:flex;align-items:center;gap:12px">
+    <button class="back" onclick="window.location.href='/'">← Nouveau</button>
+    <div class="header-avatar" id="headerAvatar"></div>
+  </div>
 </header>
 <div id="meta" class="meta"></div>
 <div id="modes" class="modes"></div>
@@ -90,6 +100,14 @@ const LABELS = {
 let audioEl = null;
 
 // Load data
+// Init avatar
+const profile = localStorage.getItem('ponk_profile');
+if (profile) {
+  const av = document.getElementById('headerAvatar');
+  av.textContent = profile[0];
+  av.className = 'header-avatar ' + (profile === 'Nicolas' ? 'avatar-n' : 'avatar-c');
+}
+
 const rawResult = localStorage.getItem('ponk_result');
 const rawMeta   = localStorage.getItem('ponk_meta');
 const audioData = localStorage.getItem('ponk_audio');
@@ -390,7 +408,15 @@ function exportPDF() {
     y += 6;
   }
 
-  const rawResult = localStorage.getItem('ponk_result');
+  // Init avatar
+const profile = localStorage.getItem('ponk_profile');
+if (profile) {
+  const av = document.getElementById('headerAvatar');
+  av.textContent = profile[0];
+  av.className = 'header-avatar ' + (profile === 'Nicolas' ? 'avatar-n' : 'avatar-c');
+}
+
+const rawResult = localStorage.getItem('ponk_result');
   const rawMeta = localStorage.getItem('ponk_meta');
   if (!rawResult) return;
   
