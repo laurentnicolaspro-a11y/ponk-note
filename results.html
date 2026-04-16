@@ -7,153 +7,290 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'DM Sans', sans-serif; background: #fff; color: #1c1c1c; margin: 0; padding: 0 20px 80px; }
-    h2 { font-size: 15px; font-weight: 500; padding: 20px 0 16px; border-bottom: 1px solid #e8e8e8; margin-bottom: 16px; display: flex; justify-content: space-between; }
-    a { color: #aaa; font-size: 13px; text-decoration: none; }
-    .badge { display: inline-block; padding: 4px 10px; border-radius: 100px; background: #f4f4f4; border: 1px solid #e8e8e8; font-size: 11px; color: #aaa; margin: 0 4px 4px 0; }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 20px 0 16px; border-bottom: 1px solid #e8e8e8; margin-bottom: 16px; }
+    .logo { font-size: 15px; font-weight: 500; }
+    .logo span { color: #aaa; font-weight: 300; }
+    .back { color: #aaa; font-size: 13px; text-decoration: none; background: none; border: none; cursor: pointer; font-family: inherit; }
+    .meta { font-size: 12px; color: #aaa; font-family: 'DM Mono', monospace; margin-bottom: 10px; }
+    .modes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 100px; background: #f4f4f4; border: 1px solid #e8e8e8; font-size: 11px; color: #aaa; }
     .card { border: 1px solid #e8e8e8; border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
-    .card-title { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; color: #aaa; padding: 12px 14px; cursor: pointer; display: flex; justify-content: space-between; }
-    .card-body { padding: 0 14px 14px; border-top: 1px solid #e8e8e8; }
-    .card-body p { font-size: 14px; line-height: 1.7; padding-top: 12px; }
-    .section { padding-top: 12px; }
-    .section-title { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 6px; }
-    ul { list-style: none; padding: 0; margin: 8px 0 0; }
-    ul li { padding: 9px 11px; background: #f4f4f4; border-radius: 8px; font-size: 13px; margin-bottom: 6px; }
-    ul li::before { content: '— '; color: #aaa; }
-    .checklist li { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-    .checklist li.done { opacity: .45; text-decoration: line-through; }
-    .checkbox { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #e8e8e8; background: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; }
-    .checklist li.done .checkbox { background: #1c1c1c; border-color: #1c1c1c; color: #fff; }
+    .card-hd { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; cursor: pointer; user-select: none; }
+    .card-hd:active { background: #f4f4f4; }
+    .card-lbl { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; color: #aaa; }
+    .card-bd { padding: 0 14px 14px; border-top: 1px solid #e8e8e8; display: block; }
+    .card-bd.hidden { display: none; }
+    .chevron { font-size: 10px; color: #aaa; transition: transform 0.2s; }
+    .chevron.closed { transform: rotate(-90deg); }
+    .sec { padding-top: 12px; }
+    .sec + .sec { margin-top: 8px; padding-top: 10px; border-top: 1px solid #e8e8e8; }
+    .sec-title { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 6px; }
+    .sec p { font-size: 14px; line-height: 1.75; color: #1c1c1c; }
+    ul.items { list-style: none; padding: 0; margin: 8px 0 0; }
+    ul.items li { padding: 9px 11px; background: #f4f4f4; border-radius: 8px; font-size: 13px; margin-bottom: 6px; display: flex; gap: 8px; }
+    ul.items li::before { content: '—'; color: #aaa; flex-shrink: 0; }
+    ul.checks { list-style: none; padding: 0; margin: 8px 0 0; }
+    ul.checks li { padding: 9px 11px; background: #f4f4f4; border-radius: 8px; font-size: 13px; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    ul.checks li.done { opacity: .45; text-decoration: line-through; }
+    .cb { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #ddd; background: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; }
+    ul.checks li.done .cb { background: #1c1c1c; border-color: #1c1c1c; color: #fff; }
     .loc { display: flex; align-items: center; gap: 8px; padding: 9px 11px; background: #f4f4f4; border-radius: 8px; margin-top: 6px; text-decoration: none; color: #1c1c1c; border: 1px solid #e8e8e8; }
+    .loc-info { flex: 1; }
+    .loc-name { font-weight: 500; font-size: 13px; }
+    .loc-addr { font-size: 11px; color: #aaa; }
     table { width: 100%; margin-top: 10px; border-collapse: collapse; }
     td { padding: 8px 0; font-size: 13px; border-bottom: 1px solid #e8e8e8; }
     td:last-child { text-align: right; font-family: 'DM Mono', monospace; }
     tr:last-child td { border-bottom: none; font-weight: 500; }
-    .meta { font-size: 12px; color: #aaa; font-family: 'DM Mono', monospace; margin-bottom: 10px; }
-    .copy { background: none; border: 1px solid #e8e8e8; color: #aaa; padding: 3px 10px; border-radius: 5px; font-size: 11px; cursor: pointer; }
-
-    .audio-simple { padding: 12px 0; display: flex; align-items: center; gap: 12px; }
-    .play-simple { width: 40px; height: 40px; border-radius: 50%; background: #1c1c1c; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+    .copy-btn { background: none; border: 1px solid #e8e8e8; color: #aaa; padding: 3px 10px; border-radius: 5px; font-size: 11px; cursor: pointer; font-family: inherit; }
+    .transcript-text { font-size: 12px; line-height: 1.9; color: #aaa; font-family: 'DM Mono', monospace; padding-top: 12px; white-space: pre-wrap; }
+    .play-simple { width: 40px; height: 40px; border-radius: 50%; background: #1c1c1c; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-top: 12px; -webkit-tap-highlight-color: transparent; }
     .play-simple svg { fill: white; }
-    .play-label { font-size: 13px; color: #aaa; }
   </style>
 </head>
 <body>
-  <h2>Ponk <span style="color:#aaa;font-weight:300">Note</span> <a href="/">← Nouveau</a></h2>
-  <div id="meta" class="meta"></div>
-  <div id="modes" style="margin-bottom:12px"></div>
-  <div id="content"></div>
+<header>
+  <span class="logo">Ponk <span>Note</span></span>
+  <button class="back" onclick="window.location.href='/'">← Nouveau</button>
+</header>
+<div id="meta" class="meta"></div>
+<div id="modes" class="modes"></div>
+<div id="content"></div>
 
 <script>
-let audioEl = null;
-const LABELS = {REUNION:'🏢 Réunion',COURSES:'🛒 Courses',CHANTIER:'🔨 Chantier',IDEES:'💡 Idées',DEPLACEMENT:'📍 Déplacement',FINANCE:'💰 Finance',APPEL:'📞 Appel',MEDICAL:'🏥 Médical',COURS:'🎓 Cours',MEMO:'📝 Mémo'};
+const LABELS = {
+  REUNION:'🏢 Réunion', COURSES:'🛒 Courses', CHANTIER:'🔨 Chantier',
+  IDEES:'💡 Idées', DEPLACEMENT:'📍 Déplacement', FINANCE:'💰 Finance',
+  APPEL:'📞 Appel', MEDICAL:'🏥 Médical', COURS:'🎓 Cours', MEMO:'📝 Mémo'
+};
 
-const raw = localStorage.getItem('ponk_result');
+let audioEl = null;
+
+// Load data
+const rawResult = localStorage.getItem('ponk_result');
+const rawMeta   = localStorage.getItem('ponk_meta');
 const audioData = localStorage.getItem('ponk_audio');
-const metaRaw = localStorage.getItem('ponk_meta');
-if (raw) {
-  const data = JSON.parse(raw);
-  const meta = metaRaw ? JSON.parse(metaRaw) : {};
+
+if (!rawResult) {
+  window.location.href = '/';
+} else {
+  let data, meta;
+  
+  try { data = JSON.parse(rawResult); }
+  catch(e) { document.getElementById('content').innerHTML = '<p style="color:red;padding:20px">Erreur de données</p>'; }
+  
+  try { meta = JSON.parse(rawMeta); } catch(e) { meta = {}; }
+
+  if (data) render(data, meta);
+}
+
+function render(data, meta) {
   const modes = data.modes || [];
   const c = document.getElementById('content');
 
-  if (meta.datetime||meta.duration)
-    document.getElementById('meta').textContent = (meta.datetime||'') + (meta.duration?' · '+meta.duration:'');
-
-  document.getElementById('modes').innerHTML = modes.map(m=>`<span class="badge">${LABELS[m]||m}</span>`).join('');
-
-  if (data.summary) c.appendChild(card('📝 Synthèse', `<div class="section"><p>${data.summary}</p></div>`));
-
-  if (modes.includes('REUNION')&&data.reunion) {
-    const r=data.reunion; let h='';
-    if(r.participants?.length) h+=sec('👥 Participants',r.participants.join(', '));
-    if(r.decisions?.length) h+=sec('✅ Décisions',lis(r.decisions));
-    if(r.actions?.length) h+=sec('⚡ Actions',lis(r.actions));
-    if(r.prochaine) h+=sec('📅 Prochaine',r.prochaine);
-    if(h) c.appendChild(card('🏢 Réunion',h,true));
+  // Meta
+  if (meta && (meta.datetime || meta.duration)) {
+    document.getElementById('meta').textContent =
+      (meta.datetime || '') + (meta.duration ? ' · ' + meta.duration : '');
   }
 
-  if (modes.includes('COURSES')&&data.courses?.items?.length) {
-    const list=data.courses.items.map(it=>`<li onclick="this.classList.toggle('done');this.querySelector('.checkbox').textContent=this.classList.contains('done')?'✓':''"><div class="checkbox"></div><span>${it.quantite?it.quantite+' ':''}${it.nom}</span></li>`).join('');
-    c.appendChild(card('🛒 Courses',`<ul class="checklist">${list}</ul>`,true));
+  // Modes badges
+  document.getElementById('modes').innerHTML =
+    modes.map(m => `<span class="badge">${LABELS[m] || m}</span>`).join('');
+
+  // Résumé
+  if (data.summary) {
+    c.appendChild(makeCard('📝 Synthèse',
+      `<div class="sec"><p>${data.summary}</p></div>`
+    ));
   }
 
-  if (modes.includes('CHANTIER')&&data.chantier) {
-    const ch=data.chantier; let h='';
-    if(ch.lieu) h+=sec('📍 Lieu',ch.lieu);
-    if(ch.materiaux?.length) h+=sec('🧱 Matériaux',lis(ch.materiaux.map(m=>m.nom+(m.quantite?' — '+m.quantite:''))));
-    if(ch.artisans?.length) h+=sec('👷 Artisans',lis(ch.artisans));
-    if(ch.budget) h+=sec('💰 Budget',ch.budget);
-    if(ch.planning?.length) h+=sec('📋 Planning',lis(ch.planning));
-    if(h) c.appendChild(card('🔨 Chantier',h,true));
+  // REUNION
+  if (modes.includes('REUNION') && data.reunion) {
+    const r = data.reunion;
+    let h = '';
+    if (r.participants && r.participants.length) h += makeSec('👥 Participants', r.participants.join(', '));
+    if (r.decisions    && r.decisions.length)    h += makeSec('✅ Décisions',    makeItems(r.decisions));
+    if (r.actions      && r.actions.length)      h += makeSec('⚡ Actions',      makeItems(r.actions));
+    if (r.prochaine)                             h += makeSec('📅 Prochaine',    r.prochaine);
+    if (h) c.appendChild(makeCard('🏢 Réunion', h, true));
   }
 
-  if (modes.includes('IDEES')&&data.idees) {
-    const id=data.idees; let h='';
-    if(id.liste?.length) h+=sec('💡 Idées',lis(id.liste));
-    if(id.aApprofondir?.length) h+=sec('🔍 À approfondir',lis(id.aApprofondir));
-    if(h) c.appendChild(card('💡 Idées',h,true));
+  // COURSES
+  if (modes.includes('COURSES') && data.courses && data.courses.items && data.courses.items.length) {
+    const items = data.courses.items;
+    const list = items.map(it =>
+      `<li onclick="toggleCheck(this)">
+        <div class="cb"></div>
+        <span>${it.quantite ? it.quantite + ' ' : ''}${it.nom}</span>
+      </li>`
+    ).join('');
+    c.appendChild(makeCard('🛒 Courses', `<ul class="checks">${list}</ul>`, true));
   }
 
-  if (modes.includes('DEPLACEMENT')&&data.deplacement) {
-    const d=data.deplacement; let h='';
-    if(d.lieux?.length) {
-      h+='<div class="section"><div class="section-title">📍 Lieux</div>';
-      d.lieux.forEach(l=>{
-        const q=encodeURIComponent(l.adresse||l.nom);
-        h+=`<a class="loc" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank">📍 <div style="flex:1"><div style="font-weight:500">${l.nom}</div>${l.adresse?`<div style="font-size:11px;color:#aaa">${l.adresse}</div>`:''}</div>→</a>`;
+  // CHANTIER
+  if (modes.includes('CHANTIER') && data.chantier) {
+    const ch = data.chantier;
+    let h = '';
+    if (ch.lieu)                               h += makeSec('📍 Lieu',       ch.lieu);
+    if (ch.materiaux && ch.materiaux.length)   h += makeSec('🧱 Matériaux',  makeItems(ch.materiaux.map(m => m.nom + (m.quantite ? ' — ' + m.quantite : ''))));
+    if (ch.artisans  && ch.artisans.length)    h += makeSec('👷 Artisans',   makeItems(ch.artisans));
+    if (ch.budget)                             h += makeSec('💰 Budget',     ch.budget);
+    if (ch.planning  && ch.planning.length)    h += makeSec('📋 Planning',   makeItems(ch.planning));
+    if (h) c.appendChild(makeCard('🔨 Chantier', h, true));
+  }
+
+  // IDEES
+  if (modes.includes('IDEES') && data.idees) {
+    const id = data.idees;
+    let h = '';
+    if (id.liste         && id.liste.length)         h += makeSec('💡 Idées',         makeItems(id.liste));
+    if (id.aApprofondir  && id.aApprofondir.length)  h += makeSec('🔍 À approfondir', makeItems(id.aApprofondir));
+    if (h) c.appendChild(makeCard('💡 Idées', h, true));
+  }
+
+  // DEPLACEMENT
+  if (modes.includes('DEPLACEMENT') && data.deplacement) {
+    const d = data.deplacement;
+    let h = '';
+    if (d.lieux && d.lieux.length) {
+      h += '<div class="sec"><div class="sec-title">📍 Lieux</div>';
+      d.lieux.forEach(l => {
+        const q = encodeURIComponent(l.adresse || l.nom);
+        h += `<a class="loc" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank">
+          <span>📍</span>
+          <div class="loc-info">
+            <div class="loc-name">${l.nom}</div>
+            ${l.adresse ? `<div class="loc-addr">${l.adresse}</div>` : ''}
+          </div>
+          <span>→</span>
+        </a>`;
       });
-      h+='</div>';
+      h += '</div>';
     }
-    if(d.horaires?.length) h+=sec('🕐 Horaires',lis(d.horaires));
-    if(d.personnes?.length) h+=sec('👤 Personnes',lis(d.personnes));
-    if(h) c.appendChild(card('📍 Déplacement',h,true));
+    if (d.horaires && d.horaires.length) h += makeSec('🕐 Horaires', makeItems(d.horaires));
+    if (d.personnes && d.personnes.length) h += makeSec('👤 Personnes', makeItems(d.personnes));
+    if (h) c.appendChild(makeCard('📍 Déplacement', h, true));
   }
 
-  if (modes.includes('FINANCE')&&data.finance?.montants?.length) {
-    const f=data.finance;
-    let rows=f.montants.map(m=>`<tr><td>${m.description}</td><td>${m.montant}</td></tr>`).join('');
-    if(f.total) rows+=`<tr><td><strong>Total</strong></td><td><strong>${f.total}</strong></td></tr>`;
-    c.appendChild(card('💰 Finance',`<div class="section"><table>${rows}</table></div>`,true));
+  // FINANCE
+  if (modes.includes('FINANCE') && data.finance && data.finance.montants && data.finance.montants.length) {
+    const f = data.finance;
+    let rows = f.montants.map(m => `<tr><td>${m.description}</td><td>${m.montant}</td></tr>`).join('');
+    if (f.total) rows += `<tr><td><strong>Total</strong></td><td><strong>${f.total}</strong></td></tr>`;
+    c.appendChild(makeCard('💰 Finance', `<div class="sec"><table>${rows}</table></div>`, true));
   }
 
-  if (modes.includes('APPEL')&&data.appel) {
-    const a=data.appel; let h='';
-    if(a.interlocuteur) h+=sec('👤 Interlocuteur',a.interlocuteur);
-    if(a.sujet) h+=sec('💬 Sujet',a.sujet);
-    if(a.suite?.length) h+=sec('⚡ Suite',lis(a.suite));
-    if(h) c.appendChild(card('📞 Appel',h,true));
+  // APPEL
+  if (modes.includes('APPEL') && data.appel) {
+    const a = data.appel;
+    let h = '';
+    if (a.interlocuteur)              h += makeSec('👤 Interlocuteur', a.interlocuteur);
+    if (a.sujet)                      h += makeSec('💬 Sujet',         a.sujet);
+    if (a.suite && a.suite.length)    h += makeSec('⚡ Suite',         makeItems(a.suite));
+    if (h) c.appendChild(makeCard('📞 Appel', h, true));
   }
 
-  if (modes.includes('MEDICAL')&&data.medical) {
-    const m=data.medical; let h='';
-    if(m.medicaments?.length) h+=sec('💊 Médicaments',lis(m.medicaments.map(med=>med.nom+(med.dosage?' — '+med.dosage:''))));
-    if(m.symptomes?.length) h+=sec('🤒 Symptômes',lis(m.symptomes));
-    if(m.rdv) h+=sec('📅 Rendez-vous',m.rdv);
-    if(h) c.appendChild(card('🏥 Médical',h,true));
+  // MEDICAL
+  if (modes.includes('MEDICAL') && data.medical) {
+    const m = data.medical;
+    let h = '';
+    if (m.medicaments && m.medicaments.length) h += makeSec('💊 Médicaments', makeItems(m.medicaments.map(med => med.nom + (med.dosage ? ' — ' + med.dosage : ''))));
+    if (m.symptomes   && m.symptomes.length)   h += makeSec('🤒 Symptômes',   makeItems(m.symptomes));
+    if (m.rdv)                                 h += makeSec('📅 Rendez-vous', m.rdv);
+    if (h) c.appendChild(makeCard('🏥 Médical', h, true));
   }
 
-  if (modes.includes('COURS')&&data.cours) {
-    const co=data.cours; let h='';
-    if(co.matiere) h+=sec('📚 Matière',co.matiere);
-    if(co.pointsCles?.length) h+=sec('🔑 Points clés',lis(co.pointsCles));
-    if(co.aRetenir?.length) h+=sec('⭐ À retenir',lis(co.aRetenir));
-    if(co.questions?.length) h+=sec('❓ Questions',lis(co.questions));
-    if(h) c.appendChild(card('🎓 Cours',h,true));
+  // COURS
+  if (modes.includes('COURS') && data.cours) {
+    const co = data.cours;
+    let h = '';
+    if (co.matiere)                          h += makeSec('📚 Matière',    co.matiere);
+    if (co.pointsCles && co.pointsCles.length) h += makeSec('🔑 Points clés', makeItems(co.pointsCles));
+    if (co.aRetenir   && co.aRetenir.length)   h += makeSec('⭐ À retenir',   makeItems(co.aRetenir));
+    if (co.questions  && co.questions.length)  h += makeSec('❓ Questions',   makeItems(co.questions));
+    if (h) c.appendChild(makeCard('🎓 Cours', h, true));
   }
 
-  if (modes.includes('MEMO')&&data.memo) {
-    const m=data.memo; let h='';
-    if(m.rappels?.length) h+=sec('🔔 Rappels',lis(m.rappels));
-    if(m.notes) h+=sec('📝 Note',m.notes);
-    if(h) c.appendChild(card('📝 Mémo',h,true));
+  // MEMO
+  if (modes.includes('MEMO') && data.memo) {
+    const m = data.memo;
+    let h = '';
+    if (m.rappels && m.rappels.length) h += makeSec('🔔 Rappels', makeItems(m.rappels));
+    if (m.notes)                       h += makeSec('📝 Note',    m.notes);
+    if (h) c.appendChild(makeCard('📝 Mémo', h, true));
   }
 
+  // Audio (caché)
+  if (audioData) {
+    audioEl = new Audio(audioData);
+    audioEl.onended = () => {
+      const btn = document.getElementById('playBtn');
+      if (btn) btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M8 5v14l11-7z"/></svg>';
+    };
+    const audioCard = makeCard('🎙 Réécouter',
+      `<button class="play-simple" id="playBtn" onclick="togglePlay()">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M8 5v14l11-7z"/></svg>
+      </button>`,
+      false
+    );
+    audioCard.querySelector('.card-bd').classList.add('hidden');
+    audioCard.querySelector('.chevron').classList.add('closed');
+    c.appendChild(audioCard);
+  }
 
-} else { window.location.href='/'; }
+  // Transcription (cachée)
+  if (data.transcript) {
+    const tCard = makeCard('📄 Transcription',
+      `<div class="transcript-text">${data.transcript}</div>`,
+      true
+    );
+    tCard.querySelector('.card-bd').classList.add('hidden');
+    tCard.querySelector('.chevron').classList.add('closed');
+    c.appendChild(tCard);
+  }
+}
 
-function togglePlaySimple() {
+// ── Helpers ──
+
+function makeCard(title, html, copyable) {
+  const d = document.createElement('div');
+  d.className = 'card';
+  d.innerHTML = `
+    <div class="card-hd" onclick="toggleCard(this)">
+      <span class="card-lbl">${title}</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        ${copyable ? `<button class="copy-btn" onclick="copyCard(this);event.stopPropagation()">Copier</button>` : ''}
+        <span class="chevron">▾</span>
+      </div>
+    </div>
+    <div class="card-bd">${html}</div>`;
+  return d;
+}
+
+function makeSec(title, content) {
+  return `<div class="sec"><div class="sec-title">${title}</div><p>${content}</p></div>`;
+}
+
+function makeItems(arr) {
+  return `<ul class="items">${arr.map(i => `<li>${i}</li>`).join('')}</ul>`;
+}
+
+function toggleCard(hd) {
+  const bd = hd.nextElementSibling;
+  const ch = hd.querySelector('.chevron');
+  bd.classList.toggle('hidden');
+  ch.classList.toggle('closed');
+}
+
+function toggleCheck(li) {
+  li.classList.toggle('done');
+  li.querySelector('.cb').textContent = li.classList.contains('done') ? '✓' : '';
+}
+
+function togglePlay() {
   if (!audioEl) return;
-  const btn = document.getElementById('playSimpleBtn');
+  const btn = document.getElementById('playBtn');
   if (audioEl.paused) {
     audioEl.play();
     btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
@@ -163,27 +300,12 @@ function togglePlaySimple() {
   }
 }
 
-function card(title, html, copyable=false) {
-  const id='c'+Math.random().toString(36).substr(2,5);
-  const d=document.createElement('div');
-  d.className='card'; d.id=id;
-  d.innerHTML=`<div class="card-title" onclick="document.getElementById('${id}').querySelector('.card-body').style.display=document.getElementById('${id}').querySelector('.card-body').style.display==='none'?'block':''">
-    ${title}
-    ${copyable?`<button class="copy" onclick="navigator.clipboard.writeText(document.getElementById('${id}').querySelector('.card-body').innerText);event.stopPropagation()">Copier</button>`:''}
-  </div><div class="card-body">${html}</div>`;
-  return d;
-}
-
-function sec(title, content) {
-  return `<div class="section"><div class="section-title">${title}</div><p>${content}</p></div>`;
-}
-
-function lis(arr) {
-  return `<ul>${arr.map(i=>`<li>${i}</li>`).join('')}</ul>`;
-}
-
-function ft(s) {
-  return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+function copyCard(btn) {
+  const bd = btn.closest('.card').querySelector('.card-bd');
+  navigator.clipboard.writeText(bd.innerText || bd.textContent).then(() => {
+    btn.textContent = '✓ Copié';
+    setTimeout(() => btn.textContent = 'Copier', 2000);
+  });
 }
 </script>
 </body>
