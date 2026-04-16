@@ -145,7 +145,71 @@ Réponds UNIQUEMENT avec un JSON valide, sans markdown, sans backticks.
 Règles :
 - Ne mets que les sections correspondant aux modes détectés
 - Tout en français
-- Réponds UNIQUEMENT avec le JSON`;
+- Réponds UNIQUEMENT avec le JSON
+
+Détecte aussi les ACTIONS IA dans la transcription et ajoute-les dans "actions_ia" :
+Types possibles : EMAIL, WHATSAPP, CALENDRIER, MAPS, RAPPEL, RECHERCHE, COMMANDE
+
+"actions_ia": [
+  {
+    "type": "EMAIL",
+    "icone": "📧",
+    "titre": "Mail à Xavier",
+    "description": "Commander 5 tapis rouges",
+    "destinataire": "Xavier",
+    "sujet": "Commander 5 tapis rouges",
+    "corps": "Bonjour Xavier,\n\nSuite à notre réunion, pourrais-tu commander 5 tapis rouges ?\n\nMerci,\n[Votre nom]"
+  },
+  {
+    "type": "WHATSAPP",
+    "icone": "💬",
+    "titre": "WhatsApp à Paul",
+    "description": "On est en retard de 10 minutes",
+    "destinataire": "Paul",
+    "message": "Bonjour Paul, on est en retard d'environ 10 minutes."
+  },
+  {
+    "type": "CALENDRIER",
+    "icone": "📅",
+    "titre": "Réunion vendredi",
+    "description": "Réunion équipe à 14h",
+    "evenement": "Réunion équipe",
+    "date": "vendredi",
+    "heure": "14:00",
+    "duree": "1h"
+  },
+  {
+    "type": "MAPS",
+    "icone": "🗺️",
+    "titre": "Aller chez le fournisseur",
+    "description": "Rue de la Paix, Paris",
+    "adresse": "Rue de la Paix, Paris"
+  },
+  {
+    "type": "RAPPEL",
+    "icone": "🔔",
+    "titre": "Vérifier la facture EDF",
+    "description": "Ne pas oublier avant vendredi",
+    "texte": "Vérifier la facture EDF avant vendredi"
+  },
+  {
+    "type": "RECHERCHE",
+    "icone": "🔍",
+    "titre": "Prix carreaux 60x60",
+    "description": "Trouver le meilleur prix",
+    "query": "prix carreaux 60x60 pas cher"
+  },
+  {
+    "type": "COMMANDE",
+    "icone": "🛒",
+    "titre": "Commander 5 tapis rouges",
+    "description": "Trouver sur Amazon ou Google Shopping",
+    "query": "5 tapis rouges 60x60"
+  }
+]
+
+Si aucune action détectée, mets "actions_ia": []
+Ne mets que les actions réellement mentionnées dans la transcription.`;
 
     let analysisResult;
     try {
