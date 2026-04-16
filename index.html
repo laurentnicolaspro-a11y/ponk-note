@@ -417,19 +417,28 @@
     formData.append('title', title);
     formData.append('duration', duration);
     formData.append('datetime', datetime);
+    formData.append('profile', localStorage.getItem('ponk_profile') || 'user');
 
     try {
+      // Étape 1 : Upload sur Google Drive
+      const uploadData = new FormData();
+      uploadData.append('audio', blob, 'rec.webm');
+      uploadData.append('title', title || 'enregistrement');
+      uploadData.append('profile', localStorage.getItem('ponk_profile') || 'user');
+
+      const uploadRes = await fetch('/api/upload', {method:'POST', body:uploadData});
+      if (uploadRes.ok) {
+        const uploadResult = await uploadRes.json();
+        localStorage.setItem('ponk_drive_file', JSON.stringify(uploadResult));
+      }
+
+      // Étape 2 : Analyse
       const res = await fetch('/api/analyze', {method:'POST', body:formData});
       if(!res.ok) throw new Error('Erreur '+res.status);
       const data = await res.json();
       localStorage.setItem('ponk_result', JSON.stringify(data));
       localStorage.setItem('ponk_meta', JSON.stringify({title, duration, datetime}));
-      const reader = new FileReader();
-      reader.onload = () => {
-        localStorage.setItem('ponk_audio', reader.result);
-        window.location.href = '/results.html';
-      };
-      reader.readAsDataURL(blob);
+      window.location.href = '/results.html';
     } catch(e) {
       hideOverlay();
       setStatus('error', e.message);
