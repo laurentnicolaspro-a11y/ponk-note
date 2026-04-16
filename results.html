@@ -31,6 +31,10 @@
     .meta { font-size: 12px; color: #aaa; font-family: 'DM Mono', monospace; margin-bottom: 10px; }
     .copy { background: none; border: 1px solid #e8e8e8; color: #aaa; padding: 3px 10px; border-radius: 5px; font-size: 11px; cursor: pointer; }
 
+    .audio-simple { padding: 12px 0; display: flex; align-items: center; gap: 12px; }
+    .play-simple { width: 40px; height: 40px; border-radius: 50%; background: #1c1c1c; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+    .play-simple svg { fill: white; }
+    .play-label { font-size: 13px; color: #aaa; }
   </style>
 </head>
 <body>
@@ -40,6 +44,7 @@
   <div id="content"></div>
 
 <script>
+let audioEl = null;
 const LABELS = {REUNION:'🏢 Réunion',COURSES:'🛒 Courses',CHANTIER:'🔨 Chantier',IDEES:'💡 Idées',DEPLACEMENT:'📍 Déplacement',FINANCE:'💰 Finance',APPEL:'📞 Appel',MEDICAL:'🏥 Médical',COURS:'🎓 Cours',MEMO:'📝 Mémo'};
 
 const raw = localStorage.getItem('ponk_result');
@@ -149,6 +154,18 @@ else {
 
 
   else { audioEl.pause(); document.getElementById('pi').innerHTML='<path d="M8 5v14l11-7z"/>'; }
+}
+
+function togglePlaySimple() {
+  if (!audioEl) return;
+  const btn = document.getElementById('playSimpleBtn');
+  if (audioEl.paused) {
+    audioEl.play();
+    btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+  } else {
+    audioEl.pause();
+    btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M8 5v14l11-7z"/></svg>';
+  }
 }
 
 function card(title, html, copyable=false) {
