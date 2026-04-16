@@ -96,6 +96,12 @@
 
     .loading { text-align:center; padding:40px; color:var(--muted); font-size:14px; }
 
+    @keyframes cardIn {
+      from { opacity:0; transform:translateY(16px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .card { animation: cardIn 0.35s ease both; }
+
     .spinner-sm { width:16px; height:16px; flex-shrink:0; }
     .spinner-sm svg { animation:spin 1s linear infinite; }
     @keyframes spin { to{transform:rotate(360deg)} }
@@ -194,15 +200,41 @@ function renderList(files) {
     return;
   }
   container.innerHTML = '';
-  files.forEach(file => container.appendChild(makeCard(file)));
+  files.forEach((file, i) => container.appendChild(makeCard(file, i)));
 }
 
-function makeCard(file) {
+function makeCard(file, index) {
   const card = document.createElement('div');
   card.className = 'card';
+  card.style.animationDelay = `${index * 80}ms`;
+
+  // Parse filename: profile-YYYY-MM-DDTHH-MM-SS-title.webm
   const nameParts = file.name.replace('.webm','').split('-');
-  const title = nameParts.slice(3).join(' ') || 'Enregistrement';
+  // Extract time from filename parts (format: Nicolas-2026-04-16T14-33-10-enregistrement)
+  let timeStr = '';
+  let titleStr = 'Enregistrement';
+  try {
+    // Find the T part that contains time
+    const joined = nameParts.join('-');
+    const timeMatch = joined.match(/T(\d{2})-(\d{2})-(\d{2})/);
+    if (timeMatch) {
+      timeStr = timeMatch[1] + 'h' + timeMatch[2];
+    }
+    // Title is everything after the timestamp
+    const afterT = joined.split(/T\d{2}-\d{2}-\d{2}-?/)[1];
+    if (afterT && afterT.trim()) titleStr = afterT.replace(/-/g,' ').trim();
+  } catch(e) {}
+
+  const displayTitle = titleStr !== 'enregistrement' && titleStr
+    ? titleStr.charAt(0).toUpperCase() + titleStr.slice(1)
+    : timeStr ? 'Enregistrement · ' + timeStr : 'Enregistrement';
+
   const dateDisplay = formatDate(file.created_at);
+
+  // Duration from metadata
+  const meta = (() => { try { return JSON.parse(localStorage.getItem(`ponk_analyzed_${file.name}`) || '{}'); } catch(e){ return {}; } })();
+  const duration = file.metadata?.size ? formatSize(file.metadata.size) : '';
+
   const analyzed = localStorage.getItem(`ponk_analyzed_${file.name}`);
   const bars = Array.from({length:40}, (_,i) => {
     // Natural voice wave shape - bell curve with randomness
@@ -216,8 +248,8 @@ function makeCard(file) {
 
   card.innerHTML = `
     <div class="card-main">
-      <div class="card-title">${title}</div>
-      <div class="card-meta">${dateDisplay}</div>
+      <div class="card-title">${displayTitle}</div>
+      <div class="card-meta">${dateDisplay}${duration ? ' · ' + duration : ''}</div>
       <div class="player" onclick="toggleActions(this.closest('.card'))">
         <button class="play-btn-sm" id="play_${file.name}" onclick="toggleAudio('${file.name}',event)">
           <svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg>
@@ -291,6 +323,13 @@ async function handleDelete(fileName, btn) {
     localStorage.removeItem(`ponk_analyzed_${fileName}`);
     loadRecordings();
   } catch(e) { btn.disabled=false; alert('Erreur : '+e.message); }
+}
+
+function formatSize(bytes) {
+  if (!bytes) return '';
+  const kb = bytes / 1024;
+  if (kb < 1024) return Math.round(kb) + ' Ko';
+  return (kb / 1024).toFixed(1) + ' Mo';
 }
 
 function formatDate(str) {
