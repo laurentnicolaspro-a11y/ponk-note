@@ -88,6 +88,22 @@
     .profile-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(74,127,212,0.15); }
     .profile-input::placeholder { color:var(--muted); }
 
+    .profile-prefs { display:flex; flex-direction:column; gap:10px; width:100%; }
+    .pref-row { display:flex; align-items:center; gap:10px; }
+    .pref-label { font-size:13px; color:var(--muted); width:60px; flex-shrink:0; }
+    .pref-options { display:flex; gap:6px; flex-wrap:wrap; flex:1; }
+    .pref-btn {
+      padding:6px 12px; border-radius:100px;
+      background:var(--glass); border:1.5px solid var(--glass-border);
+      font-size:12px; font-weight:500; color:var(--muted);
+      cursor:pointer; -webkit-tap-highlight-color:transparent;
+      transition:all 0.15s;
+    }
+    .pref-btn.active {
+      background:var(--accent); border-color:var(--accent);
+      color:#fff;
+    }
+
     .profile-submit {
       width:100%; padding:15px; border-radius:14px; border:none;
       background:var(--accent); color:#fff;
@@ -451,6 +467,35 @@
   <div class="profile-input-wrap">
     <input type="text" id="profileName" class="profile-input" placeholder="Ton prénom" maxlength="20" autocomplete="off" autocapitalize="words" />
     <input type="email" id="profileEmail" class="profile-input" placeholder="Ton adresse email" autocomplete="email" />
+
+    <div class="profile-prefs">
+      <div class="pref-row">
+        <span class="pref-label">📬 Mail</span>
+        <div class="pref-options" id="prefMail">
+          <div class="pref-btn active" data-value="gmail">Gmail</div>
+          <div class="pref-btn" data-value="outlook">Outlook</div>
+          <div class="pref-btn" data-value="yahoo">Yahoo</div>
+          <div class="pref-btn" data-value="default">Autre</div>
+        </div>
+      </div>
+      <div class="pref-row">
+        <span class="pref-label">📅 Agenda</span>
+        <div class="pref-options" id="prefCal">
+          <div class="pref-btn active" data-value="google">Google</div>
+          <div class="pref-btn" data-value="outlook">Outlook</div>
+          <div class="pref-btn" data-value="apple">Apple</div>
+        </div>
+      </div>
+      <div class="pref-row">
+        <span class="pref-label">🗺️ Maps</span>
+        <div class="pref-options" id="prefMaps">
+          <div class="pref-btn active" data-value="google">Google Maps</div>
+          <div class="pref-btn" data-value="waze">Waze</div>
+          <div class="pref-btn" data-value="apple">Apple Maps</div>
+        </div>
+      </div>
+    </div>
+
     <button class="profile-submit" onclick="submitProfile()">Commencer</button>
   </div>
 </div>
@@ -964,6 +1009,16 @@
     }
   }
 
+  // Pref buttons selection
+  document.querySelectorAll('.pref-options').forEach(group => {
+    group.querySelectorAll('.pref-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        group.querySelectorAll('.pref-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  });
+
   function submitProfile() {
     const name  = document.getElementById('profileName').value.trim();
     const email = document.getElementById('profileEmail').value.trim();
@@ -971,6 +1026,13 @@
     if (!email) { document.getElementById('profileEmail').focus(); return; }
     localStorage.setItem('ponk_profile', name);
     localStorage.setItem('ponk_email', email);
+    // Save prefs
+    const mail  = document.querySelector('#prefMail .pref-btn.active')?.dataset.value || 'gmail';
+    const cal   = document.querySelector('#prefCal .pref-btn.active')?.dataset.value || 'google';
+    const maps  = document.querySelector('#prefMaps .pref-btn.active')?.dataset.value || 'google';
+    localStorage.setItem('ponk_pref_mail', mail);
+    localStorage.setItem('ponk_pref_cal', cal);
+    localStorage.setItem('ponk_pref_maps', maps);
     showApp(name);
   }
 
