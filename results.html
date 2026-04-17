@@ -483,20 +483,40 @@ async function runDeepAnalysis(id, query, el) {
 }
 
 function getActionUrl(a) {
+  const prefMail  = localStorage.getItem('ponk_pref_mail')  || 'gmail';
+  const prefCal   = localStorage.getItem('ponk_pref_cal')   || 'google';
+  const prefMaps  = localStorage.getItem('ponk_pref_maps')  || 'google';
+
   switch(a.type) {
-    case 'EMAIL':
-      const corps = encodeURIComponent(a.corps || '');
-      const sujet = encodeURIComponent(a.sujet || '');
+    case 'EMAIL': {
+      const sujet = encodeURIComponent(a.sujet || a.titre || '');
+      const corps = encodeURIComponent(a.corps || a.description || '');
+      if (prefMail === 'gmail')   return `https://mail.google.com/mail/?view=cm&fs=1&su=${sujet}&body=${corps}`;
+      if (prefMail === 'outlook') return `https://outlook.live.com/mail/0/deeplink/compose?subject=${sujet}&body=${corps}`;
+      if (prefMail === 'yahoo')   return `https://compose.mail.yahoo.com/?subject=${sujet}&body=${corps}`;
       return `mailto:?subject=${sujet}&body=${corps}`;
+    }
     case 'WHATSAPP':
       return `https://wa.me/?text=${encodeURIComponent(a.message || a.description)}`;
-    case 'CALENDRIER':
+    case 'APPEL':
+      return `tel:`;
+    case 'CALENDRIER': {
       const titre = encodeURIComponent(a.evenement || a.titre);
-      return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&details=${encodeURIComponent(a.description||'')}`;
-    case 'MAPS':
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.adresse || a.description)}`;
+      const desc  = encodeURIComponent(a.description || '');
+      if (prefCal === 'google')  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&details=${desc}`;
+      if (prefCal === 'outlook') return `https://outlook.live.com/calendar/0/deeplink/compose?subject=${titre}&body=${desc}`;
+      if (prefCal === 'apple')   return `webcal://`;
+      return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&details=${desc}`;
+    }
+    case 'MAPS': {
+      const addr = encodeURIComponent(a.adresse || a.description);
+      if (prefMaps === 'google') return `https://www.google.com/maps/search/?api=1&query=${addr}`;
+      if (prefMaps === 'waze')   return `https://waze.com/ul?q=${addr}`;
+      if (prefMaps === 'apple')  return `https://maps.apple.com/?q=${addr}`;
+      return `https://www.google.com/maps/search/?api=1&query=${addr}`;
+    }
     case 'RAPPEL':
-      return `javascript:navigator.clipboard.writeText(${JSON.stringify(a.texte || a.description)}).then(()=>alert('Copié dans le presse-papier !'))`;
+      return `javascript:navigator.clipboard.writeText(${JSON.stringify(a.texte || a.description)}).then(()=>alert('Copié !'))`;
     case 'RECHERCHE':
       return `https://www.google.com/search?q=${encodeURIComponent(a.query || a.description)}`;
     case 'COMMANDE':
