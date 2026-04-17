@@ -90,7 +90,7 @@ Réponds UNIQUEMENT avec un JSON valide, sans markdown, sans backticks.
 
 {
   "modes": ["MODE1", "MODE2"],
-  "summary": "Synthèse structurée avec des points clés : **Ce qui a été dit :** ... **Décisions :** ... **Points importants :** ...",
+  "summary": "Ce qui a été dit : ... Décisions prises : ... Points importants : ...",
   "reunion": {
     "participants": ["Nom 1"],
     "decisions": ["Décision 1"],
