@@ -1141,17 +1141,21 @@
   }
 
   function getActionUrlFromBubble(bubble) {
-    const text = document.getElementById('bubbleModalText').value.trim() || bubble.text;
-    const encoded = encodeURIComponent(text);
+    const text = bubble.text || '';
+    const g = bubble.generated || {};
     const prefMail = localStorage.getItem('ponk_pref_mail') || 'gmail';
     const prefMaps = localStorage.getItem('ponk_pref_maps') || 'google';
     const prefCal  = localStorage.getItem('ponk_pref_cal')  || 'google';
     switch(bubble.type) {
-      case 'EMAIL':
-        if (prefMail === 'gmail')   return `https://mail.google.com/mail/?view=cm&fs=1&su=${encoded}&body=${encoded}`;
-        if (prefMail === 'outlook') return `https://outlook.live.com/mail/0/deeplink/compose?subject=${encoded}&body=${encoded}`;
-        if (prefMail === 'yahoo')   return `https://compose.mail.yahoo.com/?subject=${encoded}&body=${encoded}`;
-        return `mailto:?subject=${encoded}&body=${encoded}`;
+      case 'EMAIL': {
+        const sujet = encodeURIComponent(g.sujet || text);
+        const corps = encodeURIComponent(g.corps || text);
+        const to    = encodeURIComponent(g.destinataire || '');
+        if (prefMail === 'gmail')   return `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${sujet}&body=${corps}`;
+        if (prefMail === 'outlook') return `https://outlook.live.com/mail/0/deeplink/compose?to=${to}&subject=${sujet}&body=${corps}`;
+        if (prefMail === 'yahoo')   return `https://compose.mail.yahoo.com/?to=${to}&subject=${sujet}&body=${corps}`;
+        return `mailto:${g.destinataire||''}?subject=${sujet}&body=${corps}`;
+      }
       case 'WHATSAPP':
         return `https://wa.me/?text=${encoded}`;
       case 'APPEL':
@@ -1177,15 +1181,31 @@
     }
   }
 
-  function doNow() {
+  async function doNow() {
     if (currentBubbleIndex === null) return;
     const bubble = actionBubbles[currentBubbleIndex];
-    // Save edited text
     const edited = document.getElementById('bubbleModalText').value.trim();
     if (edited) bubble.text = edited;
+
+    // For types that benefit from AI generation
+    const aiTypes = ['EMAIL','WHATSAPP','CALENDRIER','RAPPEL'];
+    if (aiTypes.includes(bubble.type) && bubble.text) {
+      // Show loading state
+      const confirmBtn = document.querySelector('.btn-now');
+      if (confirmBtn) { confirmBtn.textContent = '⏳'; confirmBtn.disabled = true; }
+      try {
+        const res = await fetch('/api/generateaction', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({type: bubble.type, text: bubble.text, profile: localStorage.getItem('ponk_profile')})
+        });
+        const data = await res.json();
+        bubble.generated = data;
+      } catch(e) {}
+      if (confirmBtn) { confirmBtn.textContent = '→ Faire'; confirmBtn.disabled = false; }
+    }
+
     const url = getActionUrlFromBubble(bubble);
     if (url) window.open(url, '_blank');
-    // Also confirm to keep in results
     bubble.confirmed = true;
     removeBubbleEl(currentBubbleIndex);
     document.getElementById('bubbleModal').classList.add('hidden');
