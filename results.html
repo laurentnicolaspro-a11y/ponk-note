@@ -285,81 +285,39 @@ function render(data, meta) {
 
   if (data.summary) c.appendChild(makeCard('📝 Synthèse', `<div class="sec"><p>${data.summary}</p></div>`));
 
-  // Actions IA
-  if (data.actions_ia && data.actions_ia.length > 0) {
-    const actionsHTML = `<div class="actions-ia-wrap">${data.actions_ia.map(a => buildActionCard(a)).join('')}</div>`;
+  // Actions IA - combine Gemini detected + bubble actions
+  const geminiActions = data.actions_ia || [];
+  const bubbleActions = (() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('ponk_action_bubbles') || '[]');
+      return saved.map(b => ({
+        type: b.type, icone: b.icon,
+        titre: b.label,
+        description: b.text,
+        _fromBubble: true
+      }));
+    } catch(e) { return []; }
+  })();
+
+  const allActions = [...geminiActions, ...bubbleActions];
+  if (allActions.length > 0) {
+    const actionsHTML = `<div class="actions-ia-wrap">${allActions.map(a => buildActionCard(a)).join('')}</div>`;
     c.appendChild(makeCard('✨ Actions IA', actionsHTML));
   }
+  localStorage.removeItem('ponk_action_bubbles');
 
-  if (modes.includes('REUNION') && data.reunion) {
-    const r=data.reunion; let h='';
-    if (r.participants?.length) h+=sec('👥 Participants',r.participants.join(', '));
-    if (r.decisions?.length)    h+=sec('✅ Décisions',items(r.decisions));
-    if (r.actions?.length)      h+=sec('⚡ Actions',items(r.actions));
-    if (r.prochaine)            h+=sec('📅 Prochaine',r.prochaine);
-    if (h) c.appendChild(makeCard('🏢 Réunion',h,true));
-  }
+
   if (modes.includes('COURSES') && data.courses?.items?.length) {
     const list=data.courses.items.map(it=>`<li onclick="toggleCheck(this)"><div class="cb"></div><span>${it.quantite?it.quantite+' ':''}${it.nom}</span></li>`).join('');
     c.appendChild(makeCard('🛒 Courses',`<ul class="checks">${list}</ul>`,true));
   }
-  if (modes.includes('CHANTIER') && data.chantier) {
-    const ch=data.chantier; let h='';
-    if (ch.lieu) h+=sec('📍 Lieu',ch.lieu);
-    if (ch.materiaux?.length) h+=sec('🧱 Matériaux',items(ch.materiaux.map(m=>m.nom+(m.quantite?' — '+m.quantite:''))));
-    if (ch.artisans?.length) h+=sec('👷 Artisans',items(ch.artisans));
-    if (ch.budget) h+=sec('💰 Budget',ch.budget);
-    if (ch.planning?.length) h+=sec('📋 Planning',items(ch.planning));
-    if (h) c.appendChild(makeCard('🔨 Chantier',h,true));
-  }
-  if (modes.includes('IDEES') && data.idees) {
-    const id=data.idees; let h='';
-    if (id.liste?.length) h+=sec('💡 Idées',items(id.liste));
-    if (id.aApprofondir?.length) h+=sec('🔍 À approfondir',items(id.aApprofondir));
-    if (h) c.appendChild(makeCard('💡 Idées',h,true));
-  }
-  if (modes.includes('DEPLACEMENT') && data.deplacement) {
-    const d=data.deplacement; let h='';
-    if (d.lieux?.length) {
-      h+='<div class="sec"><div class="sec-title">📍 Lieux</div>';
-      d.lieux.forEach(l=>{
-        const q=encodeURIComponent(l.adresse||l.nom);
-        h+=`<a class="loc" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank"><span>📍</span><div class="loc-info"><div class="loc-name">${l.nom}</div>${l.adresse?`<div class="loc-addr">${l.adresse}</div>`:''}</div><span>→</span></a>`;
-      });
-      h+='</div>';
-    }
-    if (d.horaires?.length) h+=sec('🕐 Horaires',items(d.horaires));
-    if (d.personnes?.length) h+=sec('👤 Personnes',items(d.personnes));
-    if (h) c.appendChild(makeCard('📍 Déplacement',h,true));
-  }
-  if (modes.includes('FINANCE') && data.finance?.montants?.length) {
-    const f=data.finance;
-    let rows=f.montants.map(m=>`<tr><td>${m.description}</td><td>${m.montant}</td></tr>`).join('');
-    if (f.total) rows+=`<tr><td><strong>Total</strong></td><td><strong>${f.total}</strong></td></tr>`;
-    c.appendChild(makeCard('💰 Finance',`<div class="sec"><table>${rows}</table></div>`,true));
-  }
-  if (modes.includes('APPEL') && data.appel) {
-    const a=data.appel; let h='';
-    if (a.interlocuteur) h+=sec('👤 Interlocuteur',a.interlocuteur);
-    if (a.sujet) h+=sec('💬 Sujet',a.sujet);
-    if (a.suite?.length) h+=sec('⚡ Suite',items(a.suite));
-    if (h) c.appendChild(makeCard('📞 Appel',h,true));
-  }
-  if (modes.includes('MEDICAL') && data.medical) {
-    const m=data.medical; let h='';
-    if (m.medicaments?.length) h+=sec('💊 Médicaments',items(m.medicaments.map(med=>med.nom+(med.dosage?' — '+med.dosage:''))));
-    if (m.symptomes?.length) h+=sec('🤒 Symptômes',items(m.symptomes));
-    if (m.rdv) h+=sec('📅 RDV',m.rdv);
-    if (h) c.appendChild(makeCard('🏥 Médical',h,true));
-  }
-  if (modes.includes('COURS') && data.cours) {
-    const co=data.cours; let h='';
-    if (co.matiere) h+=sec('📚 Matière',co.matiere);
-    if (co.pointsCles?.length) h+=sec('🔑 Points clés',items(co.pointsCles));
-    if (co.aRetenir?.length) h+=sec('⭐ À retenir',items(co.aRetenir));
-    if (co.questions?.length) h+=sec('❓ Questions',items(co.questions));
-    if (h) c.appendChild(makeCard('🎓 Cours',h,true));
-  }
+
+
+
+
+
+
+
 
   if (audioData) {
     audioEl = new Audio(audioData);
