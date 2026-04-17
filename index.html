@@ -742,6 +742,7 @@
   // ── Traduction chunks ──
   let translateActive = false;
   let translateInterval = null;
+  let translateSkip = 0;
   let translateChunks = [];
   let translateRecorder = null;
 
@@ -767,6 +768,7 @@
       if (!recording || !translateActive) { stopTranslateChunks(); return; }
 
       // Take last ~8 seconds (chunks are 500ms each, so 16 chunks = 8s)
+      if (translateSkip > 0) { translateSkip--; return; }
       const recentChunks = chunks.slice(-16);
       if (recentChunks.length < 4) return;
 
@@ -787,10 +789,10 @@
           if (!res.ok) { console.log('[translate] error', res.status); return; }
           const data = await res.json();
           console.log('[translate] data:', JSON.stringify(data));
-          if (data.translation && data.langue) {
-            showAssistantResponse('🌍 ' + data.langue, data.translation);
-          } else if (data.translation) {
-            showAssistantResponse('🌍 Traduction', data.translation);
+          if (data.translation) {
+            showAssistantResponse('🌍 ' + (data.langue || 'Traduction'), data.translation);
+            // After a successful translation, skip next 2 chunks to avoid overlap
+            translateSkip = 2;
           }
         } catch(e) {}
       };
