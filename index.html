@@ -765,6 +765,7 @@
       speechRecognition.lang = 'fr-FR';
       speechRecognition.onresult = e => {
         const t = e.results[0][0].transcript.trim();
+        detectActionKeywords(t);
         if (isQuestion(t)) askGemini(t);
       };
       speechRecognition.onerror = e => { if (e.error !== 'aborted' && assistantActive && recording) setTimeout(createAndStart, 500); };
