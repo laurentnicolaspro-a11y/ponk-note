@@ -708,17 +708,15 @@
 
   function isQuestion(text) {
     const lower = text.toLowerCase();
-    // Détecte tout ce qui ressemble à une question
     const triggers = [
-      '?', "c'est quoi", "c'est quoi", "qu'est-ce", "qu'est ce",
-      'combien', 'comment', 'pourquoi', 'quand', 'où', 'quel', 'quelle',
-      'qui est', 'que veut dire', 'que signifie', 'définition',
-      'explique', 'expliques', 'dis-moi', 'dis moi',
-      'kesako', 'kézako', 'c'est quoi', 'cest quoi',
+      '?', 'cest quoi', 'quest ce', 'quest-ce',
+      'combien', 'comment', 'pourquoi', 'quand', 'quel', 'quelle',
+      'qui est', 'que veut dire', 'que signifie', 'definition',
+      'explique', 'dis moi', 'dis-moi',
       'what', 'where', 'when', 'why', 'how', 'who', 'which',
-      'that means', 'what is', 'what are',
-      'donne moi', 'donne-moi', 'calcule', 'convertis',
-      'traduis', 'traduction', 'en français', 'en anglais'
+      'what is', 'what are',
+      'donne moi', 'calcule', 'convertis',
+      'traduis', 'traduction'
     ];
     return triggers.some(t => lower.includes(t));
   }
