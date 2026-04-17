@@ -42,6 +42,7 @@ module.exports = async function handler(req, res) {
     const title    = fields['title']    || '';
     const duration = fields['duration'] || '';
     const datetime = fields['datetime'] || '';
+    const bubbles  = JSON.parse(fields['bubbles'] || '[]');
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     let model;
@@ -77,6 +78,10 @@ Réponds UNIQUEMENT avec le texte transcrit, sans commentaire, sans introduction
 IMPORTANT : Réponds OBLIGATOIREMENT en FRANÇAIS.
 
 Contexte : ${title ? 'Titre : ' + title + '.' : ''} ${duration ? 'Durée : ' + duration + '.' : ''} ${datetime ? 'Date : ' + datetime + '.' : ''}
+${bubbles.length > 0 ? `
+Actions identifiées par l'utilisateur pendant l'enregistrement (utilise ces informations pour enrichir les actions_ia correspondantes avec un contenu précis) :
+${bubbles.map(b => `- ${b.type} : "${b.text}"`).join('\n')}
+` : ''}
 
 Voici la transcription :
 """
