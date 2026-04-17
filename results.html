@@ -319,8 +319,9 @@ function render(data, meta) {
     try {
       const saved = JSON.parse(localStorage.getItem('ponk_action_bubbles') || '[]');
       return saved.map(b => ({
-        type: b.type, icone: b.icon,
-        titre: b.label,
+        type: b.type,
+        icone: b.icon || '💬',
+        titre: b.label || b.type,
         description: b.text,
         _fromBubble: true
       }));
@@ -400,10 +401,13 @@ function render(data, meta) {
 }
 
 function buildActionCard(a) {
-  if (a.type === 'ANALYSE') {
+  const isAnalyse = a.type === 'ANALYSE' || 
+    (a.description && /analys|étude|compar|bilan|rapport/i.test(a.description)) ||
+    (a.titre && /analys|étude|compar|bilan|rapport/i.test(a.titre));
+  if (isAnalyse) {
     const id = 'analyse_' + (analyseCardCounter++);
     return `<div class="action-ia-card" style="flex-direction:column;align-items:stretch;cursor:default;">
-      <div style="display:flex;align-items:center;gap:14px;" onclick="runDeepAnalysis('${id}', ${JSON.stringify(a.description || a.titre).replace(/'/g,'&#39;')})">
+      <div style="display:flex;align-items:center;gap:14px;" onclick="runDeepAnalysis('${id}', this.getAttribute('data-query'))" data-query="${(a.description || a.titre).replace(/"/g,'&quot;')}">
         <div class="action-ia-icon">${a.icone}</div>
         <div class="action-ia-info">
           <div class="action-ia-titre">${a.titre}</div>
@@ -433,7 +437,8 @@ function buildActionCard(a) {
   </a>`;
 }
 
-async function runDeepAnalysis(id, query) {
+async function runDeepAnalysis(id, query, el) {
+  if (!query && el) query = el.getAttribute('data-query');
   const loading = document.getElementById('loading_' + id);
   const result  = document.getElementById('result_' + id);
   const arrow   = document.getElementById('arrow_' + id);
