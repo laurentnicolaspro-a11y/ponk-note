@@ -687,7 +687,11 @@
       speechRecognition.lang = 'fr-FR';
       speechRecognition.onresult = e => {
         const t = e.results[0][0].transcript.trim();
-        if (isQuestion(t)) askGemini(t);
+        if (isForeignLanguage(t)) {
+          translateText(t);
+        } else if (isQuestion(t)) {
+          askGemini(t);
+        }
       };
       speechRecognition.onerror = e => { if (e.error !== 'aborted' && assistantActive && recording) setTimeout(createAndStart, 500); };
       speechRecognition.onend = () => { if (assistantActive && recording) setTimeout(createAndStart, 300); };
@@ -703,8 +707,38 @@
 
   function isQuestion(text) {
     const lower = text.toLowerCase();
-    const triggers = ['?',"c'est quoi","qu'est-ce",'combien','comment','pourquoi','quand','où','quel','quelle','qui est','what is','how much','how many'];
+    const triggers = ['?',"c'est quoi","qu'est-ce",'combien','comment','pourquoi','quand','où','quel','quelle','qui est','what is','how much','how many','what','where','when','why','how','quanto','cuanto','wie viel','was ist','che cosa'];
     return triggers.some(t => lower.includes(t));
+  }
+
+  function isForeignLanguage(text) {
+    // Detect non-French words - common English/Spanish/German/Italian patterns
+    const foreignPatterns = [
+      /(the|this|that|is|are|was|were|have|has|will|would|can|could|should|must|may|might)/i,
+      /(yo|tu|el|ella|nosotros|vosotros|ellos|que|como|cuando|donde|porque)/i,
+      /(ich|du|er|sie|wir|ihr|sie|und|oder|aber|wenn|weil|dass)/i,
+      /(io|tu|lui|lei|noi|voi|loro|che|come|quando|dove|perché)/i,
+    ];
+    const frenchWords = ['le','la','les','de','du','des','un','une','je','tu','il','nous','vous','ils','que','qui','est','sont','avec','pour','dans','sur','pas','plus','très','aussi','mais','donc','car','ni','or'];
+    const words = text.toLowerCase().split(/\s+/);
+    const frenchCount = words.filter(w => frenchWords.includes(w)).length;
+    const isForeign = foreignPatterns.some(p => p.test(text));
+    return isForeign && frenchCount < 2;
+  }
+
+  async function translateText(text) {
+    try {
+      const res = await fetch('/api/translate', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({text})
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.translation) {
+        const label = data.langue ? `🌍 ${data.langue}` : '🌍 Traduction';
+        showAssistantResponse(label, data.translation);
+      }
+    } catch(e) {}
   }
 
   async function askGemini(question) {
