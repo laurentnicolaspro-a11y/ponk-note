@@ -330,18 +330,26 @@ function render(data, meta) {
 
   const combined = [...geminiActions, ...bubbleActions];
 
-  // Remove RECHERCHE if an ANALYSE exists with overlapping keywords
-  const analyseKeywords = combined
-    .filter(a => a.type === 'ANALYSE' || /analys|étude|compar|bilan/i.test(a.titre || ''))
-    .flatMap(a => (a.description || a.titre || '').toLowerCase().split(' ').filter(w => w.length > 4));
-
+  // Deduplicate - keep best action per type (Gemini over bubble, richer content wins)
+  const seen = {};
   const allActions = combined.filter(a => {
-    if (a.type === 'RECHERCHE') {
-      const words = (a.description || a.titre || '').toLowerCase().split(' ').filter(w => w.length > 4);
-      return !words.some(w => analyseKeywords.includes(w));
+    const key = a.type;
+    if (!seen[key]) {
+      seen[key] = a;
+      return true;
     }
-    return true;
-  });
+    // Keep the one with richer content (has corps/sujet vs just description)
+    const current = seen[key];
+    const currentScore = (current.corps ? 2 : 0) + (current.sujet ? 1 : 0);
+    const newScore = (a.corps ? 2 : 0) + (a.sujet ? 1 : 0);
+    if (newScore > currentScore) {
+      // Replace with richer one
+      seen[key] = a;
+      combined[combined.indexOf(current)] = null;
+      return true;
+    }
+    return false;
+  }).filter(Boolean);
   if (allActions.length > 0) {
     const actionsHTML = `<div class="actions-ia-wrap">${allActions.map(a => buildActionCard(a)).join('')}</div>`;
     c.appendChild(makeCard('✨ Actions IA', actionsHTML));
