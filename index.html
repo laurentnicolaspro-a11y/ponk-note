@@ -766,12 +766,13 @@
     translateInterval = setInterval(async () => {
       if (!recording || !translateActive) { stopTranslateChunks(); return; }
 
-      // Take last 8 seconds from main chunks
-      const recentChunks = chunks.slice(-8);
-      if (recentChunks.length === 0) return;
+      // Take last ~8 seconds (chunks are 500ms each, so 16 chunks = 8s)
+      const recentChunks = chunks.slice(-16);
+      if (recentChunks.length < 4) return;
 
       const audioBlob = new Blob(recentChunks, {type:'audio/webm'});
-      if (audioBlob.size < 1000) return; // too small
+      console.log('[translate] blob size:', audioBlob.size);
+      if (audioBlob.size < 5000) return; // too small
 
       // Send to Gemini for transcription + translation
       const reader = new FileReader();
