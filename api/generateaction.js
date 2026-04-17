@@ -8,48 +8,23 @@ module.exports = async function handler(req, res) {
     if (!type || !text) return res.status(400).json({ error: 'Type et texte requis' });
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
 
     let prompt = '';
 
     switch(type) {
       case 'EMAIL':
-        prompt = `Tu es un assistant qui rédige des emails professionnels et naturels en français.
-        
-Description de l'utilisateur : "${text}"
-Nom de l'utilisateur : "${profile || 'moi'}"
-
-Génère un email avec un sujet et un corps naturel. Réponds UNIQUEMENT avec ce JSON :
-{"sujet": "sujet court et clair", "corps": "corps de l'email naturel et bien rédigé"}`;
+        prompt = `Rédige un email en français. Description: "${text}". Utilisateur: "${profile||'moi'}". JSON uniquement: {"sujet":"...","corps":"..."}`;
         break;
-
       case 'WHATSAPP':
-        prompt = `Tu es un assistant qui rédige des messages WhatsApp naturels en français.
-
-Description : "${text}"
-
-Génère un message court et naturel. Réponds UNIQUEMENT avec ce JSON :
-{"message": "message WhatsApp naturel et concis"}`;
+        prompt = `Rédige un message WhatsApp court en français. Description: "${text}". JSON uniquement: {"message":"..."}`;
         break;
-
       case 'CALENDRIER':
-        prompt = `Tu es un assistant qui crée des événements de calendrier.
-
-Description : "${text}"
-
-Génère un titre d'événement et une description. Réponds UNIQUEMENT avec ce JSON :
-{"titre": "titre court de l'événement", "description": "description de l'événement"}`;
+        prompt = `Crée un événement calendrier. Description: "${text}". JSON uniquement: {"titre":"...","description":"..."}`;
         break;
-
       case 'RAPPEL':
-        prompt = `Tu es un assistant qui crée des rappels clairs.
-
-Description : "${text}"
-
-Génère un rappel concis. Réponds UNIQUEMENT avec ce JSON :
-{"texte": "texte du rappel clair et actionnable"}`;
+        prompt = `Crée un rappel concis en français. Description: "${text}". JSON uniquement: {"texte":"..."}`;
         break;
-
       default:
         return res.status(200).json({ raw: text });
     }
