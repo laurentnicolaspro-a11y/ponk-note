@@ -863,13 +863,33 @@
   let actionBubbles = [];
   let currentBubbleIndex = null;
 
+  function cleanTranscript(text) {
+    // Remove repeated words/phrases (speech recognition artifacts)
+    const words = text.split(' ');
+    const cleaned = [];
+    for (let i = 0; i < words.length; i++) {
+      // Skip if same word repeated 2+ times
+      if (i > 0 && words[i] === words[i-1]) continue;
+      // Skip if 3-word sequence already seen
+      if (i >= 2) {
+        const triplet = words.slice(i-2, i+1).join(' ');
+        const prev = cleaned.join(' ');
+        if (prev.includes(triplet)) continue;
+      }
+      cleaned.push(words[i]);
+    }
+    return cleaned.join(' ');
+  }
+
   function detectActionKeywords(text) {
     const lower = text.toLowerCase();
+    // Min 3 words to avoid false positives
+    if (text.split(' ').length < 3) return;
     for (const [type, config] of Object.entries(ACTION_KEYWORDS)) {
       if (config.words.some(w => lower.includes(w))) {
         // Avoid duplicates within 30s
         const recent = actionBubbles.find(b => b.type === type && Date.now() - b.time < 30000);
-        if (!recent) addActionBubble(type, config.icon, config.label, text);
+        if (!recent) addActionBubble(type, config.icon, config.label, cleanTranscript(text));
         return;
       }
     }
@@ -902,17 +922,24 @@
   function confirmBubble() {
     if (currentBubbleIndex === null) return;
     actionBubbles[currentBubbleIndex].confirmed = true;
-    const el = document.getElementById(`bubble_${currentBubbleIndex}`);
-    if (el) el.classList.add('confirmed');
+    removeBubbleEl(currentBubbleIndex);
     document.getElementById('bubbleModal').classList.add('hidden');
   }
 
   function rejectBubble() {
     if (currentBubbleIndex === null) return;
     actionBubbles[currentBubbleIndex].confirmed = false;
-    const el = document.getElementById(`bubble_${currentBubbleIndex}`);
-    if (el) el.classList.add('rejected');
+    removeBubbleEl(currentBubbleIndex);
     document.getElementById('bubbleModal').classList.add('hidden');
+  }
+
+  function removeBubbleEl(index) {
+    const el = document.getElementById(`bubble_${index}`);
+    if (!el) return;
+    el.style.transition = 'opacity 0.2s, transform 0.2s';
+    el.style.opacity = '0';
+    el.style.transform = 'scale(0)';
+    setTimeout(() => el.remove(), 200);
   }
 
   // Save bubbles to localStorage before redirecting to results
