@@ -677,32 +677,59 @@
     }
   }
 
+  let speechRecognitionFR = null;
+  let speechRecognitionForeign = null;
+
+  // Supported foreign languages for recognition
+  const FOREIGN_LANGS = ['hr-HR', 'en-US', 'es-ES', 'de-DE', 'it-IT', 'pt-PT', 'ar-SA', 'zh-CN', 'ja-JP'];
+  let currentForeignLang = 0;
+
   async function startSpeechRecognition() {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    function createAndStart() {
-      speechRecognition = new SR();
-      speechRecognition.continuous = false;
-      speechRecognition.interimResults = false;
-      speechRecognition.lang = ''; // vide = détection automatique de la langue
-      speechRecognition.onresult = e => {
+
+    // French instance
+    function startFR() {
+      speechRecognitionFR = new SR();
+      speechRecognitionFR.continuous = false;
+      speechRecognitionFR.interimResults = false;
+      speechRecognitionFR.lang = 'fr-FR';
+      speechRecognitionFR.onresult = e => {
         const t = e.results[0][0].transcript.trim();
-        console.log('[Speech]', t, '| foreign:', isForeignLanguage(t), '| question:', isQuestion(t));
-        if (isForeignLanguage(t)) {
-          translateText(t);
-        } else if (isQuestion(t)) {
-          askGemini(t);
-        }
+        if (isQuestion(t)) askGemini(t);
       };
-      speechRecognition.onerror = e => { if (e.error !== 'aborted' && assistantActive && recording) setTimeout(createAndStart, 500); };
-      speechRecognition.onend = () => { if (assistantActive && recording) setTimeout(createAndStart, 300); };
-      try { speechRecognition.start(); } catch(e) {}
+      speechRecognitionFR.onerror = () => {};
+      speechRecognitionFR.onend = () => { if (assistantActive && recording) setTimeout(startFR, 300); };
+      try { speechRecognitionFR.start(); } catch(e) {}
     }
-    createAndStart();
+
+    // Foreign language instance - cycles through languages
+    function startForeign() {
+      speechRecognitionForeign = new SR();
+      speechRecognitionForeign.continuous = false;
+      speechRecognitionForeign.interimResults = false;
+      speechRecognitionForeign.lang = FOREIGN_LANGS[currentForeignLang % FOREIGN_LANGS.length];
+      speechRecognitionForeign.onresult = e => {
+        const t = e.results[0][0].transcript.trim();
+        const lang = FOREIGN_LANGS[currentForeignLang % FOREIGN_LANGS.length];
+        // Only translate if confidence is high enough and not French
+        if (e.results[0][0].confidence > 0.7 && t.split(' ').length >= 2) {
+          translateText(t);
+        }
+        currentForeignLang++;
+      };
+      speechRecognitionForeign.onerror = () => { currentForeignLang++; };
+      speechRecognitionForeign.onend = () => { if (assistantActive && recording) setTimeout(startForeign, 500); };
+      try { speechRecognitionForeign.start(); } catch(e) {}
+    }
+
+    startFR();
+    setTimeout(startForeign, 200); // slight delay to avoid conflict
   }
 
   function stopSpeechRecognition() {
-    if (speechRecognition) { speechRecognition.stop(); speechRecognition = null; }
+    if (speechRecognitionFR) { speechRecognitionFR.stop(); speechRecognitionFR = null; }
+    if (speechRecognitionForeign) { speechRecognitionForeign.stop(); speechRecognitionForeign = null; }
     if (assistantStream) { assistantStream.getTracks().forEach(t=>t.stop()); assistantStream = null; }
   }
 
