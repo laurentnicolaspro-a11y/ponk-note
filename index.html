@@ -684,7 +684,7 @@
       speechRecognition = new SR();
       speechRecognition.continuous = false;
       speechRecognition.interimResults = false;
-      speechRecognition.lang = 'fr-FR';
+      speechRecognition.lang = ''; // vide = détection automatique de la langue
       speechRecognition.onresult = e => {
         const t = e.results[0][0].transcript.trim();
         console.log('[Speech]', t, '| foreign:', isForeignLanguage(t), '| question:', isQuestion(t));
