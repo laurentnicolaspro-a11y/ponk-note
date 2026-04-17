@@ -755,6 +755,9 @@
     fd.append('audio', blob, 'rec.webm');
     fd.append('title', title); fd.append('duration', duration); fd.append('datetime', datetime);
     fd.append('profile', localStorage.getItem('ponk_profile') || 'user');
+    // Send saved bubbles for enriched action generation
+    const savedBubbles = actionBubbles.filter(b => b.confirmed !== false);
+    fd.append('bubbles', JSON.stringify(savedBubbles));
     try {
       const res = await fetch('/api/analyze', {method:'POST', body:fd});
       if(!res.ok) throw new Error('Erreur '+res.status);
