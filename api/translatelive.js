@@ -30,6 +30,7 @@ Réponds maintenant :`;
 
     const answer = result.response.text().trim();
 
+    console.log('[translatelive] answer:', answer);
     if (answer === 'FRANCAIS' || answer === 'SILENCE') {
       return res.status(200).json({ translation: null });
     }
