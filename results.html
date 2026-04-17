@@ -216,6 +216,29 @@
     }
     .action-ia-arrow svg { fill:white; }
 
+    /* Deep analysis */
+    .analysis-result {
+      margin-top:12px; padding:14px;
+      background:rgba(255,255,255,0.4); border-radius:12px;
+      border:1px solid rgba(255,255,255,0.6);
+      font-size:13px; line-height:1.7; color:var(--text);
+      display:none;
+    }
+    .analysis-result.visible { display:block; animation:fadeUp 0.3s ease; }
+    .analysis-result strong { color:var(--text); font-weight:600; }
+    .analysis-loading {
+      display:none; align-items:center; gap:8px;
+      margin-top:10px; font-size:12px; color:var(--muted);
+    }
+    .analysis-loading.visible { display:flex; }
+    .analysis-spinner {
+      width:14px; height:14px; border-radius:50%;
+      border:2px solid rgba(74,127,212,0.2);
+      border-top-color:var(--accent);
+      animation:spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
     .copy-btn {
       background:rgba(255,255,255,0.4); border:1px solid rgba(255,255,255,0.6);
       color:var(--muted); padding:5px 12px; border-radius:100px;
@@ -237,7 +260,6 @@
 
 <div class="content">
   <div id="meta" class="meta"></div>
-  <div id="modes" class="modes"></div>
   <div id="cards"></div>
   <div class="action-btns">
     <button class="btn-action btn-email" id="emailBtn" onclick="sendByEmail()">✉ Envoyer par email</button>
@@ -281,7 +303,7 @@ function render(data, meta) {
   if (meta && (meta.datetime || meta.duration))
     document.getElementById('meta').textContent = (meta.datetime||'') + (meta.duration?' · '+meta.duration:'');
 
-  document.getElementById('modes').innerHTML = modes.filter(m=>m!=='MEMO').map(m=>`<span class="badge">${LABELS[m]||m}</span>`).join('');
+  // modes badges removed
 
   if (data.summary) {
     const summaryHtml = data.summary
@@ -376,7 +398,29 @@ function render(data, meta) {
   }
 }
 
+let analyseCardCounter = 0;
+
 function buildActionCard(a) {
+  if (a.type === 'ANALYSE') {
+    const id = 'analyse_' + (analyseCardCounter++);
+    return `<div class="action-ia-card" style="flex-direction:column;align-items:stretch;cursor:default;">
+      <div style="display:flex;align-items:center;gap:14px;" onclick="runDeepAnalysis('${id}', ${JSON.stringify(a.description || a.titre).replace(/'/g,'&#39;')})">
+        <div class="action-ia-icon">${a.icone}</div>
+        <div class="action-ia-info">
+          <div class="action-ia-titre">${a.titre}</div>
+          <div class="action-ia-desc">${a.description}</div>
+        </div>
+        <div class="action-ia-arrow" id="arrow_${id}">
+          <svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+      </div>
+      <div class="analysis-loading" id="loading_${id}">
+        <div class="analysis-spinner"></div>
+        <span>Analyse en cours…</span>
+      </div>
+      <div class="analysis-result" id="result_${id}"></div>
+    </div>`;
+  }
   const url = getActionUrl(a);
   return `<a class="action-ia-card" href="${url}" target="_blank" rel="noopener">
     <div class="action-ia-icon">${a.icone}</div>
@@ -388,6 +432,40 @@ function buildActionCard(a) {
       <svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg>
     </div>
   </a>`;
+}
+
+async function runDeepAnalysis(id, query) {
+  const loading = document.getElementById('loading_' + id);
+  const result  = document.getElementById('result_' + id);
+  const arrow   = document.getElementById('arrow_' + id);
+  if (!loading || !result) return;
+  if (result.classList.contains('visible')) {
+    result.classList.remove('visible'); return;
+  }
+  loading.classList.add('visible');
+  if (arrow) arrow.style.display = 'none';
+  try {
+    const res = await fetch('/api/deepanalyze', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({query})
+    });
+    const data = await res.json();
+    if (data.analysis) {
+      result.innerHTML = data.analysis
+        .replace(/[*][*](.*?)[*][*]/g, '<strong>$1</strong>')
+        .replace(/
+
+/g, '</p><p>')
+        .replace(/
+/g, '<br>');
+      result.classList.add('visible');
+    }
+  } catch(e) {
+    result.innerHTML = 'Erreur lors de l'analyse.';
+    result.classList.add('visible');
+  }
+  loading.classList.remove('visible');
+  if (arrow) arrow.style.display = 'flex';
 }
 
 function getActionUrl(a) {
