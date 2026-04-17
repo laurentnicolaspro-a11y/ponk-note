@@ -273,6 +273,18 @@
     }
     .listening-text { font-size:12px; color:var(--muted); }
 
+    /* Translation toggle */
+    .translate-toggle {
+      display:flex; align-items:center; gap:6px;
+      background:rgba(255,255,255,0.3); border:1px solid rgba(255,255,255,0.5);
+      border-radius:100px; padding:3px 10px;
+      cursor:pointer; font-size:11px; font-weight:500;
+      color:var(--muted); -webkit-tap-highlight-color:transparent;
+      transition:background 0.2s;
+    }
+    .translate-toggle.on { background:rgba(74,127,212,0.2); color:var(--accent); border-color:rgba(74,127,212,0.3); }
+    .translate-toggle:active { opacity:0.7; }
+
     /* Assistant card */
     .assistant-card {
       width:100%;
@@ -437,9 +449,12 @@
         <div class="assistant-card">
           <div class="assistant-card-header">
             <span class="assistant-card-label">Assistant IA</span>
-            <div class="listening-row">
-              <div class="listening-dot"></div>
-              <span class="listening-text">En écoute…</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="translate-toggle" id="translateToggle" onclick="toggleTranslate()">🌍 Traduire</div>
+              <div class="listening-row">
+                <div class="listening-dot"></div>
+                <span class="listening-text">En écoute…</span>
+              </div>
             </div>
           </div>
           <div id="assistantBubble" class="assistant-card-body">
@@ -536,6 +551,7 @@
       seconds = 0;
       interval = setInterval(() => { seconds++; tick(); }, 1000);
       if (assistantActive) startSpeechRecognition();
+      if (translateActive) startTranslateChunks();
       document.getElementById('recordBtn').classList.add('is-recording');
       document.getElementById('powerWrap').classList.add('is-recording');
       document.getElementById('btnLabel').textContent = 'Appuyer pour arrêter';
@@ -549,6 +565,7 @@
   function stopRec() {
     recorder.stop(); recording = false; clearInterval(interval);
     stopSpeechRecognition();
+    stopTranslateChunks();
     document.getElementById('recordBtn').classList.remove('is-recording');
     document.getElementById('powerWrap').classList.remove('is-recording');
     document.getElementById('btnLabel').textContent = 'Appuyer pour enregistrer';
@@ -677,59 +694,27 @@
     }
   }
 
-  let speechRecognitionFR = null;
-  let speechRecognitionForeign = null;
-
-  // Supported foreign languages for recognition
-  const FOREIGN_LANGS = ['hr-HR', 'en-US', 'es-ES', 'de-DE', 'it-IT', 'pt-PT', 'ar-SA', 'zh-CN', 'ja-JP'];
-  let currentForeignLang = 0;
-
   async function startSpeechRecognition() {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    // French instance
-    function startFR() {
-      speechRecognitionFR = new SR();
-      speechRecognitionFR.continuous = false;
-      speechRecognitionFR.interimResults = false;
-      speechRecognitionFR.lang = 'fr-FR';
-      speechRecognitionFR.onresult = e => {
+    function createAndStart() {
+      speechRecognition = new SR();
+      speechRecognition.continuous = false;
+      speechRecognition.interimResults = false;
+      speechRecognition.lang = 'fr-FR';
+      speechRecognition.onresult = e => {
         const t = e.results[0][0].transcript.trim();
         if (isQuestion(t)) askGemini(t);
       };
-      speechRecognitionFR.onerror = () => {};
-      speechRecognitionFR.onend = () => { if (assistantActive && recording) setTimeout(startFR, 300); };
-      try { speechRecognitionFR.start(); } catch(e) {}
+      speechRecognition.onerror = e => { if (e.error !== 'aborted' && assistantActive && recording) setTimeout(createAndStart, 500); };
+      speechRecognition.onend = () => { if (assistantActive && recording) setTimeout(createAndStart, 300); };
+      try { speechRecognition.start(); } catch(e) {}
     }
-
-    // Foreign language instance - cycles through languages
-    function startForeign() {
-      speechRecognitionForeign = new SR();
-      speechRecognitionForeign.continuous = false;
-      speechRecognitionForeign.interimResults = false;
-      speechRecognitionForeign.lang = FOREIGN_LANGS[currentForeignLang % FOREIGN_LANGS.length];
-      speechRecognitionForeign.onresult = e => {
-        const t = e.results[0][0].transcript.trim();
-        const lang = FOREIGN_LANGS[currentForeignLang % FOREIGN_LANGS.length];
-        // Only translate if confidence is high enough and not French
-        if (e.results[0][0].confidence > 0.7 && t.split(' ').length >= 2) {
-          translateText(t);
-        }
-        currentForeignLang++;
-      };
-      speechRecognitionForeign.onerror = () => { currentForeignLang++; };
-      speechRecognitionForeign.onend = () => { if (assistantActive && recording) setTimeout(startForeign, 500); };
-      try { speechRecognitionForeign.start(); } catch(e) {}
-    }
-
-    startFR();
-    setTimeout(startForeign, 200); // slight delay to avoid conflict
+    createAndStart();
   }
 
   function stopSpeechRecognition() {
-    if (speechRecognitionFR) { speechRecognitionFR.stop(); speechRecognitionFR = null; }
-    if (speechRecognitionForeign) { speechRecognitionForeign.stop(); speechRecognitionForeign = null; }
+    if (speechRecognition) { speechRecognition.stop(); speechRecognition = null; }
     if (assistantStream) { assistantStream.getTracks().forEach(t=>t.stop()); assistantStream = null; }
   }
 
@@ -753,6 +738,68 @@
     const isForeign = foreignPatterns.some(p => p.test(text));
     return isForeign && frenchCount < 2;
   }
+
+  // ── Traduction chunks ──
+  let translateActive = false;
+  let translateInterval = null;
+  let translateChunks = [];
+  let translateRecorder = null;
+
+  function toggleTranslate() {
+    translateActive = !translateActive;
+    const btn = document.getElementById('translateToggle');
+    btn.classList.toggle('on', translateActive);
+    btn.textContent = translateActive ? '🌍 ON' : '🌍 Traduire';
+
+    if (translateActive && recording) {
+      startTranslateChunks();
+    } else {
+      stopTranslateChunks();
+    }
+  }
+
+  function startTranslateChunks() {
+    if (!recording || !translateActive) return;
+    translateChunks = [];
+
+    // Use a new MediaRecorder on the same stream - we save chunks every 8s
+    translateInterval = setInterval(async () => {
+      if (!recording || !translateActive) { stopTranslateChunks(); return; }
+
+      // Take last 8 seconds from main chunks
+      const recentChunks = chunks.slice(-8);
+      if (recentChunks.length === 0) return;
+
+      const audioBlob = new Blob(recentChunks, {type:'audio/webm'});
+      if (audioBlob.size < 1000) return; // too small
+
+      // Send to Gemini for transcription + translation
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result.split(',')[1];
+        try {
+          const res = await fetch('/api/translatelive', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({audioBase64: base64})
+          });
+          if (!res.ok) return;
+          const data = await res.json();
+          if (data.translation && data.langue) {
+            showAssistantResponse('🌍 ' + data.langue, data.translation);
+          }
+        } catch(e) {}
+      };
+      reader.readAsDataURL(audioBlob);
+    }, 8000);
+  }
+
+  function stopTranslateChunks() {
+    if (translateInterval) { clearInterval(translateInterval); translateInterval = null; }
+  }
+
+  // Start/stop translate with recording
+  const origStopRec = stopRec;
 
   async function translateText(text) {
     try {
