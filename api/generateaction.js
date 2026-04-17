@@ -4,7 +4,18 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { type, text, profile } = req.body;
+    // Parse body manually
+    let body = req.body;
+    if (!body || typeof body === 'string') {
+      const chunks = [];
+      await new Promise((resolve, reject) => {
+        req.on('data', chunk => chunks.push(chunk));
+        req.on('end', resolve);
+        req.on('error', reject);
+      });
+      body = JSON.parse(Buffer.concat(chunks).toString());
+    }
+    const { type, text, profile } = body;
     if (!type || !text) return res.status(400).json({ error: 'Type et texte requis' });
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
