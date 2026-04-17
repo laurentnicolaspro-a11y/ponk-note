@@ -283,7 +283,13 @@ function render(data, meta) {
 
   document.getElementById('modes').innerHTML = modes.filter(m=>m!=='MEMO').map(m=>`<span class="badge">${LABELS[m]||m}</span>`).join('');
 
-  if (data.summary) c.appendChild(makeCard('📝 Synthèse', `<div class="sec"><p>${data.summary}</p></div>`));
+  if (data.summary) {
+    const summaryHtml = data.summary
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/
+/g, '<br>');
+    c.appendChild(makeCard('📝 Synthèse', `<div class="sec"><p>${summaryHtml}</p></div>`));
+  }
 
   // Actions IA - combine Gemini detected + bubble actions
   const geminiActions = data.actions_ia || [];
