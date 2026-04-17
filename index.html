@@ -336,6 +336,17 @@
     .bubble-modal-type { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); text-align:center; margin-bottom:8px; }
     .bubble-modal-text { font-size:15px; color:var(--text); line-height:1.6; text-align:center; margin-bottom:20px; }
     .bubble-modal-btns { display:flex; gap:10px; }
+    .bubble-modal-textarea {
+      width:100%; padding:12px 14px; border-radius:12px;
+      border:1.5px solid var(--glass-border);
+      background:rgba(255,255,255,0.5);
+      font-family:inherit; font-size:14px; color:var(--text);
+      outline:none; resize:none; min-height:80px; line-height:1.5;
+      margin-bottom:16px;
+      transition:border-color 0.2s;
+    }
+    .bubble-modal-textarea:focus { border-color:var(--accent); }
+
     .bubble-modal-btn {
       flex:1; padding:13px; border-radius:12px; border:none;
       font-family:inherit; font-size:15px; font-weight:600;
@@ -582,7 +593,7 @@
   <div class="bubble-modal-card">
     <div class="bubble-modal-icon" id="bubbleModalIcon"></div>
     <div class="bubble-modal-type" id="bubbleModalType"></div>
-    <div class="bubble-modal-text" id="bubbleModalText"></div>
+    <textarea class="bubble-modal-textarea" id="bubbleModalText" placeholder="Décris l'action..."></textarea>
     <div class="bubble-modal-btns">
       <button class="bubble-modal-btn btn-reject" onclick="rejectBubble()">✗ Ignorer</button>
       <button class="bubble-modal-btn btn-confirm" onclick="confirmBubble()">✓ Conserver</button>
@@ -960,12 +971,16 @@
     const b = actionBubbles[index];
     document.getElementById('bubbleModalIcon').textContent = b.icon;
     document.getElementById('bubbleModalType').textContent = b.label;
-    document.getElementById('bubbleModalText').textContent = b.text;
+    document.getElementById('bubbleModalText').value = b.text;
     document.getElementById('bubbleModal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('bubbleModalText').focus(), 100);
   }
 
   function confirmBubble() {
     if (currentBubbleIndex === null) return;
+    // Save edited text
+    const edited = document.getElementById('bubbleModalText').value.trim();
+    if (edited) actionBubbles[currentBubbleIndex].text = edited;
     actionBubbles[currentBubbleIndex].confirmed = true;
     removeBubbleEl(currentBubbleIndex);
     document.getElementById('bubbleModal').classList.add('hidden');
