@@ -273,31 +273,7 @@
     }
     .listening-text { font-size:12px; color:var(--muted); }
 
-    /* Translation toggle */
-    .translate-toggle {
-      display:flex; align-items:center; gap:6px;
-      background:var(--glass); border:1.5px solid var(--glass-border);
-      backdrop-filter:blur(20px);
-      border-radius:100px; padding:5px 10px 5px 8px;
-      cursor:pointer; -webkit-tap-highlight-color:transparent;
-      transition:background 0.2s;
-    }
-    .translate-toggle:active { background:rgba(255,255,255,0.65); }
-    .translate-toggle-label { font-size:12px; font-weight:500; color:var(--muted); }
-    .translate-switch {
-      width:36px; height:20px; border-radius:10px;
-      background:#c7c7cc; position:relative;
-      transition:background 0.2s; flex-shrink:0;
-    }
-    .translate-toggle.on .translate-switch { background:var(--green); }
-    .translate-switch::after {
-      content:''; position:absolute;
-      width:16px; height:16px; border-radius:50%;
-      background:#fff; top:2px; left:2px;
-      transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
-      box-shadow:0 1px 3px rgba(0,0,0,0.2);
-    }
-    .translate-toggle.on .translate-switch::after { transform:translateX(16px); }
+
 
     /* Assistant card */
     .assistant-card {
@@ -464,10 +440,7 @@
           <div class="assistant-card-header">
             <span class="assistant-card-label">Assistant IA</span>
             <div style="display:flex;align-items:center;gap:8px">
-              <div class="translate-toggle" id="translateToggle" onclick="toggleTranslate()">
-                <span class="translate-toggle-label">Traduire</span>
-                <div class="translate-switch"></div>
-              </div>
+
               <div class="listening-row">
                 <div class="listening-dot"></div>
                 <span class="listening-text">En écoute…</span>
@@ -568,7 +541,6 @@
       seconds = 0;
       interval = setInterval(() => { seconds++; tick(); }, 1000);
       if (assistantActive) startSpeechRecognition();
-      if (translateActive) startTranslateChunks();
       document.getElementById('recordBtn').classList.add('is-recording');
       document.getElementById('powerWrap').classList.add('is-recording');
       document.getElementById('btnLabel').textContent = 'Appuyer pour arrêter';
@@ -582,7 +554,6 @@
   function stopRec() {
     recorder.stop(); recording = false; clearInterval(interval);
     stopSpeechRecognition();
-    stopTranslateChunks();
     document.getElementById('recordBtn').classList.remove('is-recording');
     document.getElementById('powerWrap').classList.remove('is-recording');
     document.getElementById('btnLabel').textContent = 'Appuyer pour enregistrer';
@@ -737,7 +708,18 @@
 
   function isQuestion(text) {
     const lower = text.toLowerCase();
-    const triggers = ['?',"c'est quoi","qu'est-ce",'combien','comment','pourquoi','quand','où','quel','quelle','qui est','what is','how much','how many','what','where','when','why','how','quanto','cuanto','wie viel','was ist','che cosa'];
+    // Détecte tout ce qui ressemble à une question
+    const triggers = [
+      '?', "c'est quoi", "c'est quoi", "qu'est-ce", "qu'est ce",
+      'combien', 'comment', 'pourquoi', 'quand', 'où', 'quel', 'quelle',
+      'qui est', 'que veut dire', 'que signifie', 'définition',
+      'explique', 'expliques', 'dis-moi', 'dis moi',
+      'kesako', 'kézako', 'c'est quoi', 'cest quoi',
+      'what', 'where', 'when', 'why', 'how', 'who', 'which',
+      'that means', 'what is', 'what are',
+      'donne moi', 'donne-moi', 'calcule', 'convertis',
+      'traduis', 'traduction', 'en français', 'en anglais'
+    ];
     return triggers.some(t => lower.includes(t));
   }
 
@@ -756,87 +738,7 @@
     return isForeign && frenchCount < 2;
   }
 
-  // ── Traduction chunks ──
-  let translateActive = false;
-  let translateInterval = null;
-  let translateSkip = 0;
-  let translateChunks = [];
-  let translateRecorder = null;
 
-  function toggleTranslate() {
-    translateActive = !translateActive;
-    const btn = document.getElementById('translateToggle');
-    btn.classList.toggle('on', translateActive);
-
-    if (translateActive && recording) {
-      startTranslateChunks();
-    } else {
-      stopTranslateChunks();
-    }
-  }
-
-  function startTranslateChunks() {
-    if (!recording || !translateActive) return;
-    translateChunks = [];
-
-    // Use a new MediaRecorder on the same stream - we save chunks every 8s
-    translateInterval = setInterval(async () => {
-      if (!recording || !translateActive) { stopTranslateChunks(); return; }
-
-      // Take last ~8 seconds (chunks are 500ms each, so 16 chunks = 8s)
-      if (translateSkip > 0) { translateSkip--; return; }
-      const recentChunks = chunks.slice(-16);
-      if (recentChunks.length < 4) return;
-
-      const audioBlob = new Blob(recentChunks, {type:'audio/webm'});
-      console.log('[translate] blob size:', audioBlob.size);
-      if (audioBlob.size < 5000) return; // too small
-
-      // Send to Gemini for transcription + translation
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = reader.result.split(',')[1];
-        try {
-          const res = await fetch('/api/translatelive', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({audioBase64: base64})
-          });
-          if (!res.ok) { console.log('[translate] error', res.status); return; }
-          const data = await res.json();
-          console.log('[translate] data:', JSON.stringify(data));
-          if (data.translation) {
-            showAssistantResponse('🌍 ' + (data.langue || 'Traduction'), data.translation);
-            // After a successful translation, skip next 2 chunks to avoid overlap
-            translateSkip = 2;
-          }
-        } catch(e) {}
-      };
-      reader.readAsDataURL(audioBlob);
-    }, 8000);
-  }
-
-  function stopTranslateChunks() {
-    if (translateInterval) { clearInterval(translateInterval); translateInterval = null; }
-  }
-
-  // Start/stop translate with recording
-  const origStopRec = stopRec;
-
-  async function translateText(text) {
-    try {
-      const res = await fetch('/api/translate', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({text})
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.translation) {
-        const label = data.langue ? `🌍 ${data.langue}` : '🌍 Traduction';
-        showAssistantResponse(label, data.translation);
-      }
-    } catch(e) {}
-  }
 
   async function askGemini(question) {
     try {
