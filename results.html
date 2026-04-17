@@ -453,15 +453,12 @@ async function runDeepAnalysis(id, query) {
     if (data.analysis) {
       result.innerHTML = data.analysis
         .replace(/[*][*](.*?)[*][*]/g, '<strong>$1</strong>')
-        .replace(/
-
-/g, '</p><p>')
-        .replace(/
-/g, '<br>');
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>');
       result.classList.add('visible');
     }
   } catch(e) {
-    result.innerHTML = 'Erreur lors de l'analyse.';
+    result.innerHTML = 'Erreur lors de lanalyse.';
     result.classList.add('visible');
   }
   loading.classList.remove('visible');
