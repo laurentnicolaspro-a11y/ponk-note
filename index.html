@@ -610,6 +610,9 @@
         <span class="pill-label" id="pillLabel">A</span>
         <div class="toggle-switch" id="assistantToggle"></div>
       </div>
+      <div class="assistant-pill" onclick="openManualMenu()" style="padding:5px 12px;">
+        <span class="pill-label">+</span>
+      </div>
       <div class="header-avatar" id="headerAvatar" onclick="window.location.href='/library.html'"></div>
     </div>
   </header>
@@ -676,10 +679,7 @@
         </div>
       </div>
 
-      <div style="display:flex;align-items:center;gap:12px;">
-        <div class="timer" id="timer">00:00</div>
-        <div class="btn-manual-action" onclick="openManualMenu()" title="Ajouter une action">+</div>
-      </div>
+      <div class="timer" id="timer">00:00</div>
     </div>
 
     <div class="bottom">
@@ -1192,7 +1192,7 @@
     if (aiTypes.includes(bubble.type) && bubble.text) {
       // Show loading state
       const confirmBtn = document.querySelector('.btn-now');
-      if (confirmBtn) { confirmBtn.textContent = '⏳'; confirmBtn.disabled = true; }
+      if (confirmBtn) { confirmBtn.innerHTML = '<div style="width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;animation:spin 0.8s linear infinite;display:inline-block;"></div>'; confirmBtn.disabled = true; }
       try {
         const res = await fetch('/api/generateaction', {
           method:'POST', headers:{'Content-Type':'application/json'},
