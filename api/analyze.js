@@ -209,7 +209,13 @@ Types possibles : EMAIL, WHATSAPP, CALENDRIER, MAPS, RAPPEL, RECHERCHE, COMMANDE
 ]
 
 Si aucune action détectée, mets "actions_ia": []
-Ne mets que les actions réellement mentionnées dans la transcription.`;
+Règles STRICTES pour les actions_ia :
+- Ne détecte une action que si quelqu'un exprime clairement une INTENTION de faire quelque chose ("je vais envoyer", "il faut appeler", "on doit commander", "fais une analyse sur...")
+- Une QUESTION ("combien de km entre Paris et Marseille ?") n'est PAS une action
+- Une information mentionnée en passant n'est PAS une action
+- Si tu génères une action ANALYSE sur un sujet, ne génère PAS de RECHERCHE sur le même sujet
+- Maximum 3 actions par transcription
+- Si aucune action claire n'est détectée, mets "actions_ia": []`;
 
     let analysisResult;
     try {
