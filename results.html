@@ -285,9 +285,8 @@ function render(data, meta) {
 
   if (data.summary) {
     const summaryHtml = data.summary
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/
-/g, '<br>');
+      .replace(/[*][*](.*?)[*][*]/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br>');
     c.appendChild(makeCard('📝 Synthèse', `<div class="sec"><p>${summaryHtml}</p></div>`));
   }
 
