@@ -273,6 +273,31 @@
     }
     .listening-text { font-size:12px; color:var(--muted); }
 
+    /* Assistant card */
+    .assistant-card {
+      width:100%;
+      background:var(--glass); border:1.5px solid var(--glass-border);
+      backdrop-filter:blur(20px); border-radius:18px;
+      overflow:hidden;
+    }
+    .assistant-card-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:10px 14px;
+      border-bottom:1px solid rgba(255,255,255,0.4);
+    }
+    .assistant-card-label {
+      font-size:11px; font-weight:600; text-transform:uppercase;
+      letter-spacing:0.8px; color:var(--muted);
+    }
+    .assistant-card-body {
+      padding:12px 14px; min-height:60px;
+      display:flex; flex-direction:column; justify-content:center;
+    }
+    .bubble-empty {
+      font-size:13px; color:rgba(42,42,58,0.3);
+      font-style:italic; text-align:center;
+    }
+
     /* Chat bubble */
     .assistant-bubble {
       width:100%;
@@ -409,17 +434,25 @@
 
       <!-- Assistant zone -->
       <div class="assistant-zone" id="assistantZone">
-        <div class="listening-row">
-          <div class="listening-dot"></div>
-          <span class="listening-text">En écoute…</span>
-        </div>
-        <div id="assistantBubble" style="display:none;width:100%">
-          <div class="assistant-bubble">
-            <div class="bubble-me"><span>Moi</span> : "<span id="assistantQuestion"></span>"</div>
-            <div class="bubble-ponk"><span>Ponk</span> : "<span id="assistantAnswer"></span>"</div>
+        <div class="assistant-card">
+          <div class="assistant-card-header">
+            <span class="assistant-card-label">Assistant IA</span>
+            <div class="listening-row">
+              <div class="listening-dot"></div>
+              <span class="listening-text">En écoute…</span>
+            </div>
           </div>
+          <div id="assistantBubble" class="assistant-card-body">
+            <div class="bubble-empty" id="bubbleEmpty">
+              <span>En attente d'une question…</span>
+            </div>
+            <div id="bubbleContent" style="display:none">
+              <div class="bubble-me"><span>Moi</span> : "<span id="assistantQuestion"></span>"</div>
+              <div class="bubble-ponk"><span>Ponk</span> : "<span id="assistantAnswer"></span>"</div>
+            </div>
+          </div>
+          <div class="assistant-history" id="assistantHistory"></div>
         </div>
-        <div class="assistant-history" id="assistantHistory"></div>
       </div>
 
       <div class="timer" id="timer">00:00</div>
@@ -691,7 +724,8 @@
     if (assistantHistory.length > MAX_HISTORY) assistantHistory.pop();
     document.getElementById('assistantQuestion').textContent = question;
     document.getElementById('assistantAnswer').textContent = answer;
-    document.getElementById('assistantBubble').style.display = 'block';
+    document.getElementById('bubbleEmpty').style.display = 'none';
+    document.getElementById('bubbleContent').style.display = 'block';
     const histEl = document.getElementById('assistantHistory');
     histEl.innerHTML = assistantHistory.slice(1).map((h,i) =>
       `<div class="history-pill" onclick="showHistoryItem(${i+1})" title="${h.question}">${h.question.substring(0,18)}…</div>`
@@ -703,7 +737,8 @@
     if (!h) return;
     document.getElementById('assistantQuestion').textContent = h.question;
     document.getElementById('assistantAnswer').textContent = h.answer;
-    document.getElementById('assistantBubble').style.display = 'block';
+    document.getElementById('bubbleEmpty').style.display = 'none';
+    document.getElementById('bubbleContent').style.display = 'block';
   }
 
   // ── Profile ──
