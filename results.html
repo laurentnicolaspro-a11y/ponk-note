@@ -328,7 +328,23 @@ function render(data, meta) {
     } catch(e) { return []; }
   })();
 
-  const allActions = [...geminiActions, ...bubbleActions];
+  // Deduplicate - remove RECHERCHE if ANALYSE covers same subject
+  const combined = [...geminiActions, ...bubbleActions];
+  const analyseDescriptions = combined
+    .filter(a => a.type === 'ANALYSE' || (a.description && /analys|étude|compar/i.test(a.description)))
+    .map(a => (a.description || '').toLowerCase().substring(0, 30));
+
+  const allActions = combined.filter(a => {
+    if (a.type === 'RECHERCHE') {
+      const desc = (a.description || '').toLowerCase().substring(0, 30);
+      // Remove if an ANALYSE covers similar subject
+      return !analyseDescriptions.some(ad => {
+        const words = desc.split(' ').filter(w => w.length > 4);
+        return words.some(w => ad.includes(w));
+      });
+    }
+    return true;
+  });
   if (allActions.length > 0) {
     const actionsHTML = `<div class="actions-ia-wrap">${allActions.map(a => buildActionCard(a)).join('')}</div>`;
     c.appendChild(makeCard('✨ Actions IA', actionsHTML));
