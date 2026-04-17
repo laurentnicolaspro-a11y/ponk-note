@@ -274,6 +274,7 @@ const LABELS = {
   APPEL:'📞 Appel', MEDICAL:'🏥 Médical', COURS:'🎓 Cours', MEMO:'📝 Mémo'
 };
 let audioEl = null;
+let analyseCardCounter = 0;
 
 const profile = localStorage.getItem('ponk_profile');
 if (profile) {
@@ -397,8 +398,6 @@ function render(data, meta) {
     c.appendChild(tCard);
   }
 }
-
-let analyseCardCounter = 0;
 
 function buildActionCard(a) {
   if (a.type === 'ANALYSE') {
