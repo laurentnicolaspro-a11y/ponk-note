@@ -783,10 +783,13 @@
             headers:{'Content-Type':'application/json'},
             body: JSON.stringify({audioBase64: base64})
           });
-          if (!res.ok) return;
+          if (!res.ok) { console.log('[translate] error', res.status); return; }
           const data = await res.json();
+          console.log('[translate] data:', JSON.stringify(data));
           if (data.translation && data.langue) {
             showAssistantResponse('🌍 ' + data.langue, data.translation);
+          } else if (data.translation) {
+            showAssistantResponse('🌍 Traduction', data.translation);
           }
         } catch(e) {}
       };
