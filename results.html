@@ -328,20 +328,17 @@ function render(data, meta) {
     } catch(e) { return []; }
   })();
 
-  // Deduplicate - remove RECHERCHE if ANALYSE covers same subject
   const combined = [...geminiActions, ...bubbleActions];
-  const analyseDescriptions = combined
-    .filter(a => a.type === 'ANALYSE' || (a.description && /analys|étude|compar/i.test(a.description)))
-    .map(a => (a.description || '').toLowerCase().substring(0, 30));
+
+  // Remove RECHERCHE if an ANALYSE exists with overlapping keywords
+  const analyseKeywords = combined
+    .filter(a => a.type === 'ANALYSE' || /analys|étude|compar|bilan/i.test(a.titre || ''))
+    .flatMap(a => (a.description || a.titre || '').toLowerCase().split(' ').filter(w => w.length > 4));
 
   const allActions = combined.filter(a => {
     if (a.type === 'RECHERCHE') {
-      const desc = (a.description || '').toLowerCase().substring(0, 30);
-      // Remove if an ANALYSE covers similar subject
-      return !analyseDescriptions.some(ad => {
-        const words = desc.split(' ').filter(w => w.length > 4);
-        return words.some(w => ad.includes(w));
-      });
+      const words = (a.description || a.titre || '').toLowerCase().split(' ').filter(w => w.length > 4);
+      return !words.some(w => analyseKeywords.includes(w));
     }
     return true;
   });
@@ -422,7 +419,7 @@ function buildActionCard(a) {
     (a.titre && /analys|étude|compar|bilan|rapport/i.test(a.titre));
   if (isAnalyse) {
     const id = 'analyse_' + (analyseCardCounter++);
-    return `<div class="action-ia-card" style="flex-direction:column;align-items:stretch;cursor:default;">
+    return `<div class="action-ia-card" style="flex-direction:column;align-items:stretch;cursor:pointer;">
       <div style="display:flex;align-items:center;gap:14px;" onclick="runDeepAnalysis('${id}', this.getAttribute('data-query'))" data-query="${(a.description || a.titre).replace(/"/g,'&quot;')}">
         <div class="action-ia-icon">${a.icone}</div>
         <div class="action-ia-info">
