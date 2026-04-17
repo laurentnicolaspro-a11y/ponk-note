@@ -13,13 +13,14 @@ module.exports = async function handler(req, res) {
     const prompt = `Écoute cet extrait audio de quelques secondes.
 
 Tâche :
-1. Transcris ce qui est dit
+1. Transcris TOUT ce qui est dit, même partiellement
 2. Détecte la langue
-3. Si c'est du FRANÇAIS → réponds uniquement : FRANCAIS
-4. Si c'est une AUTRE LANGUE → réponds UNIQUEMENT avec ce JSON :
-{"langue": "Anglais", "original": "texte original", "translation": "traduction en français naturelle"}
+3. Si c'est principalement du FRANÇAIS → réponds uniquement : FRANCAIS
+4. Si c'est une AUTRE LANGUE (même mélangée avec du français) → réponds UNIQUEMENT avec ce JSON sans markdown :
+{"langue": "Anglais", "original": "texte original transcrit", "translation": "traduction complète en français"}
+5. Si l'audio est totalement silencieux → réponds : SILENCE
 
-Si l'audio est silencieux ou incompréhensible → réponds : SILENCE
+Important : si tu entends des mots dans une langue étrangère, même quelques mots, génère le JSON de traduction.
 
 Réponds maintenant :`;
 
