@@ -188,6 +188,11 @@
       transition:transform 0.5s cubic-bezier(0.34,1.56,0.64,1);
     }
     .power-wrap.small { transform:scale(0.6); }
+    .power-wrap.assistant-on {
+      transform:scale(0.65);
+      margin-top:-20px;
+      margin-bottom:-20px;
+    }
 
     /* Spiky ring */
     .spiky-ring {
@@ -250,7 +255,7 @@
     /* ── Assistant zone ── */
     .assistant-zone {
       width:100%; display:none; flex-direction:column;
-      align-items:center; gap:10px;
+      align-items:center; gap:10px; flex:1;
     }
     .assistant-zone.visible { display:flex; }
 
@@ -621,6 +626,7 @@
     assistantActive = !assistantActive;
     document.getElementById('assistantToggle').classList.toggle('on', assistantActive);
     document.getElementById('assistantZone').classList.toggle('visible', assistantActive);
+    document.getElementById('powerWrap').classList.toggle('assistant-on', assistantActive);
     document.getElementById('bg').style.background = assistantActive
       ? 'linear-gradient(145deg, #d0d8f8 0%, #d8c8f0 40%, #c8d8f0 100%)'
       : 'linear-gradient(145deg, #dce8f8 0%, #e8d8f0 40%, #f5e6d8 100%)';
