@@ -62,8 +62,14 @@ module.exports = async function handler(req, res) {
     try {
       result = await model.generateContent(prompt);
     } catch(e) {
-      model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-      result = await model.generateContent(prompt);
+      console.log('[generateaction] Primary model failed:', e.message, '- trying fallback');
+      try {
+        model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        result = await model.generateContent(prompt);
+      } catch(e2) {
+        console.log('[generateaction] Fallback also failed:', e2.message);
+        return res.status(200).json({ raw: text });
+      }
     }
 
     const answer = result.response.text().trim();
