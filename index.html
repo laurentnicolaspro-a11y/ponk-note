@@ -701,6 +701,20 @@
   </div>
 </div>
 
+<!-- WhatsApp modal -->
+<div class="bubble-modal hidden" id="waModal">
+  <div class="bubble-modal-card">
+    <div style="font-size:36px;text-align:center;margin-bottom:12px">💬</div>
+    <div class="bubble-modal-type">Message WhatsApp</div>
+    <div style="background:rgba(255,255,255,0.5);border-radius:12px;padding:12px;margin:12px 0;font-size:14px;line-height:1.6;color:var(--text)" id="waModalMessage"></div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px" id="waAppLinks"></div>
+    <div style="display:flex;gap:8px">
+      <button class="bubble-modal-btn btn-confirm" onclick="copyWAMessage()" id="waCopyBtn">📋 Copier</button>
+      <button class="bubble-modal-btn" style="background:rgba(0,0,0,0.06);color:var(--muted)" onclick="document.getElementById('waModal').classList.add('hidden')">Fermer</button>
+    </div>
+  </div>
+</div>
+
 <!-- Call modal -->
 <div class="bubble-modal hidden" id="callModal">
   <div class="bubble-modal-card" style="text-align:center">
@@ -1203,6 +1217,32 @@
     const edited = document.getElementById('bubbleModalText').value.trim();
     if (edited) bubble.text = edited;
 
+    // Handle WHATSAPP - show message modal if no phone
+    if (bubble.type === 'WHATSAPP') {
+      document.getElementById('bubbleModal').classList.add('hidden');
+      bubble.confirmed = true;
+      removeBubbleEl(currentBubbleIndex);
+      // Get phone from contacts
+      const contactsWA = (() => { try { return JSON.parse(localStorage.getItem('ponk_contacts') || '[]'); } catch(e) { return []; } })();
+      const lowerWA = bubble.text.toLowerCase();
+      const contactWA = contactsWA.find(c => c.name && lowerWA.includes(c.name.toLowerCase().split(' ')[0].toLowerCase()));
+      // Enrich with Gemini first
+      const confirmBtnWA = document.querySelector('.btn-now');
+      if (confirmBtnWA) { confirmBtnWA.innerHTML = '<div style="width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;animation:spin 0.8s linear infinite;display:inline-block;"></div>'; confirmBtnWA.disabled = true; }
+      try {
+        const res = await fetch('/api/generateaction', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({type:'WHATSAPP', text: bubble.text, profile: localStorage.getItem('ponk_profile'), contacts: contactsWA})
+        });
+        const data = await res.json();
+        bubble.generated = data;
+      } catch(e) {}
+      const phone = (contactWA?.phone || bubble.generated?.phone || '').replace(/[^0-9+]/g,'');
+      const msg = bubble.generated?.message || bubble.text;
+      showWhatsAppModal(phone, msg);
+      return;
+    }
+
     // Handle APPEL - show call modal
     if (bubble.type === 'APPEL') {
       document.getElementById('bubbleModal').classList.add('hidden');
@@ -1293,6 +1333,31 @@
   function saveBubbles() {
     const kept = actionBubbles.filter(b => b.confirmed !== false);
     localStorage.setItem('ponk_action_bubbles', JSON.stringify(kept));
+  }
+
+  function showWhatsAppModal(phone, message) {
+    document.getElementById('waModalMessage').textContent = message;
+    const linksEl = document.getElementById('waAppLinks');
+    const enc = encodeURIComponent(message);
+    if (phone) {
+      linksEl.innerHTML = `
+        <a href="https://wa.me/${phone.replace(/[^0-9]/g,'')}?text=${enc}" target="_blank" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(37,211,102,0.15);color:#128C7E;text-decoration:none;font-size:13px;font-weight:600;border:1px solid rgba(37,211,102,0.3);text-align:center">💬 Ouvrir WhatsApp</a>
+      `;
+    } else {
+      linksEl.innerHTML = `
+        <a href="https://wa.me/?text=${enc}" target="_blank" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(37,211,102,0.15);color:#128C7E;text-decoration:none;font-size:13px;font-weight:600;border:1px solid rgba(37,211,102,0.3);text-align:center">💬 Ouvrir WhatsApp</a>
+      `;
+    }
+    document.getElementById('waModal').classList.remove('hidden');
+  }
+
+  function copyWAMessage() {
+    const msg = document.getElementById('waModalMessage').textContent;
+    navigator.clipboard.writeText(msg).then(() => {
+      const btn = document.getElementById('waCopyBtn');
+      btn.textContent = '✓ Copié !';
+      setTimeout(() => btn.textContent = '📋 Copier', 2000);
+    });
   }
 
   function showCallModal(phone, name) {
