@@ -1571,88 +1571,149 @@
     const pdf = window._calendrierPDF;
     if (!pdf) return;
 
-    // Load jsPDF from CDN if not already loaded
     if (!window.jspdf) {
       await new Promise((resolve, reject) => {
         const s = document.createElement('script');
         s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-        s.onload = resolve;
-        s.onerror = reject;
+        s.onload = resolve; s.onerror = reject;
         document.head.appendChild(s);
       });
     }
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const M = 18; // margin
+    const maxW = pageW - M * 2;
+    let y = M;
 
-    const pageW  = doc.internal.pageSize.getWidth();
-    const pageH  = doc.internal.pageSize.getHeight();
-    const margin = 20;
-    const maxW   = pageW - margin * 2;
-    let y = margin;
+    const C = {
+      accent:  [74, 127, 212],
+      dark:    [30, 30, 50],
+      muted:   [120, 120, 140],
+      light:   [240, 244, 252],
+      white:   [255, 255, 255],
+      section: [230, 238, 255],
+      border:  [200, 215, 245],
+      detail:  [90, 100, 120],
+    };
 
-    function checkPage(needed = 8) {
-      if (y + needed > pageH - margin) { doc.addPage(); y = margin; }
+    function checkPage(needed = 10) {
+      if (y + needed > pageH - 16) { doc.addPage(); y = M; }
     }
 
-    // Title
+    // ── TITRE ────────────────────────────────────────────────────────────────
+    doc.setFillColor(...C.accent);
+    doc.rect(0, 0, pageW, 28, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.setTextColor(74, 127, 212);
-    const titleLines = doc.splitTextToSize(pdf.titre, maxW);
-    doc.text(titleLines, margin, y);
-    y += titleLines.length * 8 + 2;
+    doc.setFontSize(15);
+    doc.setTextColor(...C.white);
+    const titleLines = doc.splitTextToSize(pdf.titre, pageW - 36);
+    doc.text(titleLines, M, 12);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(200, 220, 255);
+    doc.text('Ponk Note', pageW - M, 23, { align: 'right' });
+    y = 36;
 
-    // Underline
-    doc.setDrawColor(74, 127, 212);
-    doc.setLineWidth(0.5);
-    doc.line(margin, y, pageW - margin, y);
-    y += 8;
+    // ── FICHE RÉCAP ──────────────────────────────────────────────────────────
+    const meta = pdf.meta || {};
+    const metaItems = [
+      { label: '📅 Date',         val: meta.date         || '—' },
+      { label: '📍 Lieu',         val: meta.lieu         || '—' },
+      { label: '⏱ Durée',        val: meta.duree        || '—' },
+      { label: '👥 Participants', val: meta.participants  || '—' },
+    ];
 
-    // Parse markdown content
-    const lines = pdf.contenu.split('\n');
-    for (const line of lines) {
-      if (line.startsWith('## ')) {
-        checkPage(10);
+    doc.setFillColor(...C.light);
+    doc.setDrawColor(...C.border);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(M, y, maxW, 28, 3, 3, 'FD');
+
+    const colW = maxW / 2;
+    metaItems.forEach((item, i) => {
+      const cx = M + (i % 2) * colW + 5;
+      const cy = y + 8 + Math.floor(i / 2) * 10;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(...C.muted);
+      doc.text(item.label, cx, cy);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(...C.dark);
+      const valLines = doc.splitTextToSize(item.val, colW - 30);
+      doc.text(valLines[0], cx + 28, cy);
+    });
+    y += 36;
+
+    // ── SECTIONS ─────────────────────────────────────────────────────────────
+    const sections = pdf.sections || [];
+
+    for (const section of sections) {
+      checkPage(20);
+
+      // Header section
+      doc.setFillColor(...C.section);
+      doc.setDrawColor(...C.border);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(M, y, maxW, 9, 2, 2, 'FD');
+      // Accent bar left
+      doc.setFillColor(...C.accent);
+      doc.rect(M, y, 3, 9, 'F');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(...C.accent);
+      doc.text(section.titre.toUpperCase(), M + 7, y + 6);
+      y += 13;
+
+      // Points
+      for (const point of (section.points || [])) {
+        // Calculer la hauteur nécessaire
+        const titreLines = doc.splitTextToSize('▸ ' + point.titre, maxW - 6);
+        const detailLines = point.detail ? doc.splitTextToSize(point.detail, maxW - 10) : [];
+        const blockH = titreLines.length * 5.5 + (detailLines.length > 0 ? detailLines.length * 4.5 + 2 : 0) + 5;
+        checkPage(blockH + 4);
+
+        // Fond léger sur chaque point
+        doc.setFillColor(250, 252, 255);
+        doc.setDrawColor(220, 230, 248);
+        doc.setLineWidth(0.2);
+        doc.roundedRect(M, y, maxW, blockH, 2, 2, 'FD');
+
+        // Titre du point en gras
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(13);
-        doc.setTextColor(42, 42, 58);
-        const h2 = doc.splitTextToSize(line.substring(3), maxW);
-        doc.text(h2, margin, y);
-        y += h2.length * 6 + 4;
+        doc.setFontSize(10);
+        doc.setTextColor(...C.dark);
+        doc.text(titreLines, M + 5, y + 5);
+        y += titreLines.length * 5.5 + 1;
 
-      } else if (line.startsWith('- ')) {
-        checkPage(7);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(11);
-        doc.setTextColor(80, 80, 100);
-        const bullet = doc.splitTextToSize('• ' + line.substring(2), maxW - 4);
-        doc.text(bullet, margin + 3, y);
-        y += bullet.length * 5.5 + 1;
+        // Détail en italique grisé
+        if (detailLines.length > 0) {
+          doc.setFont('helvetica', 'italic');
+          doc.setFontSize(8.5);
+          doc.setTextColor(...C.detail);
+          doc.text(detailLines, M + 8, y + 3);
+          y += detailLines.length * 4.5 + 2;
+        }
 
-      } else if (line.trim() === '') {
         y += 4;
-
-      } else {
-        checkPage(7);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(11);
-        doc.setTextColor(42, 42, 58);
-        const para = doc.splitTextToSize(line, maxW);
-        doc.text(para, margin, y);
-        y += para.length * 5.5 + 2;
       }
+      y += 4;
     }
 
-    // Footer on each page
+    // ── FOOTER sur chaque page ────────────────────────────────────────────────
     const totalPages = doc.internal.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
+      doc.setFillColor(245, 247, 252);
+      doc.rect(0, pageH - 12, pageW, 12, 'F');
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(160, 160, 180);
-      doc.text('Ponk Note', margin, pageH - 10);
-      doc.text(`${i} / ${totalPages}`, pageW - margin, pageH - 10, { align: 'right' });
+      doc.setFontSize(7.5);
+      doc.setTextColor(...C.muted);
+      doc.text(`Généré par Ponk Note — ${pdf.generatedAt || ''}`, M, pageH - 4.5);
+      doc.text(`${i} / ${totalPages}`, pageW - M, pageH - 4.5, { align: 'right' });
     }
 
     const filename = pdf.titre.replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '_') + '.pdf';
