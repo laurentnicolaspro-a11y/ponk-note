@@ -60,14 +60,17 @@ module.exports = async function handler(req, res) {
 
     let result;
     try {
-      result = await model.generateContent(prompt);
+      // Timeout after 5s - switch to fallback model
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
+      result = await Promise.race([model.generateContent(prompt), timeout]);
     } catch(e) {
-      console.log('[generateaction] Primary model failed:', e.message, '- trying fallback');
+      console.log('[generateaction] Primary failed:', e.message, '- trying gemini-2.5-flash');
       try {
         model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        result = await model.generateContent(prompt);
+        const timeout2 = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
+        result = await Promise.race([model.generateContent(prompt), timeout2]);
       } catch(e2) {
-        console.log('[generateaction] Fallback also failed:', e2.message);
+        console.log('[generateaction] Fallback failed:', e2.message);
         return res.status(200).json({ raw: text });
       }
     }
