@@ -186,37 +186,42 @@ Règles :
         `SECTION: ${s.titre}\n${(s.items || []).map(i => `- ${i}`).join('\n')}`
       ).join('\n\n');
 
-      const enrichPrompt = `Tu es un expert qui prépare des dossiers de réunion ULTRA-LISIBLES.
+      const enrichPrompt = `Tu es un expert qui prepare des dossiers de reunion ultra-lisibles.
 
 Contexte :
-- Événement : "${text}"
+- Evenement : "${text}"
 - Participants : ${participants}
-- Date : ${body.date || 'non précisée'}
-- Réponses : ${answersText}
+- Date : ${body.date || 'non precisee'}
+- Reponses : ${answersText}
 
-Structure à enrichir :
+Structure a enrichir :
 ${sectionsText}
 
-RÈGLES DE FORMAT STRICTES — le document doit se scanner en 10 secondes :
+REGLES STRICTES :
+1. Titre du point : 5 mots maximum
+2. Detail : une seule phrase factuelle et concrete, chiffres si possible
+3. 2 a 3 idees concretes et actionnables par point
+4. Si info locale incertaine : "(a verifier)" en fin de ligne
+5. Exclusivement en francais, zero anglais
+6. Zero emoji, zero caractere special, uniquement lettres et chiffres
 
-1. Chaque point = UNE ligne maximum en gras → suivi d'UNE ligne de détail factuel
-2. Pas de phrases longues, pas de "il est important de", pas de "cela permettra de"
-3. Des faits, des chiffres, des noms, des actions — rien d'autre
-4. Si tu n'es pas certain d'un chiffre local : "(à vérifier)" en fin de ligne, pas de paragraphe d'excuse
-5. EXCLUSIVEMENT EN FRANÇAIS — aucun mot anglais
+FORMAT EXACT a respecter :
 
-FORMAT DE SORTIE EXACT (respecte-le à la lettre) :
+SECTION: Titre section
+POINT: Titre court du point
+DETAIL: Une phrase factuelle concrete
+IDEE: Premiere idee actionnable
+IDEE: Deuxieme idee actionnable
+IDEE: Troisieme idee actionnable
+POINT: Titre point suivant
+DETAIL: Une phrase factuelle
+IDEE: Idee 1
+IDEE: Idee 2
 
-SECTION: [Titre de la section en majuscules]
-POINT: [Titre du point — 5 mots max]
-DETAIL: [Une seule phrase factuelle et concrète]
-POINT: [Titre du point suivant]
-DETAIL: [Une seule phrase factuelle et concrète]
-
-SECTION: [Section suivante]
+SECTION: Section suivante
 ...
 
-Aucune introduction, aucune conclusion, aucun markdown, uniquement ce format.`;
+Zero introduction, zero conclusion, zero markdown, uniquement ce format exact.`;
 
       let enrichedRaw = '';
       try {
@@ -229,7 +234,7 @@ Aucune introduction, aucune conclusion, aucun markdown, uniquement ce format.`;
         ).join('\n\n');
       }
 
-      // Parser le format SECTION/POINT/DETAIL en structure JSON propre
+      // Parser le format SECTION/POINT/DETAIL/IDEE en structure JSON propre
       const parsedSections = [];
       let currentSection = null;
       let currentPoint = null;
@@ -243,10 +248,12 @@ Aucune introduction, aucune conclusion, aucun markdown, uniquement ce format.`;
           currentSection = { titre: trimmed.replace('SECTION:', '').trim(), points: [] };
           currentPoint = null;
         } else if (trimmed.startsWith('POINT:')) {
-          currentPoint = { titre: trimmed.replace('POINT:', '').trim(), detail: '' };
+          currentPoint = { titre: trimmed.replace('POINT:', '').trim(), detail: '', idees: [] };
           if (currentSection) currentSection.points.push(currentPoint);
         } else if (trimmed.startsWith('DETAIL:') && currentPoint) {
           currentPoint.detail = trimmed.replace('DETAIL:', '').trim();
+        } else if (trimmed.startsWith('IDEE:') && currentPoint) {
+          currentPoint.idees.push(trimmed.replace('IDEE:', '').trim());
         }
       }
       if (currentSection) parsedSections.push(currentSection);
