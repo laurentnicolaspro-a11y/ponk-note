@@ -1709,16 +1709,29 @@
           y += detailLines.length * 4.5 + 2;
         }
 
-        // Idees en vert
+        // Idees en vert avec separateur
         if (ideeLines.length > 0) {
           y += 2;
+          // Ligne separatrice fine
+          doc.setDrawColor(...C.ideeborder);
+          doc.setLineWidth(0.2);
+          doc.line(M + 8, y, M + maxW - 4, y);
+          y += 3;
+          // Label "Idees"
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(7);
+          doc.setTextColor(...C.ideetext);
+          doc.text('IDEES :', M + 8, y);
+          y += 4;
           for (const lines of ideeLines) {
             checkPage(lines.length * 4.2 + 3);
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             doc.setTextColor(...C.ideetext);
-            doc.text(lines, M + 10, y + 3);
-            y += lines.length * 4.2 + 1.5;
+            // Puce fleche
+            doc.text('->', M + 8, y);
+            doc.text(lines, M + 14, y);
+            y += lines.length * 4.2 + 2;
           }
         }
 
