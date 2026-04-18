@@ -28,7 +28,7 @@ module.exports = async function handler(req, res) {
     if (!type || !text) return res.status(400).json({ error: 'Type et texte requis' });
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
+    let model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
 
     let prompt = '';
 
@@ -57,7 +57,15 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({ raw: text });
     }
 
-    const result = await model.generateContent(prompt);
+    let model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
+    let result;
+    try {
+      result = await model.generateContent(prompt);
+    } catch(e) {
+      // Fallback to gemini-1.5-flash on 503
+      model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      result = await model.generateContent(prompt);
+    }
     const answer = result.response.text().trim();
     const clean = answer.replace(/```json|```/g, '').trim();
 
