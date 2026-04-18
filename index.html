@@ -701,6 +701,49 @@
   </div>
 </div>
 
+<!-- Calendrier modal -->
+<div class="bubble-modal hidden" id="calendrierModal">
+  <div class="bubble-modal-card" style="max-height:88vh;overflow-y:auto">
+    <div style="font-size:36px;text-align:center;margin-bottom:8px">📅</div>
+    <div class="bubble-modal-type" id="calendrierModalTitle">Événement</div>
+
+    <!-- Step 1: Event info + actions -->
+    <div id="calendrierStep1">
+      <div id="calendrierInfo" style="background:rgba(74,127,212,0.06);border:1px solid rgba(74,127,212,0.15);border-radius:14px;padding:14px;margin:12px 0;display:none">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+          <span style="font-size:11px;background:rgba(74,127,212,0.1);color:var(--accent);padding:3px 10px;border-radius:100px;font-weight:500" id="calendrierDate"></span>
+          <span style="font-size:11px;background:rgba(74,127,212,0.1);color:var(--accent);padding:3px 10px;border-radius:100px;font-weight:500" id="calendrierHeure"></span>
+          <span style="font-size:11px;background:rgba(74,127,212,0.1);color:var(--accent);padding:3px 10px;border-radius:100px;font-weight:500" id="calendrierDuree"></span>
+        </div>
+        <div style="font-size:13px;color:var(--muted)" id="calendrierDesc"></div>
+      </div>
+      <div id="calendrierCalBtn" style="display:none;margin-bottom:8px"></div>
+      <button id="calendrierOrganiseBtn" onclick="startCalendrierOrganise()" style="display:none;width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#4a7fd4,#8a55d4);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">✨ Organiser avec l'IA</button>
+    </div>
+
+    <!-- Loading -->
+    <div id="calendrierLoading" style="text-align:center;padding:20px;display:none">
+      <div style="width:28px;height:28px;border-radius:50%;border:3px solid rgba(74,127,212,0.2);border-top-color:#4a7fd4;animation:spin 0.8s linear infinite;margin:0 auto 10px"></div>
+      <div style="font-size:13px;color:var(--muted)" id="calendrierLoadingText">Analyse en cours…</div>
+    </div>
+
+    <!-- Step 2: Questions -->
+    <div id="calendrierStep2" style="display:none">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:12px">Questions de l'IA</div>
+      <div id="calendrierQuestions"></div>
+      <button onclick="submitCalendrierAnswers()" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px">Préparer →</button>
+    </div>
+
+    <!-- Step 3: Preparation result -->
+    <div id="calendrierStep3" style="display:none">
+      <div id="calendrierPrepContent"></div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px" id="calendrierActionBtns"></div>
+    </div>
+
+    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted);margin-top:10px" onclick="document.getElementById('calendrierModal').classList.add('hidden')">Fermer</button>
+  </div>
+</div>
+
 <!-- Commande modal -->
 <div class="bubble-modal hidden" id="commandeModal">
   <div class="bubble-modal-card" style="max-height:85vh;overflow-y:auto">
@@ -1258,6 +1301,15 @@
     const edited = document.getElementById('bubbleModalText').value.trim();
     if (edited) bubble.text = edited;
 
+    // Handle CALENDRIER - show calendar modal
+    if (bubble.type === 'CALENDRIER') {
+      document.getElementById('bubbleModal').classList.add('hidden');
+      bubble.confirmed = true;
+      removeBubbleEl(currentBubbleIndex);
+      showCalendrierModal(bubble.text);
+      return;
+    }
+
     // Handle COMMANDE - show brief modal
     if (bubble.type === 'COMMANDE') {
       document.getElementById('bubbleModal').classList.add('hidden');
@@ -1393,6 +1445,169 @@
     if (clean.startsWith('00')) return clean.substring(2);
     if (clean.startsWith('0')) return '33' + clean.substring(1);
     return clean;
+  }
+
+  let calendrierData = {};
+  let calendrierAnswers = [];
+
+  async function showCalendrierModal(text) {
+    calendrierData = { text };
+    calendrierAnswers = [];
+    const modal = document.getElementById('calendrierModal');
+    document.getElementById('calendrierModalTitle').textContent = text.substring(0, 40) + (text.length > 40 ? '…' : '');
+    document.getElementById('calendrierStep1').style.display = 'block';
+    document.getElementById('calendrierStep2').style.display = 'none';
+    document.getElementById('calendrierStep3').style.display = 'none';
+    document.getElementById('calendrierInfo').style.display = 'none';
+    document.getElementById('calendrierCalBtn').style.display = 'none';
+    document.getElementById('calendrierOrganiseBtn').style.display = 'none';
+    document.getElementById('calendrierLoading').style.display = 'block';
+    document.getElementById('calendrierLoadingText').textContent = 'Analyse en cours…';
+    modal.classList.remove('hidden');
+
+    const now = new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+    try {
+      const res = await fetch('/api/calendrier', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({text, datetime: now, action: 'parse'})
+      });
+      const data = await res.json();
+      calendrierData = {...calendrierData, ...data};
+      document.getElementById('calendrierLoading').style.display = 'none';
+
+      if (data.titre) {
+        document.getElementById('calendrierModalTitle').textContent = data.titre;
+
+        // Event info
+        if (data.date) document.getElementById('calendrierDate').textContent = '📅 ' + data.date;
+        if (data.heure) document.getElementById('calendrierHeure').textContent = '🕐 ' + data.heure;
+        if (data.duree) document.getElementById('calendrierDuree').textContent = '⏱ ' + data.duree;
+        if (data.description) document.getElementById('calendrierDesc').textContent = data.description;
+        document.getElementById('calendrierInfo').style.display = 'block';
+
+        // Calendar button
+        const prefCal = localStorage.getItem('ponk_pref_cal') || 'google';
+        const titre = encodeURIComponent(data.titre);
+        const desc = encodeURIComponent(data.description || '');
+        const calUrls = {
+          'google': `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&details=${desc}`,
+          'outlook': `https://outlook.live.com/calendar/0/deeplink/compose?subject=${titre}&body=${desc}`,
+          'apple': `webcal://`
+        };
+        const calNames = {'google':'Google Calendar','outlook':'Outlook','apple':'Apple Calendar'};
+        document.getElementById('calendrierCalBtn').innerHTML = `<a href="${calUrls[prefCal]}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);text-decoration:none;color:var(--text)"><span>📅</span><div style="flex:1;font-size:13px;font-weight:600">Ajouter à ${calNames[prefCal]}</div><div style="width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="12" height="12" fill="white"><path d="M8 5v14l11-7z"/></svg></div></a>`;
+        document.getElementById('calendrierCalBtn').style.display = 'block';
+        document.getElementById('calendrierOrganiseBtn').style.display = 'block';
+      }
+    } catch(e) {
+      document.getElementById('calendrierLoading').textContent = 'Service indisponible';
+    }
+  }
+
+  function startCalendrierOrganise() {
+    document.getElementById('calendrierStep1').style.display = 'none';
+    document.getElementById('calendrierStep2').style.display = 'block';
+
+    const questions = calendrierData.questions || [];
+    document.getElementById('calendrierQuestions').innerHTML = questions.map(q => `
+      <div style="margin-bottom:12px">
+        <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px">🤖 ${q.question}</div>
+        <textarea data-qid="${q.id}" data-question="${q.question.replace(/"/g,'&quot;')}" placeholder="Votre réponse..." style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.7);background:rgba(255,255,255,0.5);font-family:inherit;font-size:13px;color:var(--text);outline:none;resize:none;min-height:60px;"></textarea>
+      </div>
+    `).join('');
+  }
+
+  async function submitCalendrierAnswers() {
+    const textareas = document.querySelectorAll('#calendrierQuestions textarea');
+    calendrierAnswers = Array.from(textareas).map(t => ({
+      question: t.dataset.question,
+      answer: t.value.trim() || '—'
+    }));
+
+    document.getElementById('calendrierStep2').style.display = 'none';
+    document.getElementById('calendrierLoading').style.display = 'block';
+    document.getElementById('calendrierLoadingText').textContent = 'Préparation en cours…';
+
+    const now = new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+    try {
+      const res = await fetch('/api/calendrier', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          text: calendrierData.text,
+          datetime: now,
+          action: 'prepare',
+          type: calendrierData.type,
+          date: calendrierData.date,
+          participants: calendrierData.participants || [],
+          answers: calendrierAnswers
+        })
+      });
+      const data = await res.json();
+      document.getElementById('calendrierLoading').style.display = 'none';
+      document.getElementById('calendrierStep3').style.display = 'block';
+
+      // Show prep sections
+      const prep = data.preparation;
+      if (prep) {
+        document.getElementById('calendrierPrepContent').innerHTML = `
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:10px">✨ ${prep.titre}</div>
+          ${(prep.sections || []).map(s => `
+            <div style="background:rgba(255,255,255,0.5);border-radius:12px;padding:12px;margin-bottom:8px">
+              <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">${s.emoji} ${s.titre}</div>
+              ${(s.items || []).map(i => `<div style="font-size:12px;color:var(--muted);padding:2px 0">→ ${i}</div>`).join('')}
+            </div>
+          `).join('')}
+        `;
+      }
+
+      // Action buttons
+      const btns = document.getElementById('calendrierActionBtns');
+      let btnsHtml = '';
+
+      // Email button if participants
+      if (data.hasEmail && data.email) {
+        const prefMail = localStorage.getItem('ponk_pref_mail') || 'gmail';
+        const sujet = encodeURIComponent(data.email.sujet || '');
+        const corps = encodeURIComponent(data.email.corps || '');
+        const emailUrls = {
+          'gmail': `https://mail.google.com/mail/?view=cm&fs=1&su=${sujet}&body=${corps}`,
+          'outlook': `https://outlook.live.com/mail/0/deeplink/compose?subject=${sujet}&body=${corps}`,
+          'yahoo': `https://compose.mail.yahoo.com/?subject=${sujet}&body=${corps}`,
+          'default': `mailto:?subject=${sujet}&body=${corps}`
+        };
+        btnsHtml += `<a href="${emailUrls[prefMail]}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:var(--accent);color:#fff;text-decoration:none;font-size:14px;font-weight:600">📧 Envoyer aux participants</a>`;
+      }
+
+      // PDF button
+      if (data.pdf) {
+        btnsHtml += `<button onclick="downloadCalendrierPDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:none;background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);color:var(--text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;width:100%">↓ Télécharger PDF</button>`;
+        window._calendrierPDF = data.pdf;
+      }
+
+      btns.innerHTML = btnsHtml;
+
+    } catch(e) {
+      document.getElementById('calendrierLoading').textContent = 'Erreur lors de la préparation';
+    }
+  }
+
+  function downloadCalendrierPDF() {
+    const pdf = window._calendrierPDF;
+    if (!pdf) return;
+    // Simple HTML to print as PDF
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${pdf.titre}</title><style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:20px;color:#2a2a3a}h1{color:#4a7fd4;border-bottom:2px solid #4a7fd4;padding-bottom:10px}h2{color:#2a2a3a;margin-top:24px}ul{padding-left:20px}li{margin-bottom:6px}p{line-height:1.6}</style></head><body><h1>${pdf.titre}</h1>${pdf.contenu.replace(/##\s(.+)/g,'<h2>$1</h2>').replace(/
+-\s(.+)/g,'<li>$1</li>').replace(/(<li>.*<\/li>)/gs,'<ul>$1</ul>').replace(/
+
+/g,'<br>')}</body></html>`;
+    const blob = new Blob([html], {type:'text/html'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = pdf.titre.replace(/[^a-z0-9]/gi,'_') + '.html';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   async function showCommandeModal(text) {
