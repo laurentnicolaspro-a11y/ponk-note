@@ -1213,8 +1213,18 @@
       if (confirmBtn) { confirmBtn.textContent = '→ Faire'; confirmBtn.disabled = false; }
       const url = getActionUrlFromBubble(bubble);
       if (url) {
-        if (isMobile) window.location.href = url;
-        else if (win) win.location.href = url;
+        if (isMobile) {
+          // On mobile use a real link click for better app handling
+          const a = document.createElement('a');
+          a.href = url;
+          a.target = '_blank';
+          a.rel = 'noopener';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => document.body.removeChild(a), 100);
+        } else if (win) {
+          win.location.href = url;
+        }
       }
     } else {
       const url = getActionUrlFromBubble(bubble);
