@@ -21,8 +21,12 @@ module.exports = async function handler(req, res) {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     let model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
 
-    // Encode search query
-    const query = encodeURIComponent(text.replace(/['"]/g, '').trim());
+    // Encode search query - remove action words
+    const cleanText = text
+      .replace(/^(commande|commander|achète|acheter|réserve|réserver|passe une commande|faire une commande|je veux|il faut|faut|on doit|on va)\s+/i, '')
+      .replace(/^(un|une|des|le|la|les|du|de la)\s+/i, '')
+      .trim();
+    const query = encodeURIComponent(cleanText);
 
     const SITES_URLS = {
       'Google Shopping': `https://www.google.com/search?q=${query}&tbm=shop`,
