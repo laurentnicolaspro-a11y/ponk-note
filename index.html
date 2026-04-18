@@ -1159,8 +1159,11 @@
       }
       case 'WHATSAPP':
         return `https://wa.me/?text=${encoded}`;
-      case 'APPEL':
-        return `tel:`;
+      case 'APPEL': {
+        const phone = (g.phone || g.telephone || '').replace(/[^0-9+]/g,'');
+        // Try Phone Link first, fallback to tel:
+        return phone ? `tel:${phone}` : `tel:`;
+      }
       case 'CALENDRIER':
         if (prefCal === 'google')  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encoded}`;
         if (prefCal === 'outlook') return `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encoded}`;
