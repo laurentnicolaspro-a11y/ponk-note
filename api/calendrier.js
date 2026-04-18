@@ -180,74 +180,89 @@ Règles :
         return res.status(200).json({ raw: text });
       }
 
-      // ── Enrich : deuxième passe pour développer le contenu PDF ───────────────
+      // ── Enrich : deuxième passe — format scannable ───────────────────────────
       const pdfSections = prepData.pdf?.sections || [];
       const sectionsText = pdfSections.map(s =>
-        `### ${s.titre}\n${(s.items || []).map(i => `- ${i}`).join('\n')}`
+        `SECTION: ${s.titre}\n${(s.items || []).map(i => `- ${i}`).join('\n')}`
       ).join('\n\n');
 
-      const enrichPrompt = `Tu es un expert qui enrichit des dossiers de réunion avec des informations factuelles précises.
+      const enrichPrompt = `Tu es un expert qui prépare des dossiers de réunion ULTRA-LISIBLES.
 
-Contexte de la réunion :
+Contexte :
 - Événement : "${text}"
 - Participants : ${participants}
 - Date : ${body.date || 'non précisée'}
-- Réponses utilisateur : ${answersText}
+- Réponses : ${answersText}
 
-Voici la structure du dossier à enrichir :
+Structure à enrichir :
 ${sectionsText}
 
-Pour CHAQUE point listé, développe-le avec :
-- Des informations factuelles concrètes que tu connais sur le sujet
-- Des chiffres, statistiques ou données de référence si pertinents
-- Des éléments de contexte utiles pour la réunion
-- Des questions ou sous-points à creuser
+RÈGLES DE FORMAT STRICTES — le document doit se scanner en 10 secondes :
 
-IMPORTANT :
-- Si tu n'es pas certain d'une information locale précise, indique-le avec "(à vérifier localement)"
-- Reste factuel et professionnel
-- Développe chaque point en 2 à 4 lignes substantielles
+1. Chaque point = UNE ligne maximum en gras → suivi d'UNE ligne de détail factuel
+2. Pas de phrases longues, pas de "il est important de", pas de "cela permettra de"
+3. Des faits, des chiffres, des noms, des actions — rien d'autre
+4. Si tu n'es pas certain d'un chiffre local : "(à vérifier)" en fin de ligne, pas de paragraphe d'excuse
+5. EXCLUSIVEMENT EN FRANÇAIS — aucun mot anglais
 
-Retourne le dossier enrichi en markdown structuré, avec ce format exact :
+FORMAT DE SORTIE EXACT (respecte-le à la lettre) :
 
-## [Titre section]
-### [Sous-titre point]
-[Développement factuel et enrichi]
+SECTION: [Titre de la section en majuscules]
+POINT: [Titre du point — 5 mots max]
+DETAIL: [Une seule phrase factuelle et concrète]
+POINT: [Titre du point suivant]
+DETAIL: [Une seule phrase factuelle et concrète]
 
----
+SECTION: [Section suivante]
+...
 
-Markdown uniquement, pas de JSON, pas d'introduction.`;
+Aucune introduction, aucune conclusion, aucun markdown, uniquement ce format.`;
 
-      let enrichedContent = '';
+      let enrichedRaw = '';
       try {
-        enrichedContent = await callGemini(enrichPrompt, 20000);
+        enrichedRaw = await callGemini(enrichPrompt, 20000);
       } catch(e) {
         console.log('[calendrier] enrich failed, using basic content');
-        // Fallback : construire un markdown basique depuis la structure
-        enrichedContent = pdfSections.map(s =>
-          `## ${s.titre}\n${(s.items || []).map(i => `- ${i}`).join('\n')}`
+        enrichedRaw = pdfSections.map(s =>
+          `SECTION: ${s.titre.toUpperCase()}\n` +
+          (s.items || []).map(i => `POINT: ${i}\nDETAIL: À compléter`).join('\n')
         ).join('\n\n');
       }
 
-      // Construire le PDF final avec métadonnées + contenu enrichi
+      // Parser le format SECTION/POINT/DETAIL en structure JSON propre
+      const parsedSections = [];
+      let currentSection = null;
+      let currentPoint = null;
+
+      for (const line of enrichedRaw.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+
+        if (trimmed.startsWith('SECTION:')) {
+          if (currentSection) parsedSections.push(currentSection);
+          currentSection = { titre: trimmed.replace('SECTION:', '').trim(), points: [] };
+          currentPoint = null;
+        } else if (trimmed.startsWith('POINT:')) {
+          currentPoint = { titre: trimmed.replace('POINT:', '').trim(), detail: '' };
+          if (currentSection) currentSection.points.push(currentPoint);
+        } else if (trimmed.startsWith('DETAIL:') && currentPoint) {
+          currentPoint.detail = trimmed.replace('DETAIL:', '').trim();
+        }
+      }
+      if (currentSection) parsedSections.push(currentSection);
+
+      // Construire le contenu PDF enrichi
       const meta = prepData.pdf?.meta || {};
-      const pdfContenu = `Date : ${meta.date || 'À préciser'}
-Lieu : ${meta.lieu || 'À préciser'}
-Durée prévue : ${meta.duree || 'À préciser'}
-Participants : ${meta.participants || participants}
-
----
-
-${enrichedContent}
-
----
-
-Document généré par Ponk Note le ${new Date().toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'})}`;
-
-      // Injecter le contenu enrichi dans la réponse finale
       prepData.pdf = {
-        titre: prepData.pdf?.titre || `Dossier de séance — ${text}`,
-        contenu: pdfContenu
+        titre: prepData.pdf?.titre || `Dossier — ${text}`,
+        meta: {
+          date: meta.date || body.date || 'À préciser',
+          lieu: meta.lieu || 'À préciser',
+          duree: meta.duree || body.duree || 'À préciser',
+          participants: meta.participants || participants
+        },
+        sections: parsedSections,
+        generatedAt: new Date().toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'})
       };
 
       return res.status(200).json(prepData);
