@@ -16,6 +16,7 @@ module.exports = async function handler(req, res) {
       body = JSON.parse(Buffer.concat(chunks).toString());
     }
     const { type, text, profile, contacts = [] } = body;
+    console.log('[generateaction] type:', type, '| text:', text, '| contacts:', JSON.stringify(contacts));
 
     // Find contact by name match
     function findContact(text) {
@@ -27,7 +28,7 @@ module.exports = async function handler(req, res) {
     if (!type || !text) return res.status(400).json({ error: 'Type et texte requis' });
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
 
     let prompt = '';
 
