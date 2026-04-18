@@ -1596,11 +1596,16 @@
   function downloadCalendrierPDF() {
     const pdf = window._calendrierPDF;
     if (!pdf) return;
-    // Simple HTML to print as PDF
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${pdf.titre}</title><style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:20px;color:#2a2a3a}h1{color:#4a7fd4;border-bottom:2px solid #4a7fd4;padding-bottom:10px}h2{color:#2a2a3a;margin-top:24px}ul{padding-left:20px}li{margin-bottom:6px}p{line-height:1.6}</style></head><body><h1>${pdf.titre}</h1>${pdf.contenu.replace(/##\s(.+)/g,'<h2>$1</h2>').replace(/
--\s(.+)/g,'<li>$1</li>').replace(/(<li>.*<\/li>)/gs,'<ul>$1</ul>').replace(/
-
-/g,'<br>')}</body></html>`;
+    const contenu = pdf.contenu
+      .split('\n')
+      .map(line => {
+        if (line.startsWith('## ')) return '<h2>' + line.substring(3) + '</h2>';
+        if (line.startsWith('- ')) return '<li>' + line.substring(2) + '</li>';
+        if (line === '') return '<br>';
+        return '<p>' + line + '</p>';
+      })
+      .join('');
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${pdf.titre}</title><style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:20px;color:#2a2a3a}h1{color:#4a7fd4;border-bottom:2px solid #4a7fd4;padding-bottom:10px}h2{color:#2a2a3a;margin-top:24px}ul{padding-left:20px}li{margin-bottom:6px}p{line-height:1.6}</style></head><body><h1>${pdf.titre}</h1>${contenu}</body></html>`;
     const blob = new Blob([html], {type:'text/html'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
