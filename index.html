@@ -701,6 +701,47 @@
   </div>
 </div>
 
+<!-- Commande modal -->
+<div class="bubble-modal hidden" id="commandeModal">
+  <div class="bubble-modal-card" style="max-height:85vh;overflow-y:auto">
+    <div style="font-size:36px;text-align:center;margin-bottom:8px">🛒</div>
+    <div class="bubble-modal-type" id="commandeModalTitle">Brief produit</div>
+
+    <!-- Loading state -->
+    <div id="commandeLoading" style="text-align:center;padding:20px">
+      <div style="width:32px;height:32px;border-radius:50%;border:3px solid rgba(74,127,212,0.2);border-top-color:#4a7fd4;animation:spin 0.8s linear infinite;margin:0 auto 12px"></div>
+      <div style="font-size:13px;color:var(--muted)">Analyse en cours…</div>
+    </div>
+
+    <!-- Brief content -->
+    <div id="commandeBrief" style="display:none">
+      <div style="background:rgba(74,127,212,0.06);border:1px solid rgba(74,127,212,0.15);border-radius:14px;padding:14px;margin-bottom:14px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--accent);margin-bottom:10px">✨ Analyse IA avant achat</div>
+        <div style="display:flex;align-items:center;gap:8px;background:rgba(61,184,122,0.1);border-radius:8px;padding:8px 10px;margin-bottom:10px">
+          <span style="font-size:16px">💰</span>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#3db87a" id="commandePrix"></div>
+            <div style="font-size:11px;color:var(--muted)" id="commandePrixNote"></div>
+          </div>
+        </div>
+        <div style="margin-bottom:8px">
+          <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px">✅ Ce qu'il faut vérifier</div>
+          <div id="commandeVerifier" style="font-size:12px;color:var(--muted);line-height:1.8"></div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px">⚠️ Points d'attention</div>
+          <div id="commandeAttention" style="font-size:12px;color:var(--muted);line-height:1.8"></div>
+        </div>
+      </div>
+
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:8px">Rechercher sur</div>
+      <div id="commandeSites" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px"></div>
+    </div>
+
+    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted)" onclick="document.getElementById('commandeModal').classList.add('hidden')">Fermer</button>
+  </div>
+</div>
+
 <!-- WhatsApp modal -->
 <div class="bubble-modal hidden" id="waModal">
   <div class="bubble-modal-card">
@@ -1217,6 +1258,15 @@
     const edited = document.getElementById('bubbleModalText').value.trim();
     if (edited) bubble.text = edited;
 
+    // Handle COMMANDE - show brief modal
+    if (bubble.type === 'COMMANDE') {
+      document.getElementById('bubbleModal').classList.add('hidden');
+      bubble.confirmed = true;
+      removeBubbleEl(currentBubbleIndex);
+      showCommandeModal(bubble.text);
+      return;
+    }
+
     // Handle WHATSAPP - show message modal if no phone
     if (bubble.type === 'WHATSAPP') {
       document.getElementById('bubbleModal').classList.add('hidden');
@@ -1343,6 +1393,40 @@
     if (clean.startsWith('00')) return clean.substring(2);
     if (clean.startsWith('0')) return '33' + clean.substring(1);
     return clean;
+  }
+
+  async function showCommandeModal(text) {
+    const modal = document.getElementById('commandeModal');
+    document.getElementById('commandeModalTitle').textContent = text.substring(0, 40) + (text.length > 40 ? '…' : '');
+    document.getElementById('commandeLoading').style.display = 'block';
+    document.getElementById('commandeBrief').style.display = 'none';
+    modal.classList.remove('hidden');
+
+    try {
+      const res = await fetch('/api/commande', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({text})
+      });
+      const data = await res.json();
+
+      if (data.produit) {
+        document.getElementById('commandePrix').textContent = data.fourchette_prix || '';
+        document.getElementById('commandePrixNote').textContent = data.fourchette_note || '';
+        document.getElementById('commandeVerifier').innerHTML = (data.verifier || []).map(v => `<div>→ ${v}</div>`).join('');
+        document.getElementById('commandeAttention').innerHTML = (data.attention || []).map(a => `<div>→ ${a}</div>`).join('');
+        document.getElementById('commandeSites').innerHTML = (data.sites || []).map(s =>
+          `<a href="${s.url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);text-decoration:none;color:var(--text)">
+            <span style="font-size:20px">${s.icon}</span>
+            <div style="flex:1"><div style="font-size:13px;font-weight:600">${s.nom}</div><div style="font-size:11px;color:var(--muted)">${s.desc}</div></div>
+            <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="12" height="12" fill="white"><path d="M8 5v14l11-7z"/></svg></div>
+          </a>`
+        ).join('');
+        document.getElementById('commandeLoading').style.display = 'none';
+        document.getElementById('commandeBrief').style.display = 'block';
+      }
+    } catch(e) {
+      document.getElementById('commandeLoading').innerHTML = '<div style="font-size:13px;color:var(--muted);padding:10px">Service temporairement indisponible</div>';
+    }
   }
 
   function showWhatsAppModal(phone, message) {
