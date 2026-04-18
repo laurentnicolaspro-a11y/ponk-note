@@ -8,7 +8,7 @@ module.exports = async function handler(req, res) {
     if (!query) return res.status(400).json({ error: 'Query requise' });
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
+    let model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
 
     const prompt = `Tu es un expert analyste. Fais une analyse complète et structurée sur le sujet suivant :
 
@@ -23,8 +23,18 @@ Format de réponse en français, structuré avec des sections claires :
 
 Réponds directement sans introduction comme "Voici l'analyse" ou "Bien sûr".`;
 
-    const result = await model.generateContent(prompt);
-    const analysis = result.response.text().trim();
+    const _models_d = ['gemini-3.1-flash-lite-preview', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+    let _res_d;
+    for (const _mn of _models_d) {
+      try {
+        model = genAI.getGenerativeModel({ model: _mn });
+        const _t = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
+        _res_d = await Promise.race([model.generateContent(prompt), _t]);
+        break;
+      } catch(e) { console.log('[deepanalyze fallback]', _mn, 'failed'); }
+    }
+    if (!_res_d) return res.status(500).json({ error: 'Service temporairement indisponible' });
+    const analysis = _res_d.response.text().trim();
 
     return res.status(200).json({ analysis });
 
