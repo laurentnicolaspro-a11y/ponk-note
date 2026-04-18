@@ -707,11 +707,11 @@
     <div style="font-size:42px;margin-bottom:12px">📞</div>
     <div class="bubble-modal-type" id="callModalName"></div>
     <div style="font-size:28px;font-weight:300;letter-spacing:2px;color:var(--text);margin:16px 0" id="callModalPhone"></div>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px" id="callAppLinks"></div>
+    <div style="display:flex;gap:8px">
       <button class="bubble-modal-btn btn-confirm" onclick="copyPhone()" id="callCopyBtn">📋 Copier</button>
       <button class="bubble-modal-btn" style="background:rgba(0,0,0,0.06);color:var(--muted)" onclick="document.getElementById('callModal').classList.add('hidden')">Fermer</button>
     </div>
-    <a id="callTelLink" href="" style="font-size:12px;color:var(--accent);text-decoration:none">Ouvrir dans Phone Link →</a>
   </div>
 </div>
 
@@ -1297,8 +1297,15 @@
   function showCallModal(phone, name) {
     document.getElementById('callModalName').textContent = name || 'Appel';
     document.getElementById('callModalPhone').textContent = phone || 'Numéro non trouvé';
-    const link = document.getElementById('callTelLink');
-    if (link && phone) link.href = `tel:${phone}`;
+    const linksEl = document.getElementById('callAppLinks');
+    if (linksEl && phone) {
+      const enc = encodeURIComponent(phone);
+      linksEl.innerHTML = `
+        <a href="tel:${phone}" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.5);color:var(--text);text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,0.7);text-align:center">📱 Phone Link</a>
+        <a href="skype:${phone}?call" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.5);color:var(--text);text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,0.7);text-align:center">💙 Skype</a>
+        <a href="msteams://call?phone=${enc}" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.5);color:var(--text);text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,0.7);text-align:center">💼 Teams</a>
+      `;
+    }
     document.getElementById('callModal').classList.remove('hidden');
   }
 
