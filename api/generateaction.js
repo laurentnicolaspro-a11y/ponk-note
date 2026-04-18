@@ -32,12 +32,18 @@ module.exports = async function handler(req, res) {
     let prompt = '';
 
     switch(type) {
-      case 'EMAIL':
-        prompt = `Rédige un email en français. Description: "${text}". Utilisateur: "${profile||'moi'}". ${contact ? `Destinataire: ${contact.name}${contact.email ? ', email: '+contact.email : ''}.` : 'Extrait le prénom du destinataire si mentionné.'} JSON uniquement: {"sujet":"...","corps":"...","destinataire":"${contact?.email || contact?.name || ''}"}`;
+      case 'EMAIL': {
+        const dest = contact ? (contact.email || contact.name) : '';
+        const destInfo = contact ? `Destinataire: ${contact.name}${contact.email ? ', email: '+contact.email : ''}.` : 'Extrait le prénom du destinataire si mentionné.';
+        prompt = `Rédige un email naturel en français. Description: "${text}". Utilisateur: "${profile||'moi'}". ${destInfo} JSON uniquement: {"sujet":"sujet court","corps":"corps email bien rédigé","destinataire":"${dest}"}`;
         break;
-      case 'WHATSAPP':
-        prompt = `Rédige un message WhatsApp court en français. Description: "${text}". ${contact ? `Destinataire: ${contact.name}.` : ''} JSON uniquement: {"message":"...","phone":"${contact?.phone || ''}"}`;
+      }
+      case 'WHATSAPP': {
+        const phone = contact?.phone || '';
+        const destInfo = contact ? `Destinataire: ${contact.name}.` : '';
+        prompt = `Rédige un message WhatsApp court et naturel en français. Description: "${text}". ${destInfo} JSON uniquement: {"message":"message naturel","phone":"${phone}"}`;
         break;
+      }
       case 'CALENDRIER':
         prompt = `Crée un événement calendrier. Description: "${text}". JSON uniquement: {"titre":"...","description":"..."}`;
         break;
