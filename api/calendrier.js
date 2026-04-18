@@ -197,29 +197,37 @@ Contexte :
 Structure a enrichir :
 ${sectionsText}
 
-REGLES ABSOLUES :
-1. ZERO emoji, ZERO symbole, ZERO caractere special — uniquement des lettres, chiffres, tirets et points
-2. Titre du point : 4 mots maximum, sans verbe
-3. DETAIL : 1 phrase factuelle avec chiffre ou nom precis si possible. Si incertain : "(a verifier)"
-4. IDEE : suggestion pratique DIFFERENTE du detail — un outil concret, un nom de service, une methode nommee, un exemple reel. Pas une reformulation du detail.
-5. 2 idees maximum par point
-6. Exclusivement en francais, zero anglais
+REGLES ABSOLUES — toute violation invalide le document :
+1. ZERO emoji, ZERO symbole special, ZERO esperluette, ZERO pourcent, ZERO arobase
+2. Uniquement : lettres a-z, chiffres 0-9, tiret, point, virgule, apostrophe, parentheses
+3. Titre du point : 4 mots maximum
+4. DETAIL : 1 phrase factuelle avec chiffre ou nom precis. Si incertain : "(a verifier)"
+5. IDEE : outil concret nomme, service reel, methode avec un nom. PAS une reformulation du detail.
+6. Exactement 5 IDEE par point, ni plus ni moins
+7. Exclusivement en francais
 
-FORMAT EXACT — ne jamais s'en ecarter :
+FORMAT EXACT a respecter a la lettre :
 
-SECTION: Titre section sans emoji
-POINT: Titre sans emoji
-DETAIL: Phrase factuelle concrete
-IDEE: Suggestion pratique avec nom ou outil concret
-IDEE: Deuxieme suggestion differente
+SECTION: Titre section
+POINT: Titre point court
+DETAIL: Une phrase factuelle
+IDEE: Premiere idee avec outil ou methode nommee
+IDEE: Deuxieme idee differente
+IDEE: Troisieme idee differente
+IDEE: Quatrieme idee differente
+IDEE: Cinquieme idee differente
 POINT: Titre suivant
 DETAIL: Phrase factuelle
-IDEE: Suggestion concrete
+IDEE: Idee 1
+IDEE: Idee 2
+IDEE: Idee 3
+IDEE: Idee 4
+IDEE: Idee 5
 
 SECTION: Section suivante
 ...
 
-Commence directement par SECTION:, aucun texte avant ou apres.`;
+Commence directement par SECTION:, rien avant, rien apres.`;
 
       let enrichedRaw = '';
       try {
@@ -232,12 +240,14 @@ Commence directement par SECTION:, aucun texte avant ou apres.`;
         ).join('\n\n');
       }
 
-      // Nettoyer les emojis et caracteres speciaux que Gemini glisse malgre le prompt
+      // Nettoyer emojis, symboles et artefacts d'encodage que Gemini glisse
       const stripEmojis = (str) => str
         .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
         .replace(/[\u{2600}-\u{27BF}]/gu, '')
         .replace(/[\u{FE00}-\u{FEFF}]/gu, '')
-        .replace(/[%][\w\d]{1,3}/g, '')
+        .replace(/[\u{200B}-\u{200F}]/gu, '')
+        .replace(/%[^\w\s]/g, '')
+        .replace(/[^\x00-\x7E\u00C0-\u024F\s]/g, '')
         .trim();
 
       // Parser le format SECTION/POINT/DETAIL/IDEE en structure JSON propre
