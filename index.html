@@ -1335,13 +1335,23 @@
     localStorage.setItem('ponk_action_bubbles', JSON.stringify(kept));
   }
 
+  function normalizePhone(phone) {
+    if (!phone) return '';
+    const clean = phone.replace(/[^0-9+]/g, '');
+    if (clean.startsWith('+')) return clean.replace('+', '');
+    if (clean.startsWith('00')) return clean.substring(2);
+    if (clean.startsWith('0')) return '33' + clean.substring(1);
+    return clean;
+  }
+
   function showWhatsAppModal(phone, message) {
     document.getElementById('waModalMessage').textContent = message;
     const linksEl = document.getElementById('waAppLinks');
     const enc = encodeURIComponent(message);
     if (phone) {
+      const waPhone = normalizePhone(phone);
       linksEl.innerHTML = `
-        <a href="https://wa.me/${phone.replace(/[^0-9]/g,'')}?text=${enc}" target="_blank" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(37,211,102,0.15);color:#128C7E;text-decoration:none;font-size:13px;font-weight:600;border:1px solid rgba(37,211,102,0.3);text-align:center">💬 Ouvrir WhatsApp</a>
+        <a href="https://wa.me/${waPhone}?text=${enc}" target="_blank" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(37,211,102,0.15);color:#128C7E;text-decoration:none;font-size:13px;font-weight:600;border:1px solid rgba(37,211,102,0.3);text-align:center">💬 Ouvrir WhatsApp</a>
       `;
     } else {
       linksEl.innerHTML = `
