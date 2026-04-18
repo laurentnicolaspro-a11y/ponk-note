@@ -197,31 +197,29 @@ Contexte :
 Structure a enrichir :
 ${sectionsText}
 
-REGLES STRICTES :
-1. Titre du point : 5 mots maximum
-2. Detail : une seule phrase factuelle et concrete, chiffres si possible
-3. 2 a 3 idees concretes et actionnables par point
-4. Si info locale incertaine : "(a verifier)" en fin de ligne
-5. Exclusivement en francais, zero anglais
-6. Zero emoji, zero caractere special, uniquement lettres et chiffres
+REGLES ABSOLUES :
+1. ZERO emoji, ZERO symbole, ZERO caractere special — uniquement des lettres, chiffres, tirets et points
+2. Titre du point : 4 mots maximum, sans verbe
+3. DETAIL : 1 phrase factuelle avec chiffre ou nom precis si possible. Si incertain : "(a verifier)"
+4. IDEE : suggestion pratique DIFFERENTE du detail — un outil concret, un nom de service, une methode nommee, un exemple reel. Pas une reformulation du detail.
+5. 2 idees maximum par point
+6. Exclusivement en francais, zero anglais
 
-FORMAT EXACT a respecter :
+FORMAT EXACT — ne jamais s'en ecarter :
 
-SECTION: Titre section
-POINT: Titre court du point
-DETAIL: Une phrase factuelle concrete
-IDEE: Premiere idee actionnable
-IDEE: Deuxieme idee actionnable
-IDEE: Troisieme idee actionnable
-POINT: Titre point suivant
-DETAIL: Une phrase factuelle
-IDEE: Idee 1
-IDEE: Idee 2
+SECTION: Titre section sans emoji
+POINT: Titre sans emoji
+DETAIL: Phrase factuelle concrete
+IDEE: Suggestion pratique avec nom ou outil concret
+IDEE: Deuxieme suggestion differente
+POINT: Titre suivant
+DETAIL: Phrase factuelle
+IDEE: Suggestion concrete
 
 SECTION: Section suivante
 ...
 
-Zero introduction, zero conclusion, zero markdown, uniquement ce format exact.`;
+Commence directement par SECTION:, aucun texte avant ou apres.`;
 
       let enrichedRaw = '';
       try {
@@ -234,26 +232,34 @@ Zero introduction, zero conclusion, zero markdown, uniquement ce format exact.`;
         ).join('\n\n');
       }
 
+      // Nettoyer les emojis et caracteres speciaux que Gemini glisse malgre le prompt
+      const stripEmojis = (str) => str
+        .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
+        .replace(/[\u{2600}-\u{27BF}]/gu, '')
+        .replace(/[\u{FE00}-\u{FEFF}]/gu, '')
+        .replace(/[%][\w\d]{1,3}/g, '')
+        .trim();
+
       // Parser le format SECTION/POINT/DETAIL/IDEE en structure JSON propre
       const parsedSections = [];
       let currentSection = null;
       let currentPoint = null;
 
       for (const line of enrichedRaw.split('\n')) {
-        const trimmed = line.trim();
+        const trimmed = stripEmojis(line.trim());
         if (!trimmed) continue;
 
         if (trimmed.startsWith('SECTION:')) {
           if (currentSection) parsedSections.push(currentSection);
-          currentSection = { titre: trimmed.replace('SECTION:', '').trim(), points: [] };
+          currentSection = { titre: stripEmojis(trimmed.replace('SECTION:', '').trim()), points: [] };
           currentPoint = null;
         } else if (trimmed.startsWith('POINT:')) {
-          currentPoint = { titre: trimmed.replace('POINT:', '').trim(), detail: '', idees: [] };
+          currentPoint = { titre: stripEmojis(trimmed.replace('POINT:', '').trim()), detail: '', idees: [] };
           if (currentSection) currentSection.points.push(currentPoint);
         } else if (trimmed.startsWith('DETAIL:') && currentPoint) {
-          currentPoint.detail = trimmed.replace('DETAIL:', '').trim();
+          currentPoint.detail = stripEmojis(trimmed.replace('DETAIL:', '').trim());
         } else if (trimmed.startsWith('IDEE:') && currentPoint) {
-          currentPoint.idees.push(trimmed.replace('IDEE:', '').trim());
+          currentPoint.idees.push(stripEmojis(trimmed.replace('IDEE:', '').trim()));
         }
       }
       if (currentSection) parsedSections.push(currentSection);
