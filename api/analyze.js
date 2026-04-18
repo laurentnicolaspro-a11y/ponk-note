@@ -45,32 +45,35 @@ module.exports = async function handler(req, res) {
     const bubbles  = JSON.parse(fields['bubbles'] || '[]');
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    let model;
-    try {
-      model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
-    } catch {
-      model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
-    }
+    let model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
     const audioBase64 = audioFile.data.toString('base64');
+
+    // Triple fallback helper - timeout adapté à la taille de l'audio
+    const audioSizeMB = audioFile.data.length / (1024 * 1024);
+    const timeoutMs = Math.max(30000, Math.min(120000, audioSizeMB * 10000)); // 30s min, 120s max
+    console.log('[analyze] audio size:', audioSizeMB.toFixed(1), 'MB, timeout:', timeoutMs/1000, 's');
+
+    async function tryGenerate(content_arg) {
+      const _models = ['gemini-3.1-flash-lite-preview', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+      for (const _mn of _models) {
+        try {
+          const _m = genAI.getGenerativeModel({ model: _mn });
+          const _t = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs));
+          const _r = await Promise.race([_m.generateContent(content_arg), _t]);
+          return _r;
+        } catch(e) { console.log('[analyze fallback]', _mn, 'failed:', e.message); }
+      }
+      throw new Error('All models failed');
+    }
 
     // ── APPEL 1 : Transcription brute ──
     let transcriptResult;
     try {
-      transcriptResult = await model.generateContent([
-      { inlineData: { mimeType: 'audio/webm', data: audioBase64 } },
-      { text: `Transcris cet audio mot par mot en français. 
-Sois fidèle à ce qui est dit, garde les hésitations naturelles.
-Si l'audio est dans une autre langue, traduis en français.
-Réponds UNIQUEMENT avec le texte transcrit, sans commentaire, sans introduction.` }
-    ]);
-
-    } catch {
-      model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
-      transcriptResult = await model.generateContent([
+      transcriptResult = await tryGenerate([
         { inlineData: { mimeType: 'audio/webm', data: audioBase64 } },
-        { text: 'Transcris cet audio mot par mot en français. Réponds UNIQUEMENT avec le texte transcrit.' }
+        { text: `Transcris cet audio mot par mot en français. Sois fidèle à ce qui est dit. Réponds UNIQUEMENT avec le texte transcrit, sans commentaire.` }
       ]);
-    }
+    } catch(e) { throw e; }
     const transcript = transcriptResult.response.text().trim();
 
     // ── APPEL 2 : Analyse structurée ──
@@ -223,12 +226,7 @@ Règles STRICTES pour les actions_ia :
 - Si aucune action claire n'est détectée, mets "actions_ia": []`;
 
     let analysisResult;
-    try {
-      analysisResult = await model.generateContent(analysisPrompt);
-    } catch {
-      model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
-      analysisResult = await model.generateContent(analysisPrompt);
-    }
+    analysisResult = await tryGenerate(analysisPrompt);
     const rawText = analysisResult.response.text();
     const clean = rawText.replace(/```json|```/g, '').trim();
 
