@@ -825,6 +825,7 @@
     const fd = new FormData();
     fd.append('audio', blob, 'rec.webm');
     fd.append('title', title);
+    fd.append('email', localStorage.getItem('ponk_email') || profile);
     fd.append('profile', profile);
     try {
       const res = await fetch('/api/upload', {method:'POST', body:fd});
@@ -1264,11 +1265,30 @@
     return COLORS[Math.abs(hash)%COLORS.length];
   }
 
-  function initProfile() {
+  async function initProfile() {
     initAssistantUI();
     const profile = localStorage.getItem('ponk_profile');
-    if (profile) showApp(profile);
-    else {
+    const email   = localStorage.getItem('ponk_email');
+    if (profile && email) {
+      // Try to sync from Supabase
+      try {
+        const res = await fetch('/api/profile?email=' + encodeURIComponent(email));
+        if (res.ok) {
+          const data = await res.json();
+          // Sync prefs
+          if (data.prefs) {
+            if (data.prefs.mail)  localStorage.setItem('ponk_pref_mail', data.prefs.mail);
+            if (data.prefs.cal)   localStorage.setItem('ponk_pref_cal', data.prefs.cal);
+            if (data.prefs.maps)  localStorage.setItem('ponk_pref_maps', data.prefs.maps);
+          }
+          // Sync contacts
+          if (data.contacts) localStorage.setItem('ponk_contacts', JSON.stringify(data.contacts));
+          // Sync name
+          if (data.name) localStorage.setItem('ponk_profile', data.name);
+        }
+      } catch(e) {}
+      showApp(localStorage.getItem('ponk_profile'));
+    } else {
       document.getElementById('profileScreen').classList.add('visible');
     }
   }
@@ -1283,20 +1303,32 @@
     });
   });
 
-  function submitProfile() {
+  async function submitProfile() {
     const name  = document.getElementById('profileName').value.trim();
     const email = document.getElementById('profileEmail').value.trim();
     if (!name)  { document.getElementById('profileName').focus(); return; }
     if (!email) { document.getElementById('profileEmail').focus(); return; }
-    localStorage.setItem('ponk_profile', name);
-    localStorage.setItem('ponk_email', email);
-    // Save prefs
+
     const mail  = document.querySelector('#prefMail .pref-btn.active')?.dataset.value || 'gmail';
     const cal   = document.querySelector('#prefCal .pref-btn.active')?.dataset.value || 'google';
     const maps  = document.querySelector('#prefMaps .pref-btn.active')?.dataset.value || 'google';
+
+    // Save locally
+    localStorage.setItem('ponk_profile', name);
+    localStorage.setItem('ponk_email', email);
     localStorage.setItem('ponk_pref_mail', mail);
     localStorage.setItem('ponk_pref_cal', cal);
     localStorage.setItem('ponk_pref_maps', maps);
+
+    // Save to Supabase
+    try {
+      await fetch('/api/profile', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ email, name, prefs: {mail, cal, maps}, contacts: [] })
+      });
+    } catch(e) { console.warn('Profile save failed:', e); }
+
     showApp(name);
   }
 
