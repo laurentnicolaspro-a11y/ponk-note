@@ -470,7 +470,7 @@ async function runDeepAnalysis(id, query, el) {
   loading.classList.add('visible');
   if (arrow) arrow.style.display = 'none';
   try {
-    const res = await fetch('/api/deepanalyze', {
+    const res = await fetch('/api/calendrier', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({query})
     });
@@ -506,8 +506,10 @@ function getActionUrl(a) {
     }
     case 'WHATSAPP':
       return `https://wa.me/?text=${encodeURIComponent(a.message || a.description)}`;
-    case 'APPEL':
-      return `tel:`;
+    case 'APPEL': {
+      const phone = (a.telephone || a.phone || '').replace(/[^0-9+]/g,'');
+      return phone ? `tel:${phone}` : `tel:`;
+    }
     case 'CALENDRIER': {
       const titre = encodeURIComponent(a.evenement || a.titre);
       const desc  = encodeURIComponent(a.description || '');
