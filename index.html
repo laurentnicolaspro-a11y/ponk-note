@@ -1202,6 +1202,18 @@
     const edited = document.getElementById('bubbleModalText').value.trim();
     if (edited) bubble.text = edited;
 
+    // Handle APPEL - show call modal
+    if (bubble.type === 'APPEL') {
+      document.getElementById('bubbleModal').classList.add('hidden');
+      bubble.confirmed = true;
+      removeBubbleEl(currentBubbleIndex);
+      const contacts = (() => { try { return JSON.parse(localStorage.getItem('ponk_contacts') || '[]'); } catch(e) { return []; } })();
+      const lower = bubble.text.toLowerCase();
+      const contact = contacts.find(c => c.name && lower.includes(c.name.toLowerCase().split(' ')[0].toLowerCase()));
+      showCallModal(contact?.phone || '', contact?.name || bubble.text);
+      return;
+    }
+
     const aiTypes = ['EMAIL','WHATSAPP','CALENDRIER','RAPPEL'];
 
     if (aiTypes.includes(bubble.type) && bubble.text) {
@@ -1280,6 +1292,23 @@
   function saveBubbles() {
     const kept = actionBubbles.filter(b => b.confirmed !== false);
     localStorage.setItem('ponk_action_bubbles', JSON.stringify(kept));
+  }
+
+  function showCallModal(phone, name) {
+    document.getElementById('callModalName').textContent = name || 'Appel';
+    document.getElementById('callModalPhone').textContent = phone || 'Numéro non trouvé';
+    const link = document.getElementById('callTelLink');
+    if (link && phone) link.href = `tel:${phone}`;
+    document.getElementById('callModal').classList.remove('hidden');
+  }
+
+  function copyPhone() {
+    const phone = document.getElementById('callModalPhone').textContent;
+    navigator.clipboard.writeText(phone).then(() => {
+      const btn = document.getElementById('callCopyBtn');
+      btn.textContent = '✓ Copié !';
+      setTimeout(() => btn.textContent = '📋 Copier', 2000);
+    });
   }
 
   // ── Profile ──
