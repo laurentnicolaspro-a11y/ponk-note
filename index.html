@@ -1082,12 +1082,11 @@
   }
 
   function isForeignLanguage(text) {
-    // Detect non-French words - common English/Spanish/German/Italian patterns
     const foreignPatterns = [
-      /(the|this|that|is|are|was|were|have|has|will|would|can|could|should|must|may|might)/i,
-      /(yo|tu|el|ella|nosotros|vosotros|ellos|que|como|cuando|donde|porque)/i,
-      /(ich|du|er|sie|wir|ihr|sie|und|oder|aber|wenn|weil|dass)/i,
-      /(io|tu|lui|lei|noi|voi|loro|che|come|quando|dove|perché)/i,
+      /(the|this|that|is|are|was|were|have|has|will|would|can|could|should|must|may|might)/i,
+      /(yo|tu|el|ella|nosotros|vosotros|ellos|que|como|cuando|donde|porque)/i,
+      /(ich|du|er|sie|wir|ihr|sie|und|oder|aber|wenn|weil|dass)/i,
+      /(io|tu|lui|lei|noi|voi|loro|che|come|quando|dove|perché)/i,
     ];
     const frenchWords = ['le','la','les','de','du','des','un','une','je','tu','il','nous','vous','ils','que','qui','est','sont','avec','pour','dans','sur','pas','plus','très','aussi','mais','donc','car','ni','or'];
     const words = text.toLowerCase().split(/\s+/);
@@ -1095,8 +1094,6 @@
     const isForeign = foreignPatterns.some(p => p.test(text));
     return isForeign && frenchCount < 2;
   }
-
-
 
   async function askGemini(question) {
     try {
@@ -1152,7 +1149,6 @@
 
   function openManualBubble(type, icon, label) {
     document.getElementById('manualActionMenu').classList.add('hidden');
-    // Open bubble modal with empty text
     const tempIndex = actionBubbles.length;
     actionBubbles.push({ type, icon, label, text: '', time: Date.now(), confirmed: null });
     currentBubbleIndex = tempIndex;
@@ -1184,13 +1180,10 @@
   let currentBubbleIndex = null;
 
   function cleanTranscript(text) {
-    // Remove repeated words/phrases (speech recognition artifacts)
     const words = text.split(' ');
     const cleaned = [];
     for (let i = 0; i < words.length; i++) {
-      // Skip if same word repeated 2+ times
       if (i > 0 && words[i] === words[i-1]) continue;
-      // Skip if 3-word sequence already seen
       if (i >= 2) {
         const triplet = words.slice(i-2, i+1).join(' ');
         const prev = cleaned.join(' ');
@@ -1206,12 +1199,10 @@
   function detectActionKeywords(text) {
     const lower = text.toLowerCase();
     if (text.split(' ').length < 3) return;
-    // Count active (unprocessed) bubbles
     const activeBubbles = actionBubbles.filter(b => b.confirmed === null);
-    if (activeBubbles.length >= MAX_BUBBLES) return; // Suspend until treated
+    if (activeBubbles.length >= MAX_BUBBLES) return;
     for (const [type, config] of Object.entries(ACTION_KEYWORDS)) {
       if (config.words.some(w => lower.includes(w))) {
-        // Avoid duplicates within 30s
         const recent = actionBubbles.find(b => b.type === type && b.confirmed === null && Date.now() - b.time < 30000);
         if (!recent) addActionBubble(type, config.icon, config.label, cleanTranscript(text));
         return;
@@ -1301,7 +1292,6 @@
     const edited = document.getElementById('bubbleModalText').value.trim();
     if (edited) bubble.text = edited;
 
-    // Handle CALENDRIER - show calendar modal
     if (bubble.type === 'CALENDRIER') {
       document.getElementById('bubbleModal').classList.add('hidden');
       bubble.confirmed = true;
@@ -1310,7 +1300,6 @@
       return;
     }
 
-    // Handle COMMANDE - show brief modal
     if (bubble.type === 'COMMANDE') {
       document.getElementById('bubbleModal').classList.add('hidden');
       bubble.confirmed = true;
@@ -1319,16 +1308,13 @@
       return;
     }
 
-    // Handle WHATSAPP - show message modal if no phone
     if (bubble.type === 'WHATSAPP') {
       document.getElementById('bubbleModal').classList.add('hidden');
       bubble.confirmed = true;
       removeBubbleEl(currentBubbleIndex);
-      // Get phone from contacts
       const contactsWA = (() => { try { return JSON.parse(localStorage.getItem('ponk_contacts') || '[]'); } catch(e) { return []; } })();
       const lowerWA = bubble.text.toLowerCase();
       const contactWA = contactsWA.find(c => c.name && lowerWA.includes(c.name.toLowerCase().split(' ')[0].toLowerCase()));
-      // Enrich with Gemini first
       const confirmBtnWA = document.querySelector('.btn-now');
       if (confirmBtnWA) { confirmBtnWA.innerHTML = '<div style="width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;animation:spin 0.8s linear infinite;display:inline-block;"></div>'; confirmBtnWA.disabled = true; }
       try {
@@ -1346,7 +1332,6 @@
       return;
     }
 
-    // Handle APPEL - show call modal
     if (bubble.type === 'APPEL') {
       document.getElementById('bubbleModal').classList.add('hidden');
       bubble.confirmed = true;
@@ -1361,8 +1346,6 @@
     const aiTypes = ['EMAIL','WHATSAPP','CALENDRIER','RAPPEL'];
 
     if (aiTypes.includes(bubble.type) && bubble.text) {
-      // Open loading page immediately to avoid popup blocker
-      // On mobile window.open is blocked - use location.href instead
       const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
       let win = null;
       if (!isMobile) {
@@ -1384,7 +1367,6 @@
       const url = getActionUrlFromBubble(bubble);
       if (url) {
         if (isMobile) {
-          // On mobile use a real link click for better app handling
           const a = document.createElement('a');
           a.href = url;
           a.target = '_blank';
@@ -1408,7 +1390,6 @@
 
   function confirmBubble() {
     if (currentBubbleIndex === null) return;
-    // Save edited text
     const edited = document.getElementById('bubbleModalText').value.trim();
     if (edited) actionBubbles[currentBubbleIndex].text = edited;
     actionBubbles[currentBubbleIndex].confirmed = true;
@@ -1432,7 +1413,6 @@
     setTimeout(() => { el.remove(); updateSlots(); }, 200);
   }
 
-  // Save bubbles to localStorage before redirecting to results
   function saveBubbles() {
     const kept = actionBubbles.filter(b => b.confirmed !== false);
     localStorage.setItem('ponk_action_bubbles', JSON.stringify(kept));
@@ -1479,14 +1459,12 @@
       if (data.titre) {
         document.getElementById('calendrierModalTitle').textContent = data.titre;
 
-        // Event info
         if (data.date) document.getElementById('calendrierDate').textContent = '📅 ' + data.date;
         if (data.heure) document.getElementById('calendrierHeure').textContent = '🕐 ' + data.heure;
         if (data.duree) document.getElementById('calendrierDuree').textContent = '⏱ ' + data.duree;
         if (data.description) document.getElementById('calendrierDesc').textContent = data.description;
         document.getElementById('calendrierInfo').style.display = 'block';
 
-        // Calendar button
         const prefCal = localStorage.getItem('ponk_pref_cal') || 'google';
         const titre = encodeURIComponent(data.titre);
         const desc = encodeURIComponent(data.description || '');
@@ -1548,7 +1526,6 @@
       document.getElementById('calendrierLoading').style.display = 'none';
       document.getElementById('calendrierStep3').style.display = 'block';
 
-      // Show prep sections
       const prep = data.preparation;
       if (prep) {
         document.getElementById('calendrierPrepContent').innerHTML = `
@@ -1562,11 +1539,9 @@
         `;
       }
 
-      // Action buttons
       const btns = document.getElementById('calendrierActionBtns');
       let btnsHtml = '';
 
-      // Email button if participants
       if (data.hasEmail && data.email) {
         const prefMail = localStorage.getItem('ponk_pref_mail') || 'gmail';
         const sujet = encodeURIComponent(data.email.sujet || '');
@@ -1580,9 +1555,8 @@
         btnsHtml += `<a href="${emailUrls[prefMail]}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:var(--accent);color:#fff;text-decoration:none;font-size:14px;font-weight:600">📧 Envoyer aux participants</a>`;
       }
 
-      // PDF button
       if (data.pdf) {
-        btnsHtml += `<button onclick="downloadCalendrierPDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:none;background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);color:var(--text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;width:100%">↓ Télécharger PDF</button>`;
+        btnsHtml += `<button onclick="downloadCalendrierPDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.8);background:rgba(255,255,255,0.6);color:var(--text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;width:100%">📄 Exporter en PDF</button>`;
         window._calendrierPDF = data.pdf;
       }
 
@@ -1596,23 +1570,61 @@
   function downloadCalendrierPDF() {
     const pdf = window._calendrierPDF;
     if (!pdf) return;
+
     const contenu = pdf.contenu
       .split('\n')
       .map(line => {
         if (line.startsWith('## ')) return '<h2>' + line.substring(3) + '</h2>';
-        if (line.startsWith('- ')) return '<li>' + line.substring(2) + '</li>';
-        if (line === '') return '<br>';
+        if (line.startsWith('- '))  return '<li>' + line.substring(2) + '</li>';
+        if (line === '')             return '<br>';
         return '<p>' + line + '</p>';
       })
       .join('');
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${pdf.titre}</title><style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:20px;color:#2a2a3a}h1{color:#4a7fd4;border-bottom:2px solid #4a7fd4;padding-bottom:10px}h2{color:#2a2a3a;margin-top:24px}ul{padding-left:20px}li{margin-bottom:6px}p{line-height:1.6}</style></head><body><h1>${pdf.titre}</h1>${contenu}</body></html>`;
-    const blob = new Blob([html], {type:'text/html'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = pdf.titre.replace(/[^a-z0-9]/gi,'_') + '.html';
-    a.click();
-    URL.revokeObjectURL(url);
+
+    const html = `<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<title>${pdf.titre}</title>
+<style>
+  @media print {
+    body { margin: 0; }
+    .no-print { display: none !important; }
+  }
+  body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; color: #2a2a3a; }
+  h1 { color: #4a7fd4; border-bottom: 2px solid #4a7fd4; padding-bottom: 10px; margin-bottom: 24px; }
+  h2 { color: #2a2a3a; margin-top: 24px; }
+  ul { padding-left: 20px; } li { margin-bottom: 6px; }
+  p { line-height: 1.6; }
+  .print-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-top: 32px; padding: 12px 24px;
+    background: #4a7fd4; color: #fff; border: none;
+    border-radius: 10px; font-size: 15px; font-weight: 600;
+    cursor: pointer; font-family: Arial, sans-serif;
+  }
+  .print-btn:hover { background: #3a6fc4; }
+</style>
+</head>
+<body>
+<h1>${pdf.titre}</h1>
+${contenu}
+<button class="print-btn no-print" onclick="window.print()">📥 Enregistrer en PDF</button>
+<script>window.onload = () => setTimeout(() => window.print(), 300);<\/script>
+</body></html>`;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url  = URL.createObjectURL(blob);
+    const win  = window.open(url, '_blank');
+    if (!win) {
+      // Fallback si popup bloquée (mobile)
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => document.body.removeChild(a), 100);
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
   async function showCommandeModal(text) {
@@ -1711,20 +1723,16 @@
     const profile = localStorage.getItem('ponk_profile');
     const email   = localStorage.getItem('ponk_email');
     if (profile && email) {
-      // Try to sync from Supabase
       try {
         const res = await fetch('/api/profile?email=' + encodeURIComponent(email));
         if (res.ok) {
           const data = await res.json();
-          // Sync prefs
           if (data.prefs) {
             if (data.prefs.mail)  localStorage.setItem('ponk_pref_mail', data.prefs.mail);
             if (data.prefs.cal)   localStorage.setItem('ponk_pref_cal', data.prefs.cal);
             if (data.prefs.maps)  localStorage.setItem('ponk_pref_maps', data.prefs.maps);
           }
-          // Sync contacts
           if (data.contacts) localStorage.setItem('ponk_contacts', JSON.stringify(data.contacts));
-          // Sync name
           if (data.name) localStorage.setItem('ponk_profile', data.name);
         }
       } catch(e) {}
@@ -1734,7 +1742,6 @@
     }
   }
 
-  // Pref buttons selection
   document.querySelectorAll('.pref-options').forEach(group => {
     group.querySelectorAll('.pref-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1754,14 +1761,12 @@
     const cal   = document.querySelector('#prefCal .pref-btn.active')?.dataset.value || 'google';
     const maps  = document.querySelector('#prefMaps .pref-btn.active')?.dataset.value || 'google';
 
-    // Save locally
     localStorage.setItem('ponk_profile', name);
     localStorage.setItem('ponk_email', email);
     localStorage.setItem('ponk_pref_mail', mail);
     localStorage.setItem('ponk_pref_cal', cal);
     localStorage.setItem('ponk_pref_maps', maps);
 
-    // Save to Supabase
     try {
       await fetch('/api/profile', {
         method: 'POST',
