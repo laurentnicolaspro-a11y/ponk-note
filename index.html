@@ -1676,66 +1676,72 @@
 
       // Points
       for (const point of (section.points || [])) {
-        // Calculer la hauteur nécessaire
-        const titreLines = doc.splitTextToSize('▸ ' + point.titre, maxW - 6);
-        const detailLines = point.detail ? doc.splitTextToSize(point.detail, maxW - 10) : [];
-        const blockH = titreLines.length * 5.5 + (detailLines.length > 0 ? detailLines.length * 4.5 + 2 : 0) + 5;
-        checkPage(blockH + 4);
+        // Pre-calculer toutes les lignes
+        const titreLines  = doc.splitTextToSize(point.titre, maxW - 10);
+        const detailLines = point.detail ? doc.splitTextToSize(point.detail, maxW - 12) : [];
+        const ideeLines   = (point.idees || []).map(id => doc.splitTextToSize('-> ' + id, maxW - 18));
 
-        // Calculer hauteur totale avec idees
-        const ideeLines = (point.idees || []).map(id => doc.splitTextToSize('> ' + id, maxW - 14));
-        const ideesH = ideeLines.reduce((acc, l) => acc + l.length * 4.2 + 1.5, 0);
-        const totalBlockH = blockH + (ideeLines.length > 0 ? ideesH + 3 : 0);
+        // Calculer hauteur totale exacte
+        const titreH  = titreLines.length  * 5.5 + 3;
+        const detailH = detailLines.length > 0 ? detailLines.length * 4.5 + 4 : 0;
+        const ideeSepH = ideeLines.length  > 0 ? 10 : 0; // separateur + label
+        const ideeH   = ideeLines.reduce((acc, l) => acc + l.length * 4.5 + 2.5, 0);
+        const totalH  = titreH + detailH + ideeSepH + ideeH + 4;
 
-        // Fond du bloc
+        checkPage(totalH + 4);
+
+        const blockY = y;
+
+        // Fond du bloc — hauteur exacte
         doc.setFillColor(250, 252, 255);
         doc.setDrawColor(220, 230, 248);
         doc.setLineWidth(0.2);
-        doc.roundedRect(M, y, maxW, totalBlockH, 2, 2, 'FD');
+        doc.roundedRect(M, blockY, maxW, totalH, 2, 2, 'FD');
 
-        // Titre du point en gras
+        // Barre accent gauche coloree
+        doc.setFillColor(...C.accent);
+        doc.setOpacity(0.15);
+        doc.rect(M, blockY, 2.5, totalH, 'F');
+        doc.setOpacity(1);
+
+        // Titre en gras
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10);
         doc.setTextColor(...C.dark);
-        doc.text(titreLines, M + 5, y + 5);
+        y = blockY + 6;
+        doc.text(titreLines, M + 6, y);
         y += titreLines.length * 5.5 + 1;
 
-        // Detail en italique grise
+        // Detail en italique
         if (detailLines.length > 0) {
           doc.setFont('helvetica', 'italic');
           doc.setFontSize(8.5);
           doc.setTextColor(...C.detail);
-          doc.text(detailLines, M + 8, y + 3);
-          y += detailLines.length * 4.5 + 2;
+          doc.text(detailLines, M + 8, y + 2);
+          y += detailLines.length * 4.5 + 3;
         }
 
-        // Idees en vert avec separateur
+        // Separateur + idees
         if (ideeLines.length > 0) {
-          y += 2;
-          // Ligne separatrice fine
           doc.setDrawColor(...C.ideeborder);
-          doc.setLineWidth(0.2);
-          doc.line(M + 8, y, M + maxW - 4, y);
+          doc.setLineWidth(0.15);
+          doc.line(M + 6, y, M + maxW - 4, y);
           y += 3;
-          // Label "Idees"
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(7);
           doc.setTextColor(...C.ideetext);
-          doc.text('IDEES :', M + 8, y);
+          doc.text('Idees :', M + 6, y);
           y += 4;
           for (const lines of ideeLines) {
-            checkPage(lines.length * 4.2 + 3);
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             doc.setTextColor(...C.ideetext);
-            // Puce fleche
-            doc.text('->', M + 8, y);
-            doc.text(lines, M + 14, y);
-            y += lines.length * 4.2 + 2;
+            doc.text(lines, M + 10, y);
+            y += lines.length * 4.5 + 2.5;
           }
         }
 
-        y += 4;
+        y = blockY + totalH + 3;
       }
       y += 4;
     }
