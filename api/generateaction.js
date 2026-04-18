@@ -4,7 +4,6 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    // Parse body manually
     let body = req.body;
     if (!body || typeof body === 'string') {
       const chunks = [];
@@ -15,63 +14,63 @@ module.exports = async function handler(req, res) {
       });
       body = JSON.parse(Buffer.concat(chunks).toString());
     }
-    const { type, text, profile, contacts = [] } = body;
-    console.log('[generateaction] type:', type, '| text:', text, '| contacts:', JSON.stringify(contacts));
 
-    // Find contact by name match
-    function findContact(text) {
+    const { type, text, profile, contacts = [] } = body;
+    if (!type || !text) return res.status(400).json({ error: 'Type et texte requis' });
+
+    function findContact(t) {
       if (!contacts.length) return null;
-      const lower = text.toLowerCase();
+      const lower = t.toLowerCase();
       return contacts.find(c => c.name && lower.includes(c.name.toLowerCase().split(' ')[0].toLowerCase()));
     }
     const contact = findContact(text);
-    if (!type || !text) return res.status(400).json({ error: 'Type et texte requis' });
+
+    if (type === 'APPEL') {
+      return res.status(200).json({ phone: contact?.phone || '', name: contact?.name || '' });
+    }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     let model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
-
     let prompt = '';
 
     switch(type) {
       case 'EMAIL': {
         const dest = contact ? (contact.email || contact.name) : '';
-        const destInfo = contact ? `Destinataire: ${contact.name}${contact.email ? ', email: '+contact.email : ''}.` : 'Extrait le prénom du destinataire si mentionné.';
-        prompt = `Rédige un email naturel en français. Description: "${text}". Utilisateur: "${profile||'moi'}". ${destInfo} JSON uniquement: {"sujet":"sujet court","corps":"corps email bien rédigé","destinataire":"${dest}"}`;
+        const destInfo = contact
+          ? `Destinataire: ${contact.name}${contact.email ? ', email: ' + contact.email : ''}.`
+          : 'Extrait le prenom du destinataire si mentionne.';
+        prompt = `Tu rediges un email naturel en francais. Description: "${text}". Expediteur: "${profile || 'moi'}". ${destInfo} Genere un vrai email bien redige. JSON uniquement: {"sujet":"sujet court","corps":"corps email naturel","destinataire":"${dest}"}`;
         break;
       }
       case 'WHATSAPP': {
         const phone = contact?.phone || '';
         const destInfo = contact ? `Destinataire: ${contact.name}.` : '';
-        prompt = `Rédige un message WhatsApp court et naturel en français. Description: "${text}". ${destInfo} JSON uniquement: {"message":"message naturel","phone":"${phone}"}`;
+        prompt = `Tu rediges un message WhatsApp naturel en francais. Description: "${text}". ${destInfo} Redige un message court et naturel, pas une repetition. JSON uniquement: {"message":"message bien redige","phone":"${phone}"}`;
         break;
       }
       case 'CALENDRIER':
-        prompt = `Crée un événement calendrier. Description: "${text}". JSON uniquement: {"titre":"...","description":"..."}`;
+        prompt = `Cree un evenement calendrier. Description: "${text}". JSON uniquement: {"titre":"titre court","description":"description utile"}`;
         break;
       case 'RAPPEL':
-        prompt = `Crée un rappel concis en français. Description: "${text}". JSON uniquement: {"texte":"..."}`;
+        prompt = `Cree un rappel clair en francais. Description: "${text}". JSON uniquement: {"texte":"rappel clair"}`;
         break;
-      case 'APPEL':
-        return res.status(200).json({ phone: contact?.phone || '', name: contact?.name || '' });
       default:
         return res.status(200).json({ raw: text });
     }
 
-    let model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
     let result;
     try {
       result = await model.generateContent(prompt);
     } catch(e) {
-      // Fallback to gemini-1.5-flash on 503
       model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
       result = await model.generateContent(prompt);
     }
+
     const answer = result.response.text().trim();
     const clean = answer.replace(/```json|```/g, '').trim();
 
     try {
-      const parsed = JSON.parse(clean);
-      return res.status(200).json(parsed);
+      return res.status(200).json(JSON.parse(clean));
     } catch(e) {
       return res.status(200).json({ raw: text });
     }
