@@ -1584,43 +1584,63 @@
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
-    const M = 18; // margin
+    const M = 16;
     const maxW = pageW - M * 2;
     let y = M;
 
     const C = {
-      accent:  [74, 127, 212],
-      dark:    [30, 30, 50],
-      muted:   [120, 120, 140],
-      light:   [240, 244, 252],
-      white:   [255, 255, 255],
-      section: [230, 238, 255],
-      border:  [200, 215, 245],
-      detail:  [90, 100, 120],
-      ideebg:  [245, 250, 240],
-      ideeborder: [180, 220, 180],
-      ideetext: [60, 130, 80],
+      accent:      [74, 127, 212],
+      accentDark:  [50, 95, 170],
+      accentLight: [210, 225, 248],
+      dark:        [25, 30, 50],
+      muted:       [110, 118, 140],
+      light:       [243, 246, 253],
+      white:       [255, 255, 255],
+      sectionBg:   [232, 240, 255],
+      sectionBdr:  [190, 210, 245],
+      blockBg:     [251, 253, 255],
+      blockBdr:    [215, 228, 248],
+      detail:      [85, 95, 118],
+      ideeline:    [195, 225, 195],
+      ideelabel:   [45, 120, 70],
+      ideetext:    [55, 115, 75],
+      ideetick:    [120, 190, 130],
+      footerbg:    [244, 247, 253],
     };
 
     function checkPage(needed = 10) {
-      if (y + needed > pageH - 16) { doc.addPage(); y = M; }
+      if (y + needed > pageH - 14) { doc.addPage(); y = M; }
     }
 
-    // ── TITRE ────────────────────────────────────────────────────────────────
+    // ── BANDEAU TITRE ─────────────────────────────────────────────────────────
+    // Fond dégradé simulé : deux rectangles
+    doc.setFillColor(...C.accentDark);
+    doc.rect(0, 0, pageW, 32, 'F');
     doc.setFillColor(...C.accent);
-    doc.rect(0, 0, pageW, 28, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(15);
-    doc.setTextColor(...C.white);
-    const titleLines = doc.splitTextToSize(pdf.titre, pageW - 36);
-    doc.text(titleLines, M, 12);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(200, 220, 255);
-    doc.text('Ponk Note', pageW - M, 23, { align: 'right' });
-    y = 36;
+    doc.rect(0, 8, pageW, 24, 'F');
 
-    // ── FICHE RÉCAP ──────────────────────────────────────────────────────────
+    // Ligne déco bas du bandeau
+    doc.setFillColor(...C.accentLight);
+    doc.rect(0, 30, pageW, 1.2, 'F');
+
+    // Titre
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...C.white);
+    const titleLines = doc.splitTextToSize(pdf.titre, pageW - 40);
+    doc.text(titleLines, M, titleLines.length > 1 ? 11 : 14);
+
+    // Badge Ponk Note
+    doc.setFillColor(...C.accentDark);
+    doc.roundedRect(pageW - M - 22, 4, 22, 7, 1.5, 1.5, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(...C.accentLight);
+    doc.text('PONK NOTE', pageW - M - 11, 9, { align: 'center' });
+
+    y = 40;
+
+    // ── FICHE RÉCAP ───────────────────────────────────────────────────────────
     const meta = pdf.meta || {};
     const metaItems = [
       { label: 'Date',         val: meta.date         || '-' },
@@ -1629,132 +1649,160 @@
       { label: 'Participants', val: meta.participants  || '-' },
     ];
 
+    // Ombre simulée
+    doc.setFillColor(225, 230, 245);
+    doc.roundedRect(M + 0.8, y + 0.8, maxW, 30, 3, 3, 'F');
+    // Fond principal
     doc.setFillColor(...C.light);
-    doc.setDrawColor(...C.border);
-    doc.setLineWidth(0.3);
-    doc.roundedRect(M, y, maxW, 28, 3, 3, 'FD');
+    doc.setDrawColor(...C.sectionBdr);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(M, y, maxW, 30, 3, 3, 'FD');
+    // Bordure gauche colorée
+    doc.setFillColor(...C.accent);
+    doc.roundedRect(M, y, 3, 30, 1.5, 1.5, 'F');
 
     const colW = maxW / 2;
     metaItems.forEach((item, i) => {
-      const cx = M + (i % 2) * colW + 5;
-      const cy = y + 8 + Math.floor(i / 2) * 10;
+      const cx = M + (i % 2) * colW + 6;
+      const cy = y + 9 + Math.floor(i / 2) * 12;
       // Label
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
+      doc.setFontSize(7.5);
       doc.setTextColor(...C.muted);
-      doc.text(item.label + ' :', cx, cy);
-      // Value
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(...C.dark);
-      const labelW = doc.getTextWidth(item.label + ' :') + 2;
-      const valLines = doc.splitTextToSize(item.val, colW - labelW - 8);
-      doc.text(valLines[0], cx + labelW, cy);
+      doc.text(item.label.toUpperCase(), cx, cy);
+      // Valeur
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(...C.accent);
+      const valLines = doc.splitTextToSize(item.val, colW - 12);
+      doc.text(valLines[0], cx, cy + 5);
     });
-    y += 36;
+    y += 38;
 
-    // ── SECTIONS ─────────────────────────────────────────────────────────────
+    // ── SECTIONS ──────────────────────────────────────────────────────────────
     const sections = pdf.sections || [];
 
     for (const section of sections) {
-      checkPage(20);
+      checkPage(22);
 
-      // Header section
-      doc.setFillColor(...C.section);
-      doc.setDrawColor(...C.border);
-      doc.setLineWidth(0.3);
-      doc.roundedRect(M, y, maxW, 9, 2, 2, 'FD');
-      // Accent bar left
+      // Header section avec coins arrondis
+      doc.setFillColor(...C.sectionBg);
+      doc.setDrawColor(...C.sectionBdr);
+      doc.setLineWidth(0.25);
+      doc.roundedRect(M, y, maxW, 10, 2.5, 2.5, 'FD');
+      // Barre gauche
       doc.setFillColor(...C.accent);
-      doc.rect(M, y, 3, 9, 'F');
-
+      doc.roundedRect(M, y, 3.5, 10, 1.5, 1.5, 'F');
+      // Numéro de section
+      const sIdx = sections.indexOf(section) + 1;
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(...C.accent);
-      doc.text(section.titre.toUpperCase(), M + 7, y + 6);
+      doc.setFontSize(7);
+      doc.setTextColor(...C.white);
+      doc.text(String(sIdx), M + 1.75, y + 6.5, { align: 'center' });
+      // Titre section
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(...C.accentDark);
+      doc.text(section.titre.toUpperCase(), M + 7, y + 6.5);
       y += 13;
 
       // Points
       for (const point of (section.points || [])) {
-        // Pre-calculer toutes les lignes
-        const titreLines  = doc.splitTextToSize(point.titre, maxW - 10);
-        const detailLines = point.detail ? doc.splitTextToSize(point.detail, maxW - 12) : [];
-        const ideeLines   = (point.idees || []).map(id => doc.splitTextToSize('-> ' + id, maxW - 18));
+        const titreLines  = doc.splitTextToSize(point.titre, maxW - 12);
+        const detailLines = point.detail ? doc.splitTextToSize(point.detail, maxW - 14) : [];
+        const ideeLines   = (point.idees || []).map(id => doc.splitTextToSize(id, maxW - 22));
 
-        // Calculer hauteur totale exacte
-        const titreH  = titreLines.length  * 5.5 + 3;
-        const detailH = detailLines.length > 0 ? detailLines.length * 4.5 + 4 : 0;
-        const ideeSepH = ideeLines.length  > 0 ? 10 : 0; // separateur + label
-        const ideeH   = ideeLines.reduce((acc, l) => acc + l.length * 4.5 + 2.5, 0);
-        const totalH  = titreH + detailH + ideeSepH + ideeH + 4;
+        const titreH   = titreLines.length  * 5.8 + 4;
+        const detailH  = detailLines.length > 0 ? detailLines.length * 4.8 + 4 : 0;
+        const ideeSepH = ideeLines.length   > 0 ? 9 : 0;
+        const ideeH    = ideeLines.reduce((acc, l) => acc + l.length * 4.8 + 2, 0);
+        const totalH   = titreH + detailH + ideeSepH + ideeH + 5;
 
-        checkPage(totalH + 4);
-
+        checkPage(totalH + 5);
         const blockY = y;
 
-        // Fond du bloc — hauteur exacte
-        doc.setFillColor(250, 252, 255);
-        doc.setDrawColor(220, 230, 248);
+        // Ombre légère
+        doc.setFillColor(225, 232, 248);
+        doc.roundedRect(M + 0.6, blockY + 0.6, maxW, totalH, 2.5, 2.5, 'F');
+        // Fond blanc cassé
+        doc.setFillColor(...C.blockBg);
+        doc.setDrawColor(...C.blockBdr);
         doc.setLineWidth(0.2);
-        doc.roundedRect(M, blockY, maxW, totalH, 2, 2, 'FD');
+        doc.roundedRect(M, blockY, maxW, totalH, 2.5, 2.5, 'FD');
+        // Barre accent gauche
+        doc.setFillColor(...C.accentLight);
+        doc.roundedRect(M, blockY, 3, totalH, 1.5, 1.5, 'F');
 
-        // Barre accent gauche coloree
-        doc.setFillColor(180, 205, 240);
-        doc.rect(M, blockY, 2.5, totalH, 'F');
-
-        // Titre en gras
+        // Titre point
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10);
         doc.setTextColor(...C.dark);
         y = blockY + 6;
         doc.text(titreLines, M + 6, y);
-        y += titreLines.length * 5.5 + 1;
+        y += titreLines.length * 5.8 + 1;
 
-        // Detail en italique
+        // Détail
         if (detailLines.length > 0) {
           doc.setFont('helvetica', 'italic');
           doc.setFontSize(8.5);
           doc.setTextColor(...C.detail);
           doc.text(detailLines, M + 8, y + 2);
-          y += detailLines.length * 4.5 + 3;
+          y += detailLines.length * 4.8 + 3;
         }
 
-        // Separateur + idees
+        // Zone idées
         if (ideeLines.length > 0) {
-          doc.setDrawColor(...C.ideeborder);
+          // Fond vert très léger pour toute la zone idées
+          const ideeZoneH = ideeSepH + ideeH + 2;
+          doc.setFillColor(245, 252, 246);
+          doc.setDrawColor(...C.ideeline);
           doc.setLineWidth(0.15);
-          doc.line(M + 6, y, M + maxW - 4, y);
+          doc.roundedRect(M + 4, y, maxW - 4, ideeZoneH, 1.5, 1.5, 'FD');
+
           y += 3;
           doc.setFont('helvetica', 'bold');
-          doc.setFontSize(7);
-          doc.setTextColor(...C.ideetext);
-          doc.text('Idees :', M + 6, y);
-          y += 4;
+          doc.setFontSize(6.5);
+          doc.setTextColor(...C.ideelabel);
+          doc.text('SUGGESTIONS', M + 7, y);
+          y += 5;
+
           for (const lines of ideeLines) {
+            // Puce ronde simulée
+            doc.setFillColor(...C.ideetick);
+            doc.circle(M + 9, y - 1.2, 0.9, 'F');
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             doc.setTextColor(...C.ideetext);
-            doc.text(lines, M + 10, y);
-            y += lines.length * 4.5 + 2.5;
+            doc.text(lines, M + 12, y);
+            y += lines.length * 4.8 + 2;
           }
         }
 
-        y = blockY + totalH + 3;
+        y = blockY + totalH + 4;
       }
-      y += 4;
+      y += 5;
     }
 
-    // ── FOOTER sur chaque page ────────────────────────────────────────────────
+    // ── FOOTER ────────────────────────────────────────────────────────────────
     const totalPages = doc.internal.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
-      doc.setFillColor(245, 247, 252);
-      doc.rect(0, pageH - 12, pageW, 12, 'F');
+      doc.setFillColor(...C.footerbg);
+      doc.rect(0, pageH - 11, pageW, 11, 'F');
+      doc.setDrawColor(...C.sectionBdr);
+      doc.setLineWidth(0.2);
+      doc.line(0, pageH - 11, pageW, pageH - 11);
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.5);
+      doc.setFontSize(7);
       doc.setTextColor(...C.muted);
-      doc.text(`Généré par Ponk Note — ${pdf.generatedAt || ''}`, M, pageH - 4.5);
-      doc.text(`${i} / ${totalPages}`, pageW - M, pageH - 4.5, { align: 'right' });
+      doc.text('Genere par Ponk Note' + (pdf.generatedAt ? ' — ' + pdf.generatedAt : ''), M, pageH - 4);
+      // Badge page
+      doc.setFillColor(...C.accent);
+      doc.roundedRect(pageW - M - 14, pageH - 9, 14, 6, 1.5, 1.5, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(...C.white);
+      doc.text(i + ' / ' + totalPages, pageW - M - 7, pageH - 4.8, { align: 'center' });
     }
 
     const filename = pdf.titre.replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '_') + '.pdf';
