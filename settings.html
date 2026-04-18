@@ -175,6 +175,7 @@
 
   function savePref(key, value) {
     localStorage.setItem(key, value);
+    syncToSupabase();
   }
 
   // Contacts
@@ -211,6 +212,24 @@
     else { document.getElementById('contactName').value = ''; document.getElementById('contactEmail').value = ''; document.getElementById('contactPhone').value = ''; }
   }
 
+  async function syncToSupabase() {
+    const email = localStorage.getItem('ponk_email');
+    const name  = localStorage.getItem('ponk_profile');
+    if (!email) return;
+    const prefs = {
+      mail:  localStorage.getItem('ponk_pref_mail')  || 'gmail',
+      cal:   localStorage.getItem('ponk_pref_cal')   || 'google',
+      maps:  localStorage.getItem('ponk_pref_maps')  || 'google',
+    };
+    try {
+      await fetch('/api/profile', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ email, name, prefs, contacts: getContacts() })
+      });
+    } catch(e) { console.warn('Sync failed:', e); }
+  }
+
   function saveContact() {
     const name  = document.getElementById('contactName').value.trim();
     const email = document.getElementById('contactEmail').value.trim();
@@ -221,6 +240,7 @@
     saveContacts(contacts);
     renderContacts();
     toggleAddForm();
+    syncToSupabase();
   }
 
   function deleteContact(index) {
@@ -229,6 +249,7 @@
     contacts.splice(index, 1);
     saveContacts(contacts);
     renderContacts();
+    syncToSupabase();
   }
 
   function changeProfile() {
