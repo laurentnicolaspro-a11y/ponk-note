@@ -1239,6 +1239,7 @@
       } catch(e) {}
       const phone = (contactWA?.phone || bubble.generated?.phone || '').replace(/[^0-9+]/g,'');
       const msg = bubble.generated?.message || bubble.text;
+      document.querySelectorAll('.btn-now').forEach(b => { b.textContent = '→ Faire'; b.disabled = false; });
       showWhatsAppModal(phone, msg);
       return;
     }
