@@ -1191,21 +1191,30 @@
 
     if (aiTypes.includes(bubble.type) && bubble.text) {
       // Open loading page immediately to avoid popup blocker
-      const win = window.open('', '_blank');
-      if (win) win.document.write('<html><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f0f4ff"><div style="text-align:center"><div style="width:40px;height:40px;border-radius:50%;border:3px solid #e0e8ff;border-top-color:#4a7fd4;animation:spin 0.8s linear infinite;margin:0 auto 16px"></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style><p style="color:#4a7fd4;font-weight:500">Génération en cours…</p></div></body></html>');
+      // On mobile window.open is blocked - use location.href instead
+      const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+      let win = null;
+      if (!isMobile) {
+        win = window.open('', '_blank');
+        if (win) win.document.write('<html><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f0f4ff"><div style="text-align:center"><div style="width:40px;height:40px;border-radius:50%;border:3px solid #e0e8ff;border-top-color:#4a7fd4;animation:spin 0.8s linear infinite;margin:0 auto 16px"></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style><p style="color:#4a7fd4;font-weight:500">Génération en cours…</p></div></body></html>');
+      }
       const confirmBtn = document.querySelector('.btn-now');
       if (confirmBtn) { confirmBtn.innerHTML = '<div style="width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;animation:spin 0.8s linear infinite;display:inline-block;"></div>'; confirmBtn.disabled = true; }
       try {
+        const contacts = (() => { try { return JSON.parse(localStorage.getItem('ponk_contacts') || '[]'); } catch(e) { return []; } })();
         const res = await fetch('/api/generateaction', {
           method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({type: bubble.type, text: bubble.text, profile: localStorage.getItem('ponk_profile')})
+          body: JSON.stringify({type: bubble.type, text: bubble.text, profile: localStorage.getItem('ponk_profile'), contacts})
         });
         const data = await res.json();
         bubble.generated = data;
       } catch(e) {}
       if (confirmBtn) { confirmBtn.textContent = '→ Faire'; confirmBtn.disabled = false; }
       const url = getActionUrlFromBubble(bubble);
-      if (url && win) win.location.href = url;
+      if (url) {
+        if (isMobile) window.location.href = url;
+        else if (win) win.location.href = url;
+      }
     } else {
       const url = getActionUrlFromBubble(bubble);
       if (url) window.open(url, '_blank');
