@@ -51,6 +51,8 @@ module.exports = async function handler(req, res) {
       case 'RAPPEL':
         prompt = `Crée un rappel concis en français. Description: "${text}". JSON uniquement: {"texte":"..."}`;
         break;
+      case 'APPEL':
+        return res.status(200).json({ phone: contact?.phone || '', name: contact?.name || '' });
       default:
         return res.status(200).json({ raw: text });
     }
