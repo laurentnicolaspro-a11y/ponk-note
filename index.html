@@ -1597,6 +1597,9 @@
       section: [230, 238, 255],
       border:  [200, 215, 245],
       detail:  [90, 100, 120],
+      ideebg:  [245, 250, 240],
+      ideeborder: [180, 220, 180],
+      ideetext: [60, 130, 80],
     };
 
     function checkPage(needed = 10) {
@@ -1620,10 +1623,10 @@
     // ── FICHE RÉCAP ──────────────────────────────────────────────────────────
     const meta = pdf.meta || {};
     const metaItems = [
-      { label: '📅 Date',         val: meta.date         || '—' },
-      { label: '📍 Lieu',         val: meta.lieu         || '—' },
-      { label: '⏱ Durée',        val: meta.duree        || '—' },
-      { label: '👥 Participants', val: meta.participants  || '—' },
+      { label: 'Date',         val: meta.date         || '-' },
+      { label: 'Lieu',         val: meta.lieu         || '-' },
+      { label: 'Duree',        val: meta.duree        || '-' },
+      { label: 'Participants', val: meta.participants  || '-' },
     ];
 
     doc.setFillColor(...C.light);
@@ -1635,15 +1638,18 @@
     metaItems.forEach((item, i) => {
       const cx = M + (i % 2) * colW + 5;
       const cy = y + 8 + Math.floor(i / 2) * 10;
+      // Label
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
       doc.setTextColor(...C.muted);
-      doc.text(item.label, cx, cy);
-      doc.setFont('helvetica', 'bold');
+      doc.text(item.label + ' :', cx, cy);
+      // Value
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.setTextColor(...C.dark);
-      const valLines = doc.splitTextToSize(item.val, colW - 30);
-      doc.text(valLines[0], cx + 28, cy);
+      const labelW = doc.getTextWidth(item.label + ' :') + 2;
+      const valLines = doc.splitTextToSize(item.val, colW - labelW - 8);
+      doc.text(valLines[0], cx + labelW, cy);
     });
     y += 36;
 
@@ -1676,11 +1682,16 @@
         const blockH = titreLines.length * 5.5 + (detailLines.length > 0 ? detailLines.length * 4.5 + 2 : 0) + 5;
         checkPage(blockH + 4);
 
-        // Fond léger sur chaque point
+        // Calculer hauteur totale avec idees
+        const ideeLines = (point.idees || []).map(id => doc.splitTextToSize('> ' + id, maxW - 14));
+        const ideesH = ideeLines.reduce((acc, l) => acc + l.length * 4.2 + 1.5, 0);
+        const totalBlockH = blockH + (ideeLines.length > 0 ? ideesH + 3 : 0);
+
+        // Fond du bloc
         doc.setFillColor(250, 252, 255);
         doc.setDrawColor(220, 230, 248);
         doc.setLineWidth(0.2);
-        doc.roundedRect(M, y, maxW, blockH, 2, 2, 'FD');
+        doc.roundedRect(M, y, maxW, totalBlockH, 2, 2, 'FD');
 
         // Titre du point en gras
         doc.setFont('helvetica', 'bold');
@@ -1689,13 +1700,26 @@
         doc.text(titreLines, M + 5, y + 5);
         y += titreLines.length * 5.5 + 1;
 
-        // Détail en italique grisé
+        // Detail en italique grise
         if (detailLines.length > 0) {
           doc.setFont('helvetica', 'italic');
           doc.setFontSize(8.5);
           doc.setTextColor(...C.detail);
           doc.text(detailLines, M + 8, y + 3);
           y += detailLines.length * 4.5 + 2;
+        }
+
+        // Idees en vert
+        if (ideeLines.length > 0) {
+          y += 2;
+          for (const lines of ideeLines) {
+            checkPage(lines.length * 4.2 + 3);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(...C.ideetext);
+            doc.text(lines, M + 10, y + 3);
+            y += lines.length * 4.2 + 1.5;
+          }
         }
 
         y += 4;
