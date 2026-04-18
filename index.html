@@ -701,6 +701,20 @@
   </div>
 </div>
 
+<!-- Call modal -->
+<div class="bubble-modal hidden" id="callModal">
+  <div class="bubble-modal-card" style="text-align:center">
+    <div style="font-size:42px;margin-bottom:12px">📞</div>
+    <div class="bubble-modal-type" id="callModalName"></div>
+    <div style="font-size:28px;font-weight:300;letter-spacing:2px;color:var(--text);margin:16px 0" id="callModalPhone"></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="bubble-modal-btn btn-confirm" onclick="copyPhone()" id="callCopyBtn">📋 Copier</button>
+      <button class="bubble-modal-btn" style="background:rgba(0,0,0,0.06);color:var(--muted)" onclick="document.getElementById('callModal').classList.add('hidden')">Fermer</button>
+    </div>
+    <a id="callTelLink" href="" style="font-size:12px;color:var(--accent);text-decoration:none">Ouvrir dans Phone Link →</a>
+  </div>
+</div>
+
 <!-- Bubble modal -->
 <div class="bubble-modal hidden" id="bubbleModal">
   <div class="bubble-modal-card">
@@ -1161,8 +1175,10 @@
         return `https://wa.me/?text=${encoded}`;
       case 'APPEL': {
         const phone = (g.phone || g.telephone || '').replace(/[^0-9+]/g,'');
-        // Try Phone Link first, fallback to tel:
-        return phone ? `tel:${phone}` : `tel:`;
+        const name = g.name || bubble.text;
+        // Show call modal instead
+        setTimeout(() => showCallModal(phone, name), 100);
+        return null;
       }
       case 'CALENDRIER':
         if (prefCal === 'google')  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encoded}`;
