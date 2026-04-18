@@ -23,6 +23,36 @@ module.exports = async function handler(req, res) {
 
     let prompt = '';
 
+    if (action === 'deepanalyze') {
+      // Deep analysis inline (from results.html)
+      prompt = `Tu es un expert analyste. Fais une analyse complète et structurée sur le sujet suivant :
+
+"${text}"
+
+Format de réponse en français, structuré avec des sections claires :
+- Commence par un résumé en 2-3 phrases
+- Développe en 3-5 points clés avec des titres en gras
+- Termine par une conclusion ou recommandation
+- Sois factuel, précis et utile
+- Maximum 400 mots
+
+Réponds directement sans introduction.`;
+
+      const _models_da = ['gemini-3.1-flash-lite-preview', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+      let _result_da;
+      for (const _mn of _models_da) {
+        try {
+          model = genAI.getGenerativeModel({ model: _mn });
+          const _t = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
+          _result_da = await Promise.race([model.generateContent(prompt), _t]);
+          break;
+        } catch(e) {}
+      }
+      if (!_result_da) return res.status(500).json({ error: 'Service indisponible' });
+      const analysis = _result_da.response.text().trim();
+      return res.status(200).json({ analysis });
+    }
+
     if (action === 'parse') {
       // Step 1 - Parse event and generate questions
       prompt = `Tu es un assistant qui organise des événements de calendrier.
