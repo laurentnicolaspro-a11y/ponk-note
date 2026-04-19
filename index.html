@@ -1629,11 +1629,11 @@
     document.getElementById('bubbleModal').classList.add('hidden');
 
     // Rebond automatique pour EMAIL et actions directes
-    declencherRebond(
+    setTimeout(() => declencherRebond(
       bubble.type + ' : ' + bubble.text,
       'action: ' + bubble.type + ', texte: ' + bubble.text,
       (bubble.label || bubble.type) + ' : ' + bubble.text.substring(0, 50)
-    );
+    ), 400);
   }
 
   function confirmBubble() {
@@ -1765,11 +1765,11 @@
 
         // Déclencher rebond après fermeture
         // Déclencher rebond automatiquement
-        declencherRebond(
+        setTimeout(() => declencherRebond(
           'Calendrier : ' + (data.titre || text),
           'date: ' + (data.date || '') + ', lieu: ' + (data.description || ''),
           (data.titre || text) + (data.date ? ' — ' + data.date : '')
-        );
+        ), 400);
       }
     } catch(e) {
       document.getElementById('calendrierLoading').textContent = 'Service indisponible';
@@ -2238,11 +2238,11 @@
         document.getElementById('commandeLoading').style.display = 'none';
         document.getElementById('commandeBrief').style.display = 'block';
         // Déclencher rebond automatiquement
-        declencherRebond(
+        setTimeout(() => declencherRebond(
           'Commande : ' + text,
           'produit: ' + (data.produit || text),
           'Commande de ' + (data.produit || text)
-        );
+        ), 400);
       }
     } catch(e) {
       document.getElementById('commandeLoading').innerHTML = '<div style="font-size:13px;color:var(--muted);padding:10px">Service temporairement indisponible</div>';
@@ -2265,11 +2265,11 @@
     }
     document.getElementById('waModal').classList.remove('hidden');
     // Rebond automatique
-    declencherRebond(
+    setTimeout(() => declencherRebond(
       'Message WhatsApp : ' + message,
       'message envoye par whatsapp',
       'Message WhatsApp envoyé'
-    );
+    ), 400);
   }
 
   function copyWAMessage() {
@@ -2295,11 +2295,11 @@
     }
     document.getElementById('callModal').classList.remove('hidden');
     // Rebond automatique
-    declencherRebond(
+    setTimeout(() => declencherRebond(
       'Appel : ' + (name || phone),
       'appel telephone vers ' + (name || phone),
       'Appel vers ' + (name || phone)
-    );
+    ), 400);
   }
 
   function copyPhone() {
@@ -2491,11 +2491,11 @@
       document.getElementById('mapsAppBtns').innerHTML = ordered.map(a => appLinks[a]).join('');
 
       // Rebond automatique
-      declencherRebond(
+      setTimeout(() => declencherRebond(
         'Itineraire : ' + (arriveeVal || ''),
         'trajet vers ' + (arriveeVal || '') + ', mode: ' + mapsState.mode,
         'Itinéraire vers ' + (arriveeVal || '')
-      );
+      ), 400);
 
     } catch(e) {
       document.getElementById('mapsLoading').style.display = 'none';
@@ -2634,11 +2634,11 @@
       `).join('');
 
       // Déclencher rebond automatiquement
-      declencherRebond(
+      setTimeout(() => declencherRebond(
         'Réservation : ' + (data.titre || text),
         'type: ' + (data.type || '') + ', destination: ' + (data.infos?.destination || '') + ', date: ' + (data.infos?.date_aller || ''),
         (data.titre || text)
-      );
+      ), 400);
     } catch(e) {
       document.getElementById('reservationLoading').innerHTML = '<div style="font-size:13px;color:var(--muted)">Service indisponible</div>';
     }
@@ -2749,11 +2749,11 @@
       `;
 
       // Rebond automatique
-      declencherRebond(
+      setTimeout(() => declencherRebond(
         'Analyse : ' + (data.titre || text),
         'analyse sur le sujet: ' + (data.titre || text),
         'Analyse : ' + (data.titre || text)
-      );
+      ), 400);
 
     } catch(e) {
       document.getElementById('analyseLoading').innerHTML = '<div style="font-size:13px;color:var(--muted)">Service indisponible</div>';
