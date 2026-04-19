@@ -1322,7 +1322,7 @@
     'FINANCE':   { icon:'💰', label:'Finance', words:['paye','rembourse','virement','transfère','paiement','dépense','facture','budget','doit de largent','note de frais'], disabled: true },
     'ANALYSE':   { icon:'🧠', label:'Analyse', words:['analyse','étudie','compare','rapport','bilan','étude de','faire un point','synthèse sur'] },
     'RESERVATION':{ icon:'🎫', label:'Réservation', words:['réserve','réserver','book','booking','billet','hôtel','airbnb','sncf','train','vol','nuit'] },
-    'TABLEAU':   { icon:'📊', label:'Tableau', words:['tableau','spreadsheet','excel','sheets','comparatif','liste comparative','tableau de bord'] },
+
   };
 
   let actionBubbles = [];
@@ -2433,13 +2433,29 @@
       const sections = data.sections || [];
       document.getElementById('analyseContent').innerHTML = sections.map(s => `
         <div style="background:rgba(255,255,255,0.5);border-radius:12px;padding:12px;margin-bottom:8px;border-left:3px solid var(--accent)">
-          <div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px">${s.emoji || '📌'} ${s.titre}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px">${s.titre}</div>
           ${(s.points || []).map(p => `
             <div style="margin-bottom:6px">
               <div style="font-size:13px;font-weight:600;color:var(--text)">${p.titre}</div>
               <div style="font-size:12px;color:var(--muted);line-height:1.5">${p.detail}</div>
             </div>
           `).join('')}
+          ${s.tableau ? `
+            <div style="overflow-x:auto;margin-top:10px">
+              <table style="width:100%;border-collapse:collapse;font-size:11px">
+                <thead>
+                  <tr>${(s.tableau.colonnes || []).map(c => `<th style="background:rgba(74,127,212,0.1);color:var(--accent);padding:6px 8px;text-align:left;font-weight:600;border:1px solid rgba(74,127,212,0.15)">${c}</th>`).join('')}</tr>
+                </thead>
+                <tbody>
+                  ${(s.tableau.lignes || []).map((l, i) => `
+                    <tr style="background:${i % 2 === 0 ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)'}">
+                      ${l.map(cell => `<td style="padding:5px 8px;border:1px solid rgba(0,0,0,0.06);color:var(--text)">${cell}</td>`).join('')}
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          ` : ''}
         </div>
       `).join('');
 
@@ -2582,6 +2598,47 @@
         doc.text(detailLines, M + 8, y + 2);
         y = blockY + totalH + 4;
       }
+
+      // Tableau si présent
+      if (section.tableau && section.tableau.colonnes && section.tableau.lignes) {
+        checkPage(20);
+        const cols = section.tableau.colonnes;
+        const rows = section.tableau.lignes;
+        const colW = maxW / cols.length;
+        const cellH = 7;
+
+        // Header tableau
+        doc.setFillColor(...C.sectionBg);
+        doc.setDrawColor(...C.sectionBdr);
+        doc.setLineWidth(0.2);
+        cols.forEach((col, ci) => {
+          doc.rect(M + ci * colW, y, colW, cellH, 'FD');
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8);
+          doc.setTextColor(...C.accentDark);
+          const colLines = doc.splitTextToSize(col, colW - 4);
+          doc.text(colLines[0], M + ci * colW + 3, y + 4.5);
+        });
+        y += cellH;
+
+        // Lignes tableau
+        rows.forEach((row, ri) => {
+          checkPage(cellH + 2);
+          doc.setFillColor(ri % 2 === 0 ? 251 : 244, ri % 2 === 0 ? 253 : 247, 255);
+          row.forEach((cell, ci) => {
+            doc.setDrawColor(...C.blockBdr);
+            doc.rect(M + ci * colW, y, colW, cellH, 'FD');
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(...C.dark);
+            const cellLines = doc.splitTextToSize(String(cell), colW - 4);
+            doc.text(cellLines[0], M + ci * colW + 3, y + 4.5);
+          });
+          y += cellH;
+        });
+        y += 6;
+      }
+
       y += 5;
     }
 
