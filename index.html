@@ -754,7 +754,7 @@
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px" id="calendrierActionBtns"></div>
     </div>
 
-    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted);margin-top:10px" onclick="document.getElementById('calendrierModal').classList.add('hidden')">Fermer</button>
+    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted);margin-top:10px" onclick="document.getElementById('calendrierModal').classList.add('hidden'); if(window._rebondCalendrier){window._rebondCalendrier();window._rebondCalendrier=null;}">Fermer</button>
   </div>
 </div>
 
@@ -795,7 +795,7 @@
       <div id="commandeSites" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px"></div>
     </div>
 
-    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted)" onclick="document.getElementById('commandeModal').classList.add('hidden')">Fermer</button>
+    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted)" onclick="document.getElementById('commandeModal').classList.add('hidden'); if(window._rebondCommande){window._rebondCommande();window._rebondCommande=null;}">Fermer</button>
   </div>
 </div>
 
@@ -912,6 +912,22 @@
   </div>
 </div>
 
+<!-- Modal Rebond -->
+<div class="bubble-modal hidden" id="rebondModal">
+  <div class="bubble-modal-card">
+    <div id="rebondResume" style="background:rgba(61,184,122,0.08);border:1px solid rgba(61,184,122,0.2);border-radius:12px;padding:12px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:#3db87a;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px">✅ Action effectuée</div>
+      <div style="font-size:13px;color:var(--text)" id="rebondResumeText"></div>
+    </div>
+    <div id="rebondSuggestions" style="display:none">
+      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px">Voulez-vous aussi :</div>
+      <div id="rebondBtns" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted);margin-top:10px"
+      onclick="fermerRebond()">Terminer</button>
+  </div>
+</div>
+
 <!-- Réservation modal -->
 <div class="bubble-modal hidden" id="reservationModal">
   <div class="bubble-modal-card" style="max-height:90vh;overflow-y:auto">
@@ -937,7 +953,7 @@
     </div>
 
     <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted);margin-top:10px"
-      onclick="document.getElementById('reservationModal').classList.add('hidden')">Fermer</button>
+      onclick="document.getElementById('reservationModal').classList.add('hidden'); if(window._rebondReservation){window._rebondReservation();window._rebondReservation=null;}">Fermer</button>
   </div>
 </div>
 
@@ -1739,6 +1755,13 @@
           </div>`;
         document.getElementById('calendrierCalBtn').style.display = 'block';
         document.getElementById('calendrierOrganiseBtn').style.display = 'block';
+
+        // Déclencher rebond après fermeture
+        window._rebondCalendrier = () => declencherRebond(
+          'Calendrier : ' + (data.titre || text),
+          'date: ' + (data.date || '') + ', lieu: ' + (data.description || ''),
+          (data.titre || text) + (data.date ? ' — ' + data.date : '')
+        );
       }
     } catch(e) {
       document.getElementById('calendrierLoading').textContent = 'Service indisponible';
@@ -2206,6 +2229,12 @@
         ).join('');
         document.getElementById('commandeLoading').style.display = 'none';
         document.getElementById('commandeBrief').style.display = 'block';
+        // Rebond après fermeture
+        window._rebondCommande = () => declencherRebond(
+          'Commande : ' + text,
+          'produit: ' + (data.produit || text),
+          'Commande de ' + (data.produit || text)
+        );
       }
     } catch(e) {
       document.getElementById('commandeLoading').innerHTML = '<div style="font-size:13px;color:var(--muted);padding:10px">Service temporairement indisponible</div>';
@@ -2448,6 +2477,75 @@
     }
   }
 
+  // ── Rebond ──
+  let rebondContexte = {};
+
+  async function declencherRebond(actionFaite, contexte, texteResume) {
+    // Afficher la modal avec le résumé
+    rebondContexte = { actionFaite, contexte };
+    document.getElementById('rebondResumeText').textContent = texteResume;
+    document.getElementById('rebondSuggestions').style.display = 'none';
+    document.getElementById('rebondBtns').innerHTML = '';
+    document.getElementById('rebondModal').classList.remove('hidden');
+
+    // Appeler Gemini pour les suggestions
+    try {
+      const res = await fetch('/api/shopping', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'rebond', actionFaite, contexte, text: actionFaite })
+      });
+      const data = await res.json();
+      const rebonds = data.rebonds || [];
+
+      if (rebonds.length === 0) return; // Rien à proposer
+
+      // Afficher les suggestions
+      document.getElementById('rebondSuggestions').style.display = 'block';
+      document.getElementById('rebondBtns').innerHTML = rebonds.map(r => `
+        <button onclick="lancerRebond('${r.type}', \`${r.texte.replace(/`/g,"'")}\`)"
+          style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:12px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.6);font-family:inherit;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent"
+          onmouseover="this.style.background='rgba(255,255,255,0.95)'" onmouseout="this.style.background='rgba(255,255,255,0.6)'">
+          <span style="font-size:24px">${r.icon}</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${r.label}</div>
+            <div style="font-size:11px;color:var(--muted)">${r.raison}</div>
+          </div>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#4a7fd4" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      `).join('');
+
+    } catch(e) {
+      console.log('[rebond] erreur:', e.message);
+    }
+  }
+
+  function lancerRebond(type, texte) {
+    document.getElementById('rebondModal').classList.add('hidden');
+    // Lancer la bonne modal selon le type
+    if (type === 'CALENDRIER')  showCalendrierModal(texte);
+    else if (type === 'RESERVATION') showReservationModal(texte);
+    else if (type === 'MAPS')   showMapsModal(texte);
+    else if (type === 'COMMANDE') showCommandeModal(texte);
+    else if (type === 'ANALYSE') showAnalyseModal(texte);
+    else if (type === 'WHATSAPP') showWhatsAppModal('', texte);
+    else if (type === 'RECHERCHE') window.open('https://www.google.com/search?q=' + encodeURIComponent(texte), '_blank');
+    else if (type === 'EMAIL') {
+      const sujet = encodeURIComponent(texte);
+      const prefMail = localStorage.getItem('ponk_pref_mail') || 'gmail';
+      const urls = {
+        gmail: `https://mail.google.com/mail/?view=cm&fs=1&su=${sujet}`,
+        outlook: `https://outlook.live.com/mail/0/deeplink/compose?subject=${sujet}`,
+        yahoo: `https://compose.mail.yahoo.com/?subject=${sujet}`
+      };
+      window.open(urls[prefMail] || urls.gmail, '_blank');
+    }
+    else if (type === 'APPEL') showCallModal('', texte);
+  }
+
+  function fermerRebond() {
+    document.getElementById('rebondModal').classList.add('hidden');
+  }
+
   // ── Réservation ──
   async function showReservationModal(text) {
     document.getElementById('reservationModalTitle').textContent = text.substring(0, 40) + (text.length > 40 ? '…' : '');
@@ -2498,6 +2596,12 @@
         </a>
       `).join('');
 
+      // Rebond
+      window._rebondReservation = () => declencherRebond(
+        'Réservation : ' + (data.titre || text),
+        'type: ' + (data.type || '') + ', destination: ' + (data.infos?.destination || '') + ', date: ' + (data.infos?.date_aller || ''),
+        (data.titre || text)
+      );
     } catch(e) {
       document.getElementById('reservationLoading').innerHTML = '<div style="font-size:13px;color:var(--muted)">Service indisponible</div>';
     }
