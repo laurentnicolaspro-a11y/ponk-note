@@ -2507,10 +2507,13 @@
   // ── Rebond ──
   let rebondContexte = {};
   let rebondEnCours = false;
+  let rebondDepuisRebond = false;
 
   async function declencherRebond(actionFaite, contexte, texteResume) {
     // Éviter les appels multiples simultanés
     if (rebondEnCours) return;
+    // Éviter un rebond déclenché depuis un rebond
+    if (rebondDepuisRebond) { rebondDepuisRebond = false; return; }
     rebondEnCours = true;
 
     // Afficher la modal avec le résumé
@@ -2571,6 +2574,8 @@
 
   function lancerRebond(type, texte) {
     document.getElementById('rebondModal').classList.add('hidden');
+    rebondEnCours = false;
+    rebondDepuisRebond = true; // La prochaine action ne déclenchera pas de rebond
     // Lancer la bonne modal selon le type
     if (type === 'CALENDRIER')  showCalendrierModal(texte);
     else if (type === 'RESERVATION') showReservationModal(texte);
