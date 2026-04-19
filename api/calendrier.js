@@ -70,13 +70,14 @@ Réponds directement sans introduction.`;
 Événement : "${text}"
 Date actuelle : ${datetime || 'non précisée'}
 
-Analyse cet événement. S'il s'agit d'une réunion (REUNION), pose exactement ces 4 questions dans cet ordre :
+Analyse cet événement. S'il s'agit d'une réunion (REUNION), pose exactement ces 5 questions dans cet ordre :
 1. "Sur quoi doit-on aboutir concrètement à la fin de cette réunion ?" (objectif décisionnel)
 2. "Qui participe et quels sont leurs intérêts ou positions ?" (rapport de force)
 3. "Y a-t-il un événement récent, une tension ou un chiffre clé qui sera forcément sur la table ?" (contexte chaud)
 4. "Quelle est ta position ou ton objectif personnel en entrant dans cette réunion ?" (posture)
+5. "As-tu d'autres précisions à ajouter qui pourraient être utiles pour la préparation ?" (informations complémentaires)
 
-Pour les autres types, génère 2 à 4 questions adaptées au contexte.
+Pour les autres types, génère 2 à 4 questions adaptées au contexte, et ajoute toujours en dernière position : "As-tu d'autres précisions à ajouter ?"
 
 JSON uniquement :
 {
@@ -91,7 +92,8 @@ JSON uniquement :
     {"id": 1, "question": "question ?"},
     {"id": 2, "question": "question ?"},
     {"id": 3, "question": "question ?"},
-    {"id": 4, "question": "question ?"}
+    {"id": 4, "question": "question ?"},
+    {"id": 5, "question": "question ?"}
   ]
 }
 
