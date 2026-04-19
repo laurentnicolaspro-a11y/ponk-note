@@ -1259,9 +1259,9 @@
   function openManualMenu() {
     const items = document.getElementById('manualActionItems');
     items.innerHTML = Object.entries(ACTION_KEYWORDS).map(([type, config]) =>
-      `<div class="manual-action-item" onclick="openManualBubble('${type}','${config.icon}','${config.label}')">
+      `<div class="manual-action-item" ${config.disabled ? 'style="opacity:0.35;pointer-events:none;"' : `onclick="openManualBubble('${type}','${config.icon}','${config.label}')"`}>
         <span>${config.icon}</span>
-        <span>${config.label}</span>
+        <span>${config.label}${config.disabled ? ' 🚧' : ''}</span>
       </div>`
     ).join('');
     document.getElementById('manualActionMenu').classList.remove('hidden');
@@ -1295,7 +1295,7 @@
     'CALENDRIER':{ icon:'📅', label:'Calendrier', words:['réunion','rendez-vous','rdv','planifie','prévois','agenda','meeting','noter dans','bloquer','fixer un'] },
     'MAPS':      { icon:'🗺️', label:'Itinéraire', words:['aller à','va chez','adresse','itinéraire','trajet','navigation','se rendre','chemin pour'] },
     'RECHERCHE': { icon:'🔍', label:'Recherche', words:['cherche','recherche','trouve','googler','renseigne','regarde sur','vérifier','voir si'] },
-    'RAPPEL':    { icon:'🔔', label:'Rappel', words:['rappelle-moi','oublie pas','oubliez pas','pense à','pensez à','note que','rappel','ne pas oublier','faut penser'] },
+    'RAPPEL':    { icon:'🔔', label:'Rappel', words:['rappelle-moi','oublie pas','oubliez pas','pense à','pensez à','note que','rappel','ne pas oublier','faut penser'], disabled: true },
     'PAIEMENT':  { icon:'💰', label:'Paiement', words:['paye','rembourse','virement','transfère','paiement','rendre la monnaie','doit de largent'] },
     'ANALYSE':   { icon:'🧠', label:'Analyse', words:['analyse','étudie','compare','rapport','bilan','étude de','faire un point','synthèse sur'] },
     'RESERVATION':{ icon:'🎫', label:'Réservation', words:['réserve','réserver','book','booking','billet','hôtel','airbnb','sncf','train','vol','nuit'] },
@@ -1328,6 +1328,7 @@
     const activeBubbles = actionBubbles.filter(b => b.confirmed === null);
     if (activeBubbles.length >= MAX_BUBBLES) return;
     for (const [type, config] of Object.entries(ACTION_KEYWORDS)) {
+      if (config.disabled) continue;
       if (config.words.some(w => lower.includes(w))) {
         const recent = actionBubbles.find(b => b.type === type && b.confirmed === null && Date.now() - b.time < 30000);
         if (!recent) addActionBubble(type, config.icon, config.label, cleanTranscript(text));
