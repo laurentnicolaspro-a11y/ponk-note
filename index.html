@@ -912,6 +912,29 @@
   </div>
 </div>
 
+<!-- Analyse modal -->
+<div class="bubble-modal hidden" id="analyseModal">
+  <div class="bubble-modal-card" style="max-height:90vh;overflow-y:auto">
+    <div style="font-size:36px;text-align:center;margin-bottom:8px">🧠</div>
+    <div class="bubble-modal-type" id="analyseModalTitle">Analyse</div>
+
+    <!-- Loading -->
+    <div id="analyseLoading" style="text-align:center;padding:24px">
+      <div style="width:28px;height:28px;border-radius:50%;border:3px solid rgba(74,127,212,0.2);border-top-color:#4a7fd4;animation:spin 0.8s linear infinite;margin:0 auto 10px"></div>
+      <div style="font-size:13px;color:var(--muted)">Analyse en cours…</div>
+    </div>
+
+    <!-- Résultat -->
+    <div id="analyseResult" style="display:none">
+      <div id="analyseContent" style="margin-bottom:14px"></div>
+      <div style="display:flex;flex-direction:column;gap:8px" id="analyseActionBtns"></div>
+    </div>
+
+    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted);margin-top:10px"
+      onclick="document.getElementById('analyseModal').classList.add('hidden')">Fermer</button>
+  </div>
+</div>
+
 <!-- Rappel modal -->
 <div class="bubble-modal hidden" id="rappelModal">
   <div class="bubble-modal-card">
@@ -1296,7 +1319,7 @@
     'MAPS':      { icon:'🗺️', label:'Itinéraire', words:['aller à','va chez','adresse','itinéraire','trajet','navigation','se rendre','chemin pour'] },
     'RECHERCHE': { icon:'🔍', label:'Recherche', words:['cherche','recherche','trouve','googler','renseigne','regarde sur','vérifier','voir si'] },
     'RAPPEL':    { icon:'🔔', label:'Rappel', words:['rappelle-moi','oublie pas','oubliez pas','pense à','pensez à','note que','rappel','ne pas oublier','faut penser'], disabled: true },
-    'PAIEMENT':  { icon:'💰', label:'Paiement', words:['paye','rembourse','virement','transfère','paiement','rendre la monnaie','doit de largent'] },
+    'FINANCE':   { icon:'💰', label:'Finance', words:['paye','rembourse','virement','transfère','paiement','dépense','facture','budget','doit de largent','note de frais'], disabled: true },
     'ANALYSE':   { icon:'🧠', label:'Analyse', words:['analyse','étudie','compare','rapport','bilan','étude de','faire un point','synthèse sur'] },
     'RESERVATION':{ icon:'🎫', label:'Réservation', words:['réserve','réserver','book','booking','billet','hôtel','airbnb','sncf','train','vol','nuit'] },
     'TABLEAU':   { icon:'📊', label:'Tableau', words:['tableau','spreadsheet','excel','sheets','comparatif','liste comparative','tableau de bord'] },
@@ -1399,8 +1422,9 @@
       case 'MAPS':
         return null; // Géré par showMapsModal
       case 'RECHERCHE':
-      case 'ANALYSE':
         return `https://www.google.com/search?q=${encoded}`;
+      case 'ANALYSE':
+        return null; // Géré par showAnalyseModal
       case 'COMMANDE':
         return `https://www.google.com/search?q=${encoded}&tbm=shop`;
       case 'RAPPEL': {
@@ -1474,6 +1498,14 @@
       bubble.confirmed = true;
       removeBubbleEl(currentBubbleIndex);
       showMapsModal(bubble.text);
+      return;
+    }
+
+    if (bubble.type === 'ANALYSE') {
+      document.getElementById('bubbleModal').classList.add('hidden');
+      bubble.confirmed = true;
+      removeBubbleEl(currentBubbleIndex);
+      showAnalyseModal(bubble.text);
       return;
     }
 
@@ -2376,6 +2408,209 @@
     }
   }
 
+  // ── Analyse ──
+  let analyseData = {};
+
+  async function showAnalyseModal(text) {
+    analyseData = { text, titre: text.substring(0, 60) };
+    document.getElementById('analyseModalTitle').textContent = text.substring(0, 50) + (text.length > 50 ? '…' : '');
+    document.getElementById('analyseLoading').style.display = 'block';
+    document.getElementById('analyseResult').style.display = 'none';
+    document.getElementById('analyseModal').classList.remove('hidden');
+
+    try {
+      const res = await fetch('/api/analyse', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, profile: localStorage.getItem('ponk_profile') || '' })
+      });
+      const data = await res.json();
+      analyseData = { ...analyseData, ...data };
+
+      document.getElementById('analyseLoading').style.display = 'none';
+      document.getElementById('analyseResult').style.display = 'block';
+
+      // Rendu du contenu
+      const sections = data.sections || [];
+      document.getElementById('analyseContent').innerHTML = sections.map(s => `
+        <div style="background:rgba(255,255,255,0.5);border-radius:12px;padding:12px;margin-bottom:8px;border-left:3px solid var(--accent)">
+          <div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px">${s.emoji || '📌'} ${s.titre}</div>
+          ${(s.points || []).map(p => `
+            <div style="margin-bottom:6px">
+              <div style="font-size:13px;font-weight:600;color:var(--text)">${p.titre}</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.5">${p.detail}</div>
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+
+      // Boutons actions
+      const prefMail = localStorage.getItem('ponk_pref_mail') || 'gmail';
+      const sujet = encodeURIComponent('Analyse : ' + analyseData.titre);
+      const corps = encodeURIComponent(sections.map(s =>
+        s.titre + '\n' + (s.points || []).map(p => '• ' + p.titre + ' : ' + p.detail).join('\n')
+      ).join('\n\n'));
+      const emailUrls = {
+        'gmail':   `https://mail.google.com/mail/?view=cm&fs=1&su=${sujet}&body=${corps}`,
+        'outlook': `https://outlook.live.com/mail/0/deeplink/compose?subject=${sujet}&body=${corps}`,
+        'yahoo':   `https://compose.mail.yahoo.com/?subject=${sujet}&body=${corps}`,
+        'default': `mailto:?subject=${sujet}&body=${corps}`
+      };
+
+      document.getElementById('analyseActionBtns').innerHTML = `
+        <a href="${emailUrls[prefMail]}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:var(--accent);color:#fff;text-decoration:none;font-size:14px;font-weight:600">📧 Envoyer par email</a>
+        <button onclick="downloadAnalysePDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.8);background:rgba(255,255,255,0.6);color:var(--text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;width:100%">📄 Exporter en PDF</button>
+      `;
+
+    } catch(e) {
+      document.getElementById('analyseLoading').innerHTML = '<div style="font-size:13px;color:var(--muted)">Service indisponible</div>';
+    }
+  }
+
+  async function downloadAnalysePDF() {
+    const data = analyseData;
+    if (!data.sections) return;
+
+    if (!window.jspdf) {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const M = 16;
+    const maxW = pageW - M * 2;
+    let y = M;
+
+    const C = {
+      accent:     [74, 127, 212],
+      accentDark: [50, 95, 170],
+      accentLight:[210, 225, 248],
+      dark:       [25, 30, 50],
+      muted:      [110, 118, 140],
+      light:      [243, 246, 253],
+      white:      [255, 255, 255],
+      sectionBg:  [232, 240, 255],
+      sectionBdr: [190, 210, 245],
+      blockBg:    [251, 253, 255],
+      blockBdr:   [215, 228, 248],
+      detail:     [85, 95, 118],
+      footerbg:   [244, 247, 253],
+    };
+
+    function checkPage(needed = 10) {
+      if (y + needed > pageH - 14) { doc.addPage(); y = M; }
+    }
+
+    // Bandeau titre
+    doc.setFillColor(...C.accentDark);
+    doc.rect(0, 0, pageW, 32, 'F');
+    doc.setFillColor(...C.accent);
+    doc.rect(0, 8, pageW, 24, 'F');
+    doc.setFillColor(...C.accentLight);
+    doc.rect(0, 30, pageW, 1.2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(...C.white);
+    const titleLines = doc.splitTextToSize('Analyse : ' + data.titre, pageW - 40);
+    doc.text(titleLines, M, titleLines.length > 1 ? 11 : 14);
+    doc.setFillColor(...C.accentDark);
+    doc.roundedRect(pageW - M - 22, 4, 22, 7, 1.5, 1.5, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(...C.accentLight);
+    doc.text('PONK NOTE', pageW - M - 11, 9, { align: 'center' });
+    y = 40;
+
+    // Date génération
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...C.muted);
+    doc.text('Généré le ' + new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }), M, y);
+    y += 10;
+
+    // Sections
+    for (const section of (data.sections || [])) {
+      checkPage(22);
+
+      // Header section
+      doc.setFillColor(...C.sectionBg);
+      doc.setDrawColor(...C.sectionBdr);
+      doc.setLineWidth(0.25);
+      doc.roundedRect(M, y, maxW, 10, 2.5, 2.5, 'FD');
+      doc.setFillColor(...C.accent);
+      doc.roundedRect(M, y, 3.5, 10, 1.5, 1.5, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(...C.accentDark);
+      doc.text((section.emoji || '') + ' ' + section.titre.toUpperCase(), M + 7, y + 6.5);
+      y += 13;
+
+      // Points
+      for (const point of (section.points || [])) {
+        const titreLines  = doc.splitTextToSize(point.titre, maxW - 12);
+        const detailLines = doc.splitTextToSize(point.detail, maxW - 14);
+        const totalH = titreLines.length * 5.8 + detailLines.length * 4.8 + 12;
+
+        checkPage(totalH + 5);
+        const blockY = y;
+
+        doc.setFillColor(225, 232, 248);
+        doc.roundedRect(M + 0.6, blockY + 0.6, maxW, totalH, 2.5, 2.5, 'F');
+        doc.setFillColor(...C.blockBg);
+        doc.setDrawColor(...C.blockBdr);
+        doc.setLineWidth(0.2);
+        doc.roundedRect(M, blockY, maxW, totalH, 2.5, 2.5, 'FD');
+        doc.setFillColor(...C.accentLight);
+        doc.roundedRect(M, blockY, 3, totalH, 1.5, 1.5, 'F');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(...C.dark);
+        y = blockY + 6;
+        doc.text(titreLines, M + 6, y);
+        y += titreLines.length * 5.8 + 1;
+
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(8.5);
+        doc.setTextColor(...C.detail);
+        doc.text(detailLines, M + 8, y + 2);
+        y = blockY + totalH + 4;
+      }
+      y += 5;
+    }
+
+    // Footer
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFillColor(...C.footerbg);
+      doc.rect(0, pageH - 11, pageW, 11, 'F');
+      doc.setDrawColor(...C.sectionBdr);
+      doc.setLineWidth(0.2);
+      doc.line(0, pageH - 11, pageW, pageH - 11);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(...C.muted);
+      doc.text('Ponk Note', M, pageH - 4);
+      doc.setFillColor(...C.accent);
+      doc.roundedRect(pageW - M - 14, pageH - 9, 14, 6, 1.5, 1.5, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(...C.white);
+      doc.text(i + ' / ' + totalPages, pageW - M - 7, pageH - 4.8, { align: 'center' });
+    }
+
+    const filename = ('Analyse_' + data.titre).replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '_') + '.pdf';
+    doc.save(filename);
+  }
+
+  // ── Rappel ──
   function showRappelModal(text) {
     document.getElementById('rappelText').textContent = text;
     document.getElementById('rappelCopyBtn').textContent = '📋 Copier';
