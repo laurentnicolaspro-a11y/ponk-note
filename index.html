@@ -1472,7 +1472,26 @@
       return;
     }
 
-    const aiTypes = ['EMAIL','WHATSAPP','CALENDRIER','RAPPEL'];
+    if (bubble.type === 'RAPPEL') {
+      const ta = document.createElement('textarea');
+      ta.value = bubble.text;
+      ta.style.position = 'fixed';
+      ta.style.top = '0';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      bubble.confirmed = true;
+      removeBubbleEl(currentBubbleIndex);
+      document.getElementById('bubbleModal').classList.add('hidden');
+      setStatus('active', '📋 Rappel copié dans le presse-papier');
+      setTimeout(() => setStatus('', 'Prêt'), 3000);
+      return;
+    }
+
+    const aiTypes = ['EMAIL','WHATSAPP','CALENDRIER'];
 
     if (aiTypes.includes(bubble.type) && bubble.text) {
       const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
