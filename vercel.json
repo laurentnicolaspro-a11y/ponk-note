@@ -1,10 +1,10 @@
 {
   "version": 2,
-  "routes": [
-    { "src": "/results.html", "dest": "/results.html" },
-    { "src": "/library.html", "dest": "/library.html" },
-    { "src": "/settings.html", "dest": "/settings.html" },
-    { "src": "/test.html", "dest": "/test.html" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "rewrites": [
+    { "source": "/results.html", "destination": "/results.html" },
+    { "source": "/library.html", "destination": "/library.html" },
+    { "source": "/settings.html", "destination": "/settings.html" },
+    { "source": "/test.html", "destination": "/test.html" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
