@@ -2654,14 +2654,14 @@
           const colW = maxW / cols.length;
           const cellH = 7;
           // Header
-          doc.setFillColor(...C.sectionBg);
-          doc.setDrawColor(...C.sectionBdr);
-          doc.setLineWidth(0.2);
           cols.forEach((col, ci) => {
+            doc.setFillColor(232, 240, 255);
+            doc.setDrawColor(190, 210, 245);
+            doc.setLineWidth(0.2);
             doc.rect(M + ci * colW, y, colW, cellH, 'FD');
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(7.5);
-            doc.setTextColor(...C.accentDark);
+            doc.setTextColor(50, 95, 170);
             const t = doc.splitTextToSize(String(col), colW - 3);
             doc.text(t[0], M + ci * colW + 2, y + 4.5);
           });
@@ -2669,13 +2669,19 @@
           // Lignes
           rows.forEach((row, ri) => {
             checkPage(cellH + 2);
-            doc.setFillColor(ri % 2 === 0 ? 251 : 244, ri % 2 === 0 ? 253 : 247, 255);
             row.forEach((cell, ci) => {
-              doc.setDrawColor(...C.blockBdr);
+              // Forcer couleur fond explicitement
+              if (ri % 2 === 0) {
+                doc.setFillColor(251, 253, 255);
+              } else {
+                doc.setFillColor(244, 247, 255);
+              }
+              doc.setDrawColor(215, 228, 248);
+              doc.setLineWidth(0.2);
               doc.rect(M + ci * colW, y, colW, cellH, 'FD');
               doc.setFont('helvetica', 'normal');
               doc.setFontSize(7.5);
-              doc.setTextColor(...C.dark);
+              doc.setTextColor(25, 30, 50);
               const t = doc.splitTextToSize(String(cell), colW - 3);
               doc.text(t[0], M + ci * colW + 2, y + 4.5);
             });
