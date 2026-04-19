@@ -2257,6 +2257,12 @@
       `;
     }
     document.getElementById('waModal').classList.remove('hidden');
+    // Rebond automatique
+    declencherRebond(
+      'Message WhatsApp : ' + message,
+      'message envoye par whatsapp',
+      'Message WhatsApp envoyé'
+    );
   }
 
   function copyWAMessage() {
@@ -2281,6 +2287,12 @@
       `;
     }
     document.getElementById('callModal').classList.remove('hidden');
+    // Rebond automatique
+    declencherRebond(
+      'Appel : ' + (name || phone),
+      'appel telephone vers ' + (name || phone),
+      'Appel vers ' + (name || phone)
+    );
   }
 
   function copyPhone() {
@@ -2470,6 +2482,13 @@
       const allApps = ['google','waze','apple'];
       const ordered = [prefMaps, ...allApps.filter(a => a !== prefMaps)];
       document.getElementById('mapsAppBtns').innerHTML = ordered.map(a => appLinks[a]).join('');
+
+      // Rebond automatique
+      declencherRebond(
+        'Itineraire : ' + (arriveeVal || ''),
+        'trajet vers ' + (arriveeVal || '') + ', mode: ' + mapsState.mode,
+        'Itinéraire vers ' + (arriveeVal || '')
+      );
 
     } catch(e) {
       document.getElementById('mapsLoading').style.display = 'none';
@@ -2721,6 +2740,13 @@
         <a href="${emailUrls[prefMail]}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:var(--accent);color:#fff;text-decoration:none;font-size:14px;font-weight:600">📧 Envoyer par email</a>
         <button onclick="downloadAnalysePDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.8);background:rgba(255,255,255,0.6);color:var(--text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;width:100%">📄 Exporter en PDF</button>
       `;
+
+      // Rebond automatique
+      declencherRebond(
+        'Analyse : ' + (data.titre || text),
+        'analyse sur le sujet: ' + (data.titre || text),
+        'Analyse : ' + (data.titre || text)
+      );
 
     } catch(e) {
       document.getElementById('analyseLoading').innerHTML = '<div style="font-size:13px;color:var(--muted)">Service indisponible</div>';
