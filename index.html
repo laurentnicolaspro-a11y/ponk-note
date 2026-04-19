@@ -613,7 +613,7 @@
       <div class="assistant-pill" onclick="openManualMenu()" style="padding:5px 12px;">
         <span class="pill-label">+</span>
       </div>
-      <div class="header-avatar" id="headerAvatar" onclick="window.location.href='/library.html'"></div>
+      <div class="header-avatar" id="headerAvatar" onclick="goToLibrary()"></div>
     </div>
   </header>
 
@@ -894,6 +894,7 @@
       recording = true;
       seconds = 0;
       interval = setInterval(() => { seconds++; tick(); }, 1000);
+      window.addEventListener('beforeunload', confirmQuit);
       if (assistantActive) startSpeechRecognition();
       document.getElementById('recordBtn').classList.add('is-recording');
       document.getElementById('powerWrap').classList.add('is-recording');
@@ -907,6 +908,7 @@
 
   function stopRec() {
     recorder.stop(); recording = false; clearInterval(interval);
+    window.removeEventListener('beforeunload', confirmQuit);
     stopSpeechRecognition();
     document.getElementById('recordBtn').classList.remove('is-recording');
     document.getElementById('powerWrap').classList.remove('is-recording');
@@ -998,6 +1000,16 @@
       setStatus('error', e.message);
       document.getElementById('btnAnalyze').disabled = false;
     }
+  }
+
+  function goToLibrary() {
+    window.location.href = '/library.html';
+  }
+
+  function confirmQuit(e) {
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
   }
 
   function fmt(s) { const m=Math.floor(s/60),sec=s%60; return m>0?m+'m '+sec+'s':sec+'s'; }
