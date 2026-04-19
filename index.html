@@ -1482,6 +1482,11 @@
         document.getElementById('calendrierCalBtn').innerHTML = `
           <div style="background:rgba(74,127,212,0.06);border:1px solid rgba(74,127,212,0.15);border-radius:12px;padding:12px;margin-bottom:8px">
             <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:10px">Détails de l'événement</div>
+            <div style="margin-bottom:8px">
+              <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px">DATE</div>
+              <input type="date" id="calDateInput" value="${data.date && data.date.match(/\d{4}-\d{2}-\d{2}/) ? data.date.match(/\d{4}-\d{2}-\d{2}/)[0] : ''}"
+                style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:14px;color:var(--text);outline:none"/>
+            </div>
             <div style="display:flex;gap:8px;margin-bottom:8px">
               <div style="flex:1">
                 <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px">HEURE</div>
@@ -1519,60 +1524,109 @@
     const prefCal = localStorage.getItem('ponk_pref_cal') || 'google';
     const data = calendrierData;
 
-    const titre = encodeURIComponent(data.titre || data.text || '');
-    const desc  = encodeURIComponent(data.description || '');
+    const titreRaw = data.titre || data.text || '';
+    const descRaw  = data.description || '';
 
-    // Construire la date+heure de début au format Google Calendar : YYYYMMDDTHHmmss
     const heureInput = document.getElementById('calHeureInput');
     const dureeInput = document.getElementById('calDureeInput');
-    const heure  = heureInput  ? heureInput.value  : '09:00';
-    const duree  = dureeInput  ? parseInt(dureeInput.value) : 60;
+    const dateInput  = document.getElementById('calDateInput');
+    const heure = heureInput ? heureInput.value : '09:00';
+    const duree = dureeInput ? parseInt(dureeInput.value) : 60;
 
-    // Parser la date depuis calendrierData
-    let dateStr = data.date || '';
-    let startISO = '';
-    let endISO   = '';
-
-    try {
-      // Tenter de construire une date ISO depuis la date extraite par Gemini
-      // Formats possibles : "18 juin 2026", "2026-06-18", "lundi 20 avril 2026"
-      const moisFr = {'janvier':'01','février':'02','mars':'03','avril':'04','mai':'05',
-        'juin':'06','juillet':'07','août':'08','septembre':'09','octobre':'10',
-        'novembre':'11','décembre':'12'};
-      let yyyy, mm, dd;
+    // Parser la date — depuis input HTML date (YYYY-MM-DD) en priorité
+    let yyyy = '', mm = '', dd = '';
+    if (dateInput && dateInput.value) {
+      [yyyy, mm, dd] = dateInput.value.split('-');
+    } else {
+      // Fallback : parser la date texte de Gemini
+      const dateStr = data.date || '';
+      const moisFr = {
+        'janvier':'01','fevrier':'02','février':'02','mars':'03','avril':'04',
+        'mai':'05','juin':'06','juillet':'07','aout':'08','août':'08',
+        'septembre':'09','octobre':'10','novembre':'11','decembre':'12','décembre':'12'
+      };
       const isoMatch = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/);
       const frMatch  = dateStr.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/);
-      if (isoMatch) {
-        [, yyyy, mm, dd] = isoMatch;
-      } else if (frMatch) {
-        dd   = frMatch[1].padStart(2,'0');
-        mm   = moisFr[frMatch[2].toLowerCase()] || '01';
+      if (isoMatch) { yyyy=isoMatch[1]; mm=isoMatch[2]; dd=isoMatch[3].padStart(2,'0'); }
+      else if (frMatch) {
+        dd = frMatch[1].padStart(2,'0');
+        mm = moisFr[frMatch[2].toLowerCase()] || '01';
         yyyy = frMatch[3];
       }
-      if (yyyy && mm && dd) {
-        const [hh, min] = heure.split(':');
-        const start = new Date(`${yyyy}-${mm}-${dd}T${hh}:${min}:00`);
-        const end   = new Date(start.getTime() + duree * 60000);
-        const fmt = d => d.toISOString().replace(/[-:]/g,'').split('.')[0];
-        startISO = fmt(start);
-        endISO   = fmt(end);
-      }
-    } catch(e) {}
-
-    let url = '';
-    if (prefCal === 'google') {
-      url = startISO
-        ? `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&details=${desc}&dates=${startISO}/${endISO}`
-        : `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&details=${desc}`;
-    } else if (prefCal === 'outlook') {
-      url = startISO
-        ? `https://outlook.live.com/calendar/0/deeplink/compose?subject=${titre}&body=${desc}&startdt=${startISO.substring(0,8)}&enddt=${startISO.substring(0,8)}`
-        : `https://outlook.live.com/calendar/0/deeplink/compose?subject=${titre}&body=${desc}`;
-    } else {
-      url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&details=${desc}`;
     }
 
-    window.open(url, '_blank');
+    // Construire start/end SANS passer par Date() pour éviter le décalage UTC
+    // Format Google : YYYYMMDDTHHmmss (heure locale, pas UTC)
+    const [hh, min] = heure.split(':');
+    const startMins = parseInt(hh) * 60 + parseInt(min);
+    const endMins   = startMins + duree;
+    const endHH  = String(Math.floor(endMins / 60) % 24).padStart(2, '0');
+    const endMin = String(endMins % 60).padStart(2, '0');
+    // Gérer passage minuit
+    const endDD = endMins >= 1440
+      ? String(parseInt(dd) + 1).padStart(2, '0')
+      : dd;
+
+    const startLocal = yyyy && mm && dd
+      ? `${yyyy}${mm}${dd}T${hh}${min}00`
+      : '';
+    const endLocal = yyyy && mm && endDD
+      ? `${yyyy}${mm}${endDD}T${endHH}${endMin}00`
+      : '';
+
+    // Dates formatées pour Outlook (ISO 8601 local)
+    const startOutlook = yyyy && mm && dd
+      ? `${yyyy}-${mm}-${dd}T${hh}:${min}:00`
+      : '';
+    const endOutlook = yyyy && mm && endDD
+      ? `${yyyy}-${mm}-${endDD}T${endHH}:${endMin}:00`
+      : '';
+
+    const titre = encodeURIComponent(titreRaw);
+    const desc  = encodeURIComponent(descRaw);
+
+    let url = '';
+
+    if (prefCal === 'google') {
+      url = startLocal
+        ? `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&details=${desc}&dates=${startLocal}/${endLocal}`
+        : `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&details=${desc}`;
+      window.open(url, '_blank');
+
+    } else if (prefCal === 'outlook') {
+      url = startOutlook
+        ? `https://outlook.live.com/calendar/0/deeplink/compose?subject=${titre}&body=${desc}&startdt=${encodeURIComponent(startOutlook)}&enddt=${encodeURIComponent(endOutlook)}&path=/calendar/action/compose`
+        : `https://outlook.live.com/calendar/0/deeplink/compose?subject=${titre}&body=${desc}&path=/calendar/action/compose`;
+      window.open(url, '_blank');
+
+    } else if (prefCal === 'apple') {
+      // Générer un fichier .ics téléchargeable
+      const icsStart = startLocal || `${new Date().getFullYear()}0101T090000`;
+      const icsEnd   = endLocal   || `${new Date().getFullYear()}0101T100000`;
+      const uid = Date.now() + '@ponknote';
+      const ics = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Ponk Note//FR',
+        'BEGIN:VEVENT',
+        `UID:${uid}`,
+        `SUMMARY:${titreRaw}`,
+        `DESCRIPTION:${descRaw.replace(/
+/g, '\n')}`,
+        `DTSTART;TZID=Europe/Paris:${icsStart}`,
+        `DTEND;TZID=Europe/Paris:${icsEnd}`,
+        'END:VEVENT',
+        'END:VCALENDAR'
+      ].join('
+');
+      const blob = new Blob([ics], { type: 'text/calendar' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = titreRaw.replace(/[^a-z0-9]/gi, '_') + '.ics';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1000);
+    }
   }
 
   function startCalendrierOrganise() {
