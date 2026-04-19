@@ -2523,8 +2523,13 @@
       });
       const data = await res.json();
       const rebonds = data.rebonds || [];
+      console.log('[rebond] reçu:', rebonds.length, 'suggestions', rebonds);
 
       if (rebonds.length === 0) return; // Rien à proposer
+
+      // Vérifier que la modal est toujours ouverte
+      const modal = document.getElementById('rebondModal');
+      console.log('[rebond] modal visible:', !modal.classList.contains('hidden'));
 
       // Afficher les suggestions
       document.getElementById('rebondSuggestions').style.display = 'block';
