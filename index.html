@@ -2506,8 +2506,13 @@
 
   // ── Rebond ──
   let rebondContexte = {};
+  let rebondEnCours = false;
 
   async function declencherRebond(actionFaite, contexte, texteResume) {
+    // Éviter les appels multiples simultanés
+    if (rebondEnCours) return;
+    rebondEnCours = true;
+
     // Afficher la modal avec le résumé
     rebondContexte = { actionFaite, contexte };
     document.getElementById('rebondResumeText').textContent = texteResume;
@@ -2558,6 +2563,8 @@
 
     } catch(e) {
       console.log('[rebond] erreur:', e.message);
+    } finally {
+      rebondEnCours = false;
     }
   }
 
@@ -2586,6 +2593,7 @@
 
   function fermerRebond() {
     document.getElementById('rebondModal').classList.add('hidden');
+    rebondEnCours = false;
   }
 
   // ── Réservation ──
