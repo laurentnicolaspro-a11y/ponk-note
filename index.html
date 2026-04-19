@@ -2217,7 +2217,7 @@
 
       // Géocoder arrivée
       const geoArr = await geocodeAddress(arriveeVal);
-      if (!geoArr) { alert('Destination introuvable, vérifiez ladresse'); return; }
+      if (!geoArr) { alert('Destination introuvable, vérifiez l\'adresse'); return; }
       mapsState.arriveeLat = geoArr.lat;
       mapsState.arriveeLon = geoArr.lon;
 
@@ -2280,8 +2280,7 @@
         document.getElementById('mapsMeteoIcon').textContent = weather.icon;
         document.getElementById('mapsMeteoTemp').textContent = weather.temp + '°C · ' + weather.city;
         document.getElementById('mapsMeteoDesc').textContent = weather.description.charAt(0).toUpperCase() + weather.description.slice(1);
-        document.getElementById('mapsMeteoWind').textContent = '💨 ' + weather.wind + ' km/h
-💧 ' + weather.humidity + '%';
+        document.getElementById('mapsMeteoWind').textContent = '💨 ' + weather.wind + ' km/h  💧 ' + weather.humidity + '%';
         document.getElementById('mapsMeteo').style.display = 'block';
       }
 
