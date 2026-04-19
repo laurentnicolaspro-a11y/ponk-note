@@ -549,6 +549,20 @@
     .overlay-text { font-size:15px; font-weight:500; color:var(--text); min-height:22px; }
     .overlay-text::after { content:'▎'; animation:cursor .8s step-end infinite; opacity:0.5; }
     @keyframes cursor { 0%,100%{opacity:.5} 50%{opacity:0} }
+
+    /* Maps mode buttons */
+    .maps-mode-btn {
+      flex:1; padding:7px 4px; border-radius:10px;
+      border:1.5px solid rgba(74,127,212,0.2);
+      background:rgba(255,255,255,0.6);
+      font-family:inherit; font-size:11px; font-weight:500;
+      color:var(--muted); cursor:pointer;
+      transition:all 0.15s; -webkit-tap-highlight-color:transparent;
+    }
+    .maps-mode-btn.active {
+      background:var(--accent); border-color:var(--accent);
+      color:#fff; font-weight:600;
+    }
   </style>
 </head>
 <body>
@@ -810,6 +824,91 @@
       <button class="bubble-modal-btn btn-confirm" onclick="copyPhone()" id="callCopyBtn">📋 Copier</button>
       <button class="bubble-modal-btn" style="background:rgba(0,0,0,0.06);color:var(--muted)" onclick="document.getElementById('callModal').classList.add('hidden')">Fermer</button>
     </div>
+  </div>
+</div>
+
+<!-- Maps / Itinéraire modal -->
+<div class="bubble-modal hidden" id="mapsModal">
+  <div class="bubble-modal-card" style="max-height:90vh;overflow-y:auto">
+    <div style="font-size:36px;text-align:center;margin-bottom:8px">🗺️</div>
+    <div class="bubble-modal-type" id="mapsModalTitle">Itinéraire</div>
+
+    <!-- Champs départ / arrivée -->
+    <div id="mapsForm" style="margin:12px 0">
+      <div style="margin-bottom:8px">
+        <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.6px">Départ</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="text" id="mapsDepart" placeholder="Ma position actuelle…"
+            style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:13px;color:var(--text);outline:none"/>
+          <button onclick="geolocateDepart()" title="Ma position"
+            style="width:36px;height:36px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:16px;cursor:pointer;flex-shrink:0">📍</button>
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.6px">Destination</div>
+        <input type="text" id="mapsArrivee" placeholder="Adresse de destination…"
+          style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:13px;color:var(--text);outline:none"/>
+      </div>
+      <!-- Mode transport -->
+      <div style="display:flex;gap:6px;margin-bottom:12px" id="mapsMode">
+        <button class="maps-mode-btn active" data-mode="car"     onclick="setMapsMode(this)">🚗 Voiture</button>
+        <button class="maps-mode-btn"         data-mode="transit" onclick="setMapsMode(this)">🚌 Transport</button>
+        <button class="maps-mode-btn"         data-mode="walk"    onclick="setMapsMode(this)">🚶 À pied</button>
+        <button class="maps-mode-btn"         data-mode="bike"    onclick="setMapsMode(this)">🚲 Vélo</button>
+      </div>
+      <button onclick="lancerItineraire()" id="mapsLancerBtn"
+        style="width:100%;padding:12px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">
+        Calculer l'itinéraire
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div id="mapsLoading" style="display:none;text-align:center;padding:16px">
+      <div style="width:28px;height:28px;border-radius:50%;border:3px solid rgba(74,127,212,0.2);border-top-color:#4a7fd4;animation:spin 0.8s linear infinite;margin:0 auto 10px"></div>
+      <div style="font-size:13px;color:var(--muted)">Chargement…</div>
+    </div>
+
+    <!-- Résultats -->
+    <div id="mapsResult" style="display:none">
+      <!-- Trajet -->
+      <div id="mapsTrajet" style="background:rgba(74,127,212,0.06);border:1px solid rgba(74,127,212,0.15);border-radius:14px;padding:14px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-size:28px" id="mapsModeIcon">🚗</div>
+          <div style="flex:1">
+            <div style="font-size:18px;font-weight:700;color:var(--text)" id="mapsDuree">—</div>
+            <div style="font-size:12px;color:var(--muted)" id="mapsDistance">—</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">Partir à</div>
+            <div style="font-size:20px;font-weight:700;color:var(--accent)" id="mapsHeureDep">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Météo destination -->
+      <div id="mapsMeteo" style="background:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.8);border-radius:14px;padding:12px;margin-bottom:10px;display:none">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:32px" id="mapsMeteoIcon">🌤️</div>
+          <div style="flex:1">
+            <div style="font-size:16px;font-weight:700;color:var(--text)" id="mapsMeteoTemp">—</div>
+            <div style="font-size:12px;color:var(--muted)" id="mapsMeteoDesc">—</div>
+          </div>
+          <div style="text-align:right;font-size:11px;color:var(--muted)" id="mapsMeteoWind">—</div>
+        </div>
+      </div>
+
+      <!-- POI -->
+      <div id="mapsPOIWrap" style="display:none">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:8px">À proximité de la destination</div>
+        <div id="mapsPOIList" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+
+      <!-- Bouton ouvrir app -->
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px" id="mapsAppBtns"></div>
+    </div>
+
+    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted);margin-top:10px"
+      onclick="document.getElementById('mapsModal').classList.add('hidden')">Fermer</button>
   </div>
 </div>
 
@@ -1282,9 +1381,7 @@
         if (prefCal === 'outlook') return `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encoded}`;
         return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encoded}`;
       case 'MAPS':
-        if (prefMaps === 'waze')  return `https://waze.com/ul?q=${encoded}`;
-        if (prefMaps === 'apple') return `https://maps.apple.com/?q=${encoded}`;
-        return `https://www.google.com/maps/search/?api=1&query=${encoded}`;
+        return null; // Géré par showMapsModal
       case 'RECHERCHE':
       case 'ANALYSE':
         return `https://www.google.com/search?q=${encoded}`;
@@ -1341,6 +1438,14 @@
       const msg = bubble.generated?.message || bubble.text;
       document.querySelectorAll('.btn-now').forEach(b => { b.textContent = '→ Faire'; b.disabled = false; });
       showWhatsAppModal(phone, msg);
+      return;
+    }
+
+    if (bubble.type === 'MAPS') {
+      document.getElementById('bubbleModal').classList.add('hidden');
+      bubble.confirmed = true;
+      removeBubbleEl(currentBubbleIndex);
+      showMapsModal(bubble.text);
       return;
     }
 
@@ -2047,6 +2152,181 @@
       btn.textContent = '✓ Copié !';
       setTimeout(() => btn.textContent = '📋 Copier', 2000);
     });
+  }
+
+  // ── Maps / Itinéraire ──
+  let mapsState = { mode: 'car', departLat: null, departLon: null, arriveeLat: null, arriveeLon: null };
+
+  function showMapsModal(text) {
+    document.getElementById('mapsModalTitle').textContent = text ? text.substring(0, 40) : 'Itinéraire';
+    document.getElementById('mapsDepart').value = '';
+    document.getElementById('mapsArrivee').value = text || '';
+    document.getElementById('mapsResult').style.display = 'none';
+    document.getElementById('mapsLoading').style.display = 'none';
+    document.getElementById('mapsMeteo').style.display = 'none';
+    document.getElementById('mapsPOIWrap').style.display = 'none';
+    mapsState = { mode: 'car', departLat: null, departLon: null, arriveeLat: null, arriveeLon: null };
+    document.getElementById('mapsModal').classList.remove('hidden');
+    // Géolocaliser automatiquement
+    geolocateDepart();
+  }
+
+  function setMapsMode(btn) {
+    document.querySelectorAll('.maps-mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    mapsState.mode = btn.dataset.mode;
+  }
+
+  function geolocateDepart() {
+    if (!navigator.geolocation) return;
+    const btn = document.querySelector('[onclick="geolocateDepart()"]');
+    if (btn) btn.textContent = '⏳';
+    navigator.geolocation.getCurrentPosition(pos => {
+      mapsState.departLat = pos.coords.latitude;
+      mapsState.departLon = pos.coords.longitude;
+      document.getElementById('mapsDepart').value = 'Ma position actuelle';
+      if (btn) btn.textContent = '✅';
+    }, () => {
+      if (btn) btn.textContent = '📍';
+      document.getElementById('mapsDepart').placeholder = 'Entrez votre adresse de départ';
+    });
+  }
+
+  async function geocodeAddress(address) {
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(address);
+    const r = await fetch(url, { headers: { 'Accept-Language': 'fr' } });
+    const data = await r.json();
+    if (data && data[0]) return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), display: data[0].display_name };
+    return null;
+  }
+
+  async function lancerItineraire() {
+    const departVal  = document.getElementById('mapsDepart').value.trim();
+    const arriveeVal = document.getElementById('mapsArrivee').value.trim();
+    if (!arriveeVal) { alert('Veuillez entrer une destination'); return; }
+
+    document.getElementById('mapsLoading').style.display = 'block';
+    document.getElementById('mapsResult').style.display = 'none';
+
+    try {
+      // Géocoder départ si pas de coords GPS
+      if (!mapsState.departLat && departVal && departVal !== 'Ma position actuelle') {
+        const geo = await geocodeAddress(departVal);
+        if (geo) { mapsState.departLat = geo.lat; mapsState.departLon = geo.lon; }
+      }
+
+      // Géocoder arrivée
+      const geoArr = await geocodeAddress(arriveeVal);
+      if (!geoArr) { alert('Destination introuvable, vérifiez l'adresse'); return; }
+      mapsState.arriveeLat = geoArr.lat;
+      mapsState.arriveeLon = geoArr.lon;
+
+      // Appels parallèles
+      const promises = [];
+
+      // Durée trajet
+      if (mapsState.departLat) {
+        promises.push(fetch('/api/itineraire', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ action:'duration', lat: mapsState.departLat, lon: mapsState.departLon,
+            destLat: mapsState.arriveeLat, destLon: mapsState.arriveeLon, mode: mapsState.mode })
+        }).then(r => r.json()).catch(() => null));
+      } else {
+        promises.push(Promise.resolve(null));
+      }
+
+      // Météo destination
+      promises.push(fetch('/api/itineraire', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'weather', lat: mapsState.arriveeLat, lon: mapsState.arriveeLon })
+      }).then(r => r.json()).catch(() => null));
+
+      // POI destination
+      promises.push(fetch('/api/itineraire', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'poi', lat: mapsState.arriveeLat, lon: mapsState.arriveeLon })
+      }).then(r => r.json()).catch(() => null));
+
+      const [duration, weather, poi] = await Promise.all(promises);
+
+      document.getElementById('mapsLoading').style.display = 'none';
+      document.getElementById('mapsResult').style.display = 'block';
+
+      // ── Trajet ──
+      const modeIcons = { car:'🚗', transit:'🚌', walk:'🚶', bike:'🚲' };
+      const modeLabels = { car:'En voiture', transit:'En transport', walk:'À pied', bike:'À vélo' };
+      document.getElementById('mapsModeIcon').textContent = modeIcons[mapsState.mode] || '🚗';
+
+      if (duration && duration.duration_min) {
+        const mins = duration.duration_min;
+        const dureeStr = mins >= 60 ? `${Math.floor(mins/60)}h${String(mins%60).padStart(2,'0')}` : `${mins} min`;
+        document.getElementById('mapsDuree').textContent = dureeStr + ' · ' + modeLabels[mapsState.mode];
+        document.getElementById('mapsDistance').textContent = duration.distance_km + ' km (estimation)';
+
+        // Heure de départ pour arriver à l'heure actuelle + 15min de marge
+        const now = new Date();
+        now.setMinutes(now.getMinutes() + mins + 10);
+        const hh = String(now.getHours()).padStart(2,'0');
+        const mm = String(now.getMinutes()).padStart(2,'0');
+        document.getElementById('mapsHeureDep').textContent = hh + 'h' + mm;
+      } else {
+        document.getElementById('mapsDuree').textContent = modeLabels[mapsState.mode];
+        document.getElementById('mapsDistance').textContent = 'Distance non calculée';
+        document.getElementById('mapsHeureDep').textContent = '--';
+      }
+
+      // ── Météo ──
+      if (weather && weather.temp !== undefined) {
+        document.getElementById('mapsMeteoIcon').textContent = weather.icon;
+        document.getElementById('mapsMeteoTemp').textContent = weather.temp + '°C · ' + weather.city;
+        document.getElementById('mapsMeteoDesc').textContent = weather.description.charAt(0).toUpperCase() + weather.description.slice(1);
+        document.getElementById('mapsMeteoWind').textContent = '💨 ' + weather.wind + ' km/h
+💧 ' + weather.humidity + '%';
+        document.getElementById('mapsMeteo').style.display = 'block';
+      }
+
+      // ── POI ──
+      if (poi && poi.pois && poi.pois.length > 0) {
+        document.getElementById('mapsPOIList').innerHTML = poi.pois.map(p => `
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8)">
+            <span style="font-size:20px">${p.emoji}</span>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:600;color:var(--text)">${p.name}</div>
+              <div style="font-size:11px;color:var(--muted)">${p.address || ''}</div>
+            </div>
+            <div style="font-size:11px;font-weight:600;color:var(--accent)">${p.distance}m</div>
+          </div>
+        `).join('');
+        document.getElementById('mapsPOIWrap').style.display = 'block';
+      }
+
+      // ── Boutons app ──
+      const dep = mapsState.departLat ? `${mapsState.departLat},${mapsState.departLon}` : encodeURIComponent(departVal || '');
+      const arr = `${mapsState.arriveeLat},${mapsState.arriveeLon}`;
+      const arrEnc = encodeURIComponent(arriveeVal);
+      const prefMaps = localStorage.getItem('ponk_pref_maps') || 'google';
+      const modeGoog = { car:'driving', transit:'transit', walk:'walking', bike:'bicycling' }[mapsState.mode] || 'driving';
+
+      const googleUrl = `https://www.google.com/maps/dir/?api=1&origin=${dep}&destination=${arr}&travelmode=${modeGoog}`;
+      const wazeUrl   = `https://waze.com/ul?ll=${arr}&navigate=yes`;
+      const appleUrl  = `https://maps.apple.com/?saddr=${dep}&daddr=${arr}&dirflg=${{ car:'d', transit:'r', walk:'w', bike:'b' }[mapsState.mode] || 'd'}`;
+
+      const appLinks = {
+        google: `<a href="${googleUrl}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:var(--accent);color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">🗺️ Ouvrir dans Google Maps</a>`,
+        waze:   `<a href="${wazeUrl}"   target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:#33ccff;color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">🚗 Ouvrir dans Waze</a>`,
+        apple:  `<a href="${appleUrl}"  target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:#555;color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">🍎 Ouvrir dans Apple Maps</a>`,
+      };
+
+      // Afficher l'app préférée en premier + les autres
+      const allApps = ['google','waze','apple'];
+      const ordered = [prefMaps, ...allApps.filter(a => a !== prefMaps)];
+      document.getElementById('mapsAppBtns').innerHTML = ordered.map(a => appLinks[a]).join('');
+
+    } catch(e) {
+      document.getElementById('mapsLoading').style.display = 'none';
+      document.getElementById('mapsResult').innerHTML = '<div style="text-align:center;color:var(--muted);padding:16px">Service temporairement indisponible</div>';
+      document.getElementById('mapsResult').style.display = 'block';
+    }
   }
 
   // ── Profile ──
