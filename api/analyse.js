@@ -21,7 +21,7 @@ module.exports = async function handler(req, res) {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-1.5-flash'];
 
-    async function callGemini(prompt, timeoutMs = 15000) {
+    async function callGemini(prompt, timeoutMs = 20000) {
       for (const mn of MODELS) {
         try {
           const model = genAI.getGenerativeModel({ model: mn });
@@ -37,38 +37,50 @@ module.exports = async function handler(req, res) {
       throw new Error('Tous les modèles ont échoué');
     }
 
-    const prompt = `Tu es un expert analyste. Analyse le sujet suivant de façon complète et structurée.
+    const prompt = `Tu es un expert analyste. Analyse le sujet suivant de façon complète, structurée et professionnelle.
 
 Sujet : "${text}"
 ${profile ? `Contexte utilisateur : ${profile}` : ''}
 
-Génère une analyse professionnelle en JSON uniquement :
+Génère une analyse approfondie en JSON uniquement.
+Quand une comparaison ou des données chiffrées sont pertinentes, génère un tableau.
+
+JSON :
 {
-  "titre": "titre court de l'analyse (max 60 caractères)",
-  "resume": "résumé en 2 phrases maximum",
+  "titre": "titre court (max 60 caractères)",
+  "resume": "résumé en 2-3 phrases percutantes",
   "sections": [
     {
-      "emoji": "🎯",
       "titre": "Titre de la section",
       "points": [
         {
-          "titre": "Point clé court",
-          "detail": "Explication factuelle en 1-2 phrases concrètes avec chiffres si possible"
+          "titre": "Point clé (5 mots max)",
+          "detail": "Explication factuelle en 1-2 phrases avec chiffres si possible"
         }
-      ]
+      ],
+      "tableau": {
+        "colonnes": ["Critère", "Option A", "Option B"],
+        "lignes": [
+          ["Prix", "999€", "799€"],
+          ["Batterie", "20h", "25h"]
+        ]
+      }
     }
   ]
 }
 
 Règles :
-- 3 à 5 sections selon la richesse du sujet
+- 3 à 5 sections
 - 2 à 4 points par section
-- Chaque point : titre court (5 mots max) + détail factuel et concret
-- Exclusivement en français
-- Pas de généralités, des faits et des chiffres
+- Ajoute un tableau UNIQUEMENT si le sujet s'y prête naturellement (comparaison, données chiffrées, classement)
+- Si pas de tableau pertinent pour une section, omets le champ "tableau"
+- Maximum 1 tableau par section, maximum 2 tableaux au total
+- Colonnes : 2 à 5 maximum
+- Lignes : 3 à 8 maximum
+- Tout en français, factuel et concret
 - JSON uniquement, aucun texte autour`;
 
-    const raw = await callGemini(prompt, 15000);
+    const raw = await callGemini(prompt, 20000);
     const clean = raw.replace(/```json|```/g, '').trim();
 
     try {
