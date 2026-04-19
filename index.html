@@ -1388,7 +1388,21 @@
       case 'COMMANDE':
         return `https://www.google.com/search?q=${encoded}&tbm=shop`;
       case 'RAPPEL':
-        navigator.clipboard.writeText(text).then(() => alert('Copié !'));
+        try {
+          navigator.clipboard.writeText(text);
+        } catch(e) {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        }
+        setStatus('active', '📋 Rappel copié dans le presse-papier');
+        setTimeout(() => setStatus('', 'Prêt'), 3000);
         return null;
       default:
         return null;
