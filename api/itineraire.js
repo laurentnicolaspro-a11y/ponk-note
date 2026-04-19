@@ -24,7 +24,7 @@ module.exports = async function handler(req, res) {
       const r = await fetch(url);
       const data = await r.json();
 
-      if (data.cod !== 200) return res.status(200).json({ error: 'Météo indisponible' });
+      if (data.cod != 200) return res.status(200).json({ error: 'Météo indisponible', detail: data.message });
 
       const iconCode = data.weather[0].icon;
       const iconMap = {
@@ -70,10 +70,13 @@ module.exports = async function handler(req, res) {
         out body 20;
       `;
 
-      const r = await fetch('https://overpass-api.de/api/interpreter', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'data=' + encodeURIComponent(query)
+      const overpassUrl = 'https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query);
+      const r = await fetch(overpassUrl, {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'PonkNote/1.0 (contact@ponknote.app)',
+          'Accept': 'application/json'
+        }
       });
       const data = await r.json();
 
