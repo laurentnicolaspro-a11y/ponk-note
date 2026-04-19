@@ -213,6 +213,70 @@ JSON uniquement, pas de texte autour.`;
       return res.status(200).json({ ...parsed, plateformes });
     }
 
+    // ── REBOND ────────────────────────────────────────────────────────────────
+    if (action === 'rebond') {
+      const { actionFaite, contexte } = body;
+
+      const ACTIONS_DISPO = [
+        { type: 'EMAIL',       label: 'Envoyer un email',         icon: '📧' },
+        { type: 'WHATSAPP',    label: 'Envoyer un message',        icon: '💬' },
+        { type: 'APPEL',       label: 'Passer un appel',           icon: '📞' },
+        { type: 'CALENDRIER',  label: 'Ajouter au calendrier',     icon: '📅' },
+        { type: 'RESERVATION', label: 'Faire une réservation',     icon: '🎫' },
+        { type: 'MAPS',        label: 'Obtenir un itinéraire',     icon: '🗺️' },
+        { type: 'COMMANDE',    label: 'Commander un produit',      icon: '🛒' },
+        { type: 'RECHERCHE',   label: 'Faire une recherche',       icon: '🔍' },
+        { type: 'ANALYSE',     label: 'Lancer une analyse',        icon: '🧠' },
+      ];
+
+      const prompt = `Tu es un assistant intelligent qui suggère des actions complémentaires.
+
+L'utilisateur vient de faire : ${actionFaite}
+Contexte : ${contexte || 'aucun contexte supplémentaire'}
+
+Actions disponibles : ${ACTIONS_DISPO.map(a => a.type).join(', ')}
+
+Propose 0, 1 ou 2 actions complémentaires qui auraient vraiment du sens dans ce contexte.
+Sois créatif et humain — pense à ce qu'une personne ferait naturellement ensuite.
+Si aucune action ne s'impose, retourne un tableau vide.
+
+Exemples :
+- "mail à ma femme je l'aime" → proposer COMMANDE (fleurs)
+- "réunion à Lyon le 26 juin" → proposer RESERVATION (hôtel), MAPS (itinéraire)  
+- "commande tapis rouges" → proposer CALENDRIER (réception livraison)
+- "analyse concurrence" → proposer RECHERCHE (approfondir)
+
+JSON uniquement :
+{
+  "rebonds": [
+    {
+      "type": "TYPE_ACTION",
+      "label": "Texte du bouton court et naturel (ex: Commander des fleurs)",
+      "texte": "Texte pré-rempli pour cette action (ex: Commander un bouquet de fleurs)",
+      "raison": "Pourquoi cette suggestion en 1 phrase courte"
+    }
+  ]
+}
+
+Maximum 2 rebonds. Si aucun rebond pertinent, retourne {"rebonds": []}.
+JSON uniquement.`;
+
+      const raw = await callGemini(prompt, 8000);
+      const clean = raw.replace(/```json|```/g, '').trim();
+
+      try {
+        const parsed = JSON.parse(clean);
+        // Enrichir avec les icônes
+        parsed.rebonds = (parsed.rebonds || []).map(r => {
+          const action = ACTIONS_DISPO.find(a => a.type === r.type);
+          return { ...r, icon: action?.icon || '✨' };
+        });
+        return res.status(200).json(parsed);
+      } catch(e) {
+        return res.status(200).json({ rebonds: [] });
+      }
+    }
+
     return res.status(400).json({ error: 'Action non reconnue' });
 
   } catch(err) {
