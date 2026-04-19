@@ -1,10 +1,6 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/results.html", "destination": "/results.html" },
-    { "source": "/library.html", "destination": "/library.html" },
-    { "source": "/settings.html", "destination": "/settings.html" },
-    { "source": "/test.html", "destination": "/test.html" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
