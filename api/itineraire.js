@@ -48,37 +48,34 @@ module.exports = async function handler(req, res) {
 
     // ── POI à proximité (OpenStreetMap Overpass) ──────────────────────────────
     if (action === 'poi') {
-      const radius = 500; // mètres
-      const categories = [
-        { type: 'cafe',         emoji: '☕', label: 'Café' },
-        { type: 'bakery',       emoji: '🥐', label: 'Boulangerie' },
-        { type: 'restaurant',   emoji: '🍽️', label: 'Restaurant' },
-        { type: 'fast_food',    emoji: '🍔', label: 'Restauration rapide' },
-        { type: 'bar',          emoji: '🍺', label: 'Bar' },
+      const radius = 500;
+
+      const query = `[out:json][timeout:6];(node["amenity"~"cafe|bakery|restaurant|fast_food|bar"](around:${radius},${lat},${lon});node["shop"="bakery"](around:${radius},${lat},${lon}););out body 15;`;
+
+      // Essayer plusieurs mirrors Overpass
+      const mirrors = [
+        'https://overpass.kumi.systems/api/interpreter',
+        'https://overpass.openstreetmap.fr/api/interpreter',
+        'https://overpass-api.de/api/interpreter',
       ];
 
-      const query = `
-        [out:json][timeout:10];
-        (
-          node["amenity"="cafe"](around:${radius},${lat},${lon});
-          node["amenity"="bakery"](around:${radius},${lat},${lon});
-          node["shop"="bakery"](around:${radius},${lat},${lon});
-          node["amenity"="restaurant"](around:${radius},${lat},${lon});
-          node["amenity"="fast_food"](around:${radius},${lat},${lon});
-          node["amenity"="bar"](around:${radius},${lat},${lon});
-        );
-        out body 20;
-      `;
-
-      const overpassUrl = 'https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query);
-      const r = await fetch(overpassUrl, {
-        method: 'GET',
-        headers: {
-          'User-Agent': 'PonkNote/1.0 (contact@ponknote.app)',
-          'Accept': 'application/json'
+      let data = null;
+      for (const mirror of mirrors) {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 5000);
+          const r = await fetch(mirror + '?data=' + encodeURIComponent(query), {
+            signal: controller.signal,
+            headers: { 'User-Agent': 'PonkNote/1.0', 'Accept': 'application/json' }
+          });
+          clearTimeout(timer);
+          if (r.ok) { data = await r.json(); break; }
+        } catch(e) {
+          console.log('[poi] mirror failed:', mirror, e.message);
         }
-      });
-      const data = await r.json();
+      }
+
+      if (!data) return res.status(200).json({ pois: [], error: 'POI indisponible' });
 
       const getEmoji = (tags) => {
         if (tags.amenity === 'cafe')       return '☕';
