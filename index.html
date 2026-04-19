@@ -2548,7 +2548,7 @@
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9.5);
       doc.setTextColor(...C.accentDark);
-      doc.text((section.emoji || '') + ' ' + section.titre.toUpperCase(), M + 7, y + 6.5);
+      doc.text(section.titre.toUpperCase(), M + 7, y + 6.5);
       y += 13;
 
       // Points
@@ -2606,7 +2606,7 @@
       doc.text(i + ' / ' + totalPages, pageW - M - 7, pageH - 4.8, { align: 'center' });
     }
 
-    const filename = ('Analyse_' + data.titre).replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '_') + '.pdf';
+    const filename = data.titre.replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '_') + '.pdf';
     doc.save(filename);
   }
 
