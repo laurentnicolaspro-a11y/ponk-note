@@ -912,6 +912,35 @@
   </div>
 </div>
 
+<!-- Réservation modal -->
+<div class="bubble-modal hidden" id="reservationModal">
+  <div class="bubble-modal-card" style="max-height:90vh;overflow-y:auto">
+    <div style="font-size:36px;text-align:center;margin-bottom:8px">🎫</div>
+    <div class="bubble-modal-type" id="reservationModalTitle">Réservation</div>
+
+    <!-- Loading -->
+    <div id="reservationLoading" style="text-align:center;padding:24px">
+      <div style="width:28px;height:28px;border-radius:50%;border:3px solid rgba(74,127,212,0.2);border-top-color:#4a7fd4;animation:spin 0.8s linear infinite;margin:0 auto 10px"></div>
+      <div style="font-size:13px;color:var(--muted)">Analyse en cours…</div>
+    </div>
+
+    <!-- Résultat -->
+    <div id="reservationResult" style="display:none">
+      <!-- Infos extraites -->
+      <div id="reservationInfos" style="background:rgba(74,127,212,0.06);border:1px solid rgba(74,127,212,0.15);border-radius:14px;padding:14px;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px" id="reservationResume"></div>
+        <div id="reservationTags" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+      <!-- Plateformes -->
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:8px">Réserver sur</div>
+      <div id="reservationPlateformes" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+
+    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted);margin-top:10px"
+      onclick="document.getElementById('reservationModal').classList.add('hidden')">Fermer</button>
+  </div>
+</div>
+
 <!-- Analyse modal -->
 <div class="bubble-modal hidden" id="analyseModal">
   <div class="bubble-modal-card" style="max-height:90vh;overflow-y:auto">
@@ -1509,6 +1538,14 @@
       bubble.confirmed = true;
       removeBubbleEl(currentBubbleIndex);
       showAnalyseModal(bubble.text);
+      return;
+    }
+
+    if (bubble.type === 'RESERVATION') {
+      document.getElementById('bubbleModal').classList.add('hidden');
+      bubble.confirmed = true;
+      removeBubbleEl(currentBubbleIndex);
+      showReservationModal(bubble.text);
       return;
     }
 
@@ -2149,9 +2186,9 @@
     modal.classList.remove('hidden');
 
     try {
-      const res = await fetch('/api/commande', {
+      const res = await fetch('/api/shopping', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({text})
+        body: JSON.stringify({text, action:'commande'})
       });
       const data = await res.json();
 
@@ -2408,6 +2445,61 @@
       document.getElementById('mapsLoading').style.display = 'none';
       document.getElementById('mapsResult').innerHTML = '<div style="text-align:center;color:var(--muted);padding:16px">Service temporairement indisponible</div>';
       document.getElementById('mapsResult').style.display = 'block';
+    }
+  }
+
+  // ── Réservation ──
+  async function showReservationModal(text) {
+    document.getElementById('reservationModalTitle').textContent = text.substring(0, 40) + (text.length > 40 ? '…' : '');
+    document.getElementById('reservationLoading').style.display = 'block';
+    document.getElementById('reservationResult').style.display = 'none';
+    document.getElementById('reservationModal').classList.remove('hidden');
+
+    try {
+      const res = await fetch('/api/shopping', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, action: 'reservation' })
+      });
+      const data = await res.json();
+
+      document.getElementById('reservationLoading').style.display = 'none';
+      document.getElementById('reservationResult').style.display = 'block';
+
+      // Titre et résumé
+      document.getElementById('reservationModalTitle').textContent = data.titre || text.substring(0, 40);
+      document.getElementById('reservationResume').textContent = data.resume || '';
+
+      // Tags infos
+      const infos = data.infos || {};
+      const tags = [];
+      if (infos.origine)      tags.push('🚩 ' + infos.origine);
+      if (infos.destination)  tags.push('📍 ' + infos.destination);
+      if (infos.date_aller)   tags.push('📅 ' + infos.date_aller);
+      if (infos.date_retour)  tags.push('🔄 ' + infos.date_retour);
+      if (infos.personnes)    tags.push('👥 ' + infos.personnes + ' pers.');
+      if (infos.budget)       tags.push('💰 ' + infos.budget);
+
+      document.getElementById('reservationTags').innerHTML = tags.map(t =>
+        `<span style="font-size:11px;background:rgba(74,127,212,0.1);color:var(--accent);padding:3px 10px;border-radius:100px;font-weight:500">${t}</span>`
+      ).join('');
+
+      // Plateformes
+      document.getElementById('reservationPlateformes').innerHTML = (data.plateformes || []).map(p => `
+        <a href="${p.url}" target="_blank" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);text-decoration:none;-webkit-tap-highlight-color:transparent"
+          onmouseover="this.style.background='rgba(255,255,255,0.95)'" onmouseout="this.style.background='rgba(255,255,255,0.6)'">
+          <span style="font-size:24px">${p.icon}</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:var(--text)">${p.nom}</div>
+            <div style="font-size:11px;color:var(--muted)">${p.desc}</div>
+          </div>
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+        </a>
+      `).join('');
+
+    } catch(e) {
+      document.getElementById('reservationLoading').innerHTML = '<div style="font-size:13px;color:var(--muted)">Service indisponible</div>';
     }
   }
 
