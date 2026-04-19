@@ -2530,11 +2530,12 @@
       const rebonds = data.rebonds || [];
       console.log('[rebond] reçu:', rebonds.length, 'suggestions', rebonds);
 
-      if (rebonds.length === 0) return; // Rien à proposer
+      if (rebonds.length === 0) return;
 
-      // Vérifier que la modal est toujours ouverte
+      // Forcer la modal ouverte avec les suggestions
       const modal = document.getElementById('rebondModal');
-      console.log('[rebond] modal visible:', !modal.classList.contains('hidden'));
+      modal.classList.remove('hidden');
+      console.log('[rebond] modal forcée visible');
 
       // Afficher les suggestions
       document.getElementById('rebondSuggestions').style.display = 'block';
