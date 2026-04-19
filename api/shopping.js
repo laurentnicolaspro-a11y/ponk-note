@@ -258,7 +258,7 @@ JSON uniquement :
   ]
 }
 
-Maximum 1 rebond. Si aucun rebond pertinent, retourne {"rebonds": []}.
+Maximum 2 rebonds. Si aucun rebond pertinent, retourne {"rebonds": []}.
 JSON uniquement.`;
 
       const raw = await callGemini(prompt, 8000);
