@@ -583,6 +583,7 @@
   <div class="profile-input-wrap">
     <input type="text" id="profileName" class="profile-input" placeholder="Ton prénom" maxlength="20" autocomplete="off" autocapitalize="words" />
     <input type="email" id="profileEmail" class="profile-input" placeholder="Ton adresse email" autocomplete="email" />
+    <input type="text" id="profileVille" class="profile-input" placeholder="Ta ville (ex: Cambrai)" autocomplete="address-level2" />
 
     <div class="profile-prefs">
       <div class="pref-row">
@@ -2509,6 +2510,10 @@
   let rebondEnCours = false;
   let rebondDepuisRebond = false;
 
+  function getVilleUtilisateur() {
+    return localStorage.getItem('ponk_ville') || '';
+  }
+
   async function declencherRebond(actionFaite, contexte, texteResume) {
     // Éviter les appels multiples simultanés
     if (rebondEnCours) return;
@@ -2525,9 +2530,11 @@
 
     // Appeler Gemini pour les suggestions
     try {
+      const ville = getVilleUtilisateur();
+      const contexteEnrichi = contexte + (ville ? ', ville utilisateur: ' + ville : '');
       const res = await fetch('/api/shopping', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'rebond', actionFaite, contexte, text: actionFaite })
+        body: JSON.stringify({ action: 'rebond', actionFaite, contexte: contexteEnrichi, text: actionFaite })
       });
       const data = await res.json();
       const rebonds = data.rebonds || [];
@@ -3129,6 +3136,7 @@
             if (data.prefs.mail)  localStorage.setItem('ponk_pref_mail', data.prefs.mail);
             if (data.prefs.cal)   localStorage.setItem('ponk_pref_cal', data.prefs.cal);
             if (data.prefs.maps)  localStorage.setItem('ponk_pref_maps', data.prefs.maps);
+            if (data.prefs.ville) localStorage.setItem('ponk_ville', data.prefs.ville);
           }
           if (data.contacts) localStorage.setItem('ponk_contacts', JSON.stringify(data.contacts));
           if (data.name) localStorage.setItem('ponk_profile', data.name);
@@ -3158,18 +3166,20 @@
     const mail  = document.querySelector('#prefMail .pref-btn.active')?.dataset.value || 'gmail';
     const cal   = document.querySelector('#prefCal .pref-btn.active')?.dataset.value || 'google';
     const maps  = document.querySelector('#prefMaps .pref-btn.active')?.dataset.value || 'google';
+    const ville = document.getElementById('profileVille').value.trim();
 
     localStorage.setItem('ponk_profile', name);
     localStorage.setItem('ponk_email', email);
     localStorage.setItem('ponk_pref_mail', mail);
     localStorage.setItem('ponk_pref_cal', cal);
     localStorage.setItem('ponk_pref_maps', maps);
+    if (ville) localStorage.setItem('ponk_ville', ville);
 
     try {
       await fetch('/api/profile', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ email, name, prefs: {mail, cal, maps}, contacts: [] })
+        body: JSON.stringify({ email, name, prefs: {mail, cal, maps, ville}, contacts: [] })
       });
     } catch(e) { console.warn('Profile save failed:', e); }
 
@@ -3177,7 +3187,8 @@
   }
 
   document.getElementById('profileName').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('profileEmail').focus(); });
-  document.getElementById('profileEmail').addEventListener('keydown', e => { if(e.key==='Enter') submitProfile(); });
+  document.getElementById('profileEmail').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('profileVille').focus(); });
+  document.getElementById('profileVille').addEventListener('keydown', e => { if(e.key==='Enter') submitProfile(); });
 
   function showApp(name) {
     document.getElementById('profileScreen').classList.remove('visible');
