@@ -1627,6 +1627,13 @@
     bubble.confirmed = true;
     removeBubbleEl(currentBubbleIndex);
     document.getElementById('bubbleModal').classList.add('hidden');
+
+    // Rebond automatique pour EMAIL et actions directes
+    declencherRebond(
+      bubble.type + ' : ' + bubble.text,
+      'action: ' + bubble.type + ', texte: ' + bubble.text,
+      (bubble.label || bubble.type) + ' : ' + bubble.text.substring(0, 50)
+    );
   }
 
   function confirmBubble() {
