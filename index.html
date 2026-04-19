@@ -2431,33 +2431,68 @@
 
       // Rendu du contenu
       const sections = data.sections || [];
-      document.getElementById('analyseContent').innerHTML = sections.map(s => `
-        <div style="background:rgba(255,255,255,0.5);border-radius:12px;padding:12px;margin-bottom:8px;border-left:3px solid var(--accent)">
+      document.getElementById('analyseContent').innerHTML = sections.map(s => {
+        const v = s.visuel;
+        let visuelHtml = '';
+        if (v) {
+          if (v.type === 'tableau') {
+            visuelHtml = `<div style="overflow-x:auto;margin-top:10px">
+              <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:4px">${v.titre||''}</div>
+              <table style="width:100%;border-collapse:collapse;font-size:11px">
+                <thead><tr>${(v.colonnes||[]).map(c=>`<th style="background:rgba(74,127,212,0.1);color:var(--accent);padding:6px 8px;text-align:left;font-weight:600;border:1px solid rgba(74,127,212,0.15)">${c}</th>`).join('')}</tr></thead>
+                <tbody>${(v.lignes||[]).map((l,i)=>`<tr style="background:${i%2===0?'rgba(255,255,255,0.6)':'rgba(255,255,255,0.3)'}">${l.map(cell=>`<td style="padding:5px 8px;border:1px solid rgba(0,0,0,0.06);color:var(--text)">${cell}</td>`).join('')}</tr>`).join('')}</tbody>
+              </table></div>`;
+          } else if (v.type === 'barres') {
+            const max = Math.max(...(v.valeurs||[1]));
+            visuelHtml = `<div style="margin-top:10px">
+              <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:6px">${v.titre||''}</div>
+              ${(v.labels||[]).map((l,i)=>`
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+                  <div style="font-size:10px;color:var(--muted);width:80px;flex-shrink:0;text-align:right">${l}</div>
+                  <div style="flex:1;background:rgba(74,127,212,0.1);border-radius:4px;height:18px;position:relative">
+                    <div style="background:var(--accent);border-radius:4px;height:100%;width:${Math.round((v.valeurs[i]/max)*100)}%"></div>
+                  </div>
+                  <div style="font-size:10px;font-weight:600;color:var(--accent);width:50px">${v.valeurs[i]} ${v.unite||''}</div>
+                </div>`).join('')}
+            </div>`;
+          } else if (v.type === 'camembert') {
+            const total = (v.valeurs||[]).reduce((a,b)=>a+b,0);
+            const colors = ['#4a7fd4','#3db87a','#e07a30','#8a55d4','#e05555','#30a8d4'];
+            visuelHtml = `<div style="margin-top:10px">
+              <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:6px">${v.titre||''}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px">${(v.labels||[]).map((l,i)=>`
+                <div style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,0.5);padding:4px 8px;border-radius:100px">
+                  <div style="width:8px;height:8px;border-radius:50%;background:${colors[i%colors.length]};flex-shrink:0"></div>
+                  <span style="font-size:11px;color:var(--text)">${l}</span>
+                  <span style="font-size:11px;font-weight:600;color:${colors[i%colors.length]}">${Math.round((v.valeurs[i]/total)*100)}%</span>
+                </div>`).join('')}</div>
+            </div>`;
+          } else if (v.type === 'courbe') {
+            const max = Math.max(...(v.valeurs||[1]));
+            const min = Math.min(...(v.valeurs||[0]));
+            const range = max - min || 1;
+            const w = 100, h = 60;
+            const pts = (v.valeurs||[]).map((val,i)=>`${Math.round((i/(v.valeurs.length-1))*w)},${Math.round(h-((val-min)/range)*h)}`).join(' ');
+            visuelHtml = `<div style="margin-top:10px">
+              <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:6px">${v.titre||''}</div>
+              <svg viewBox="0 0 100 65" style="width:100%;height:70px">
+                <polyline points="${pts}" fill="none" stroke="#4a7fd4" stroke-width="2" stroke-linejoin="round"/>
+                ${(v.valeurs||[]).map((val,i)=>`<circle cx="${Math.round((i/(v.valeurs.length-1))*w)}" cy="${Math.round(h-((val-min)/range)*h)}" r="2" fill="#4a7fd4"/>`).join('')}
+              </svg>
+              <div style="display:flex;justify-content:space-between">${(v.labels||[]).map(l=>`<span style="font-size:9px;color:var(--muted)">${l}</span>`).join('')}</div>
+            </div>`;
+          }
+        }
+        return `<div style="background:rgba(255,255,255,0.5);border-radius:12px;padding:12px;margin-bottom:8px;border-left:3px solid var(--accent)">
           <div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px">${s.titre}</div>
-          ${(s.points || []).map(p => `
+          ${(s.points||[]).map(p=>`
             <div style="margin-bottom:6px">
               <div style="font-size:13px;font-weight:600;color:var(--text)">${p.titre}</div>
               <div style="font-size:12px;color:var(--muted);line-height:1.5">${p.detail}</div>
-            </div>
-          `).join('')}
-          ${s.tableau ? `
-            <div style="overflow-x:auto;margin-top:10px">
-              <table style="width:100%;border-collapse:collapse;font-size:11px">
-                <thead>
-                  <tr>${(s.tableau.colonnes || []).map(c => `<th style="background:rgba(74,127,212,0.1);color:var(--accent);padding:6px 8px;text-align:left;font-weight:600;border:1px solid rgba(74,127,212,0.15)">${c}</th>`).join('')}</tr>
-                </thead>
-                <tbody>
-                  ${(s.tableau.lignes || []).map((l, i) => `
-                    <tr style="background:${i % 2 === 0 ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)'}">
-                      ${l.map(cell => `<td style="padding:5px 8px;border:1px solid rgba(0,0,0,0.06);color:var(--text)">${cell}</td>`).join('')}
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-          ` : ''}
-        </div>
-      `).join('');
+            </div>`).join('')}
+          ${visuelHtml}
+        </div>`;
+      }).join('');
 
       // Boutons actions
       const prefMail = localStorage.getItem('ponk_pref_mail') || 'gmail';
@@ -2599,44 +2634,149 @@
         y = blockY + totalH + 4;
       }
 
-      // Tableau si présent
-      if (section.tableau && section.tableau.colonnes && section.tableau.lignes) {
-        checkPage(20);
-        const cols = section.tableau.colonnes;
-        const rows = section.tableau.lignes;
-        const colW = maxW / cols.length;
-        const cellH = 7;
+      // Visuel si présent (tableau, barres, camembert, courbe)
+      const v = section.visuel;
+      if (v && v.type) {
+        checkPage(30);
 
-        // Header tableau
-        doc.setFillColor(...C.sectionBg);
-        doc.setDrawColor(...C.sectionBdr);
-        doc.setLineWidth(0.2);
-        cols.forEach((col, ci) => {
-          doc.rect(M + ci * colW, y, colW, cellH, 'FD');
+        // Titre du visuel
+        if (v.titre) {
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(8);
           doc.setTextColor(...C.accentDark);
-          const colLines = doc.splitTextToSize(col, colW - 4);
-          doc.text(colLines[0], M + ci * colW + 3, y + 4.5);
-        });
-        y += cellH;
+          doc.text(v.titre, M, y);
+          y += 6;
+        }
 
-        // Lignes tableau
-        rows.forEach((row, ri) => {
-          checkPage(cellH + 2);
-          doc.setFillColor(ri % 2 === 0 ? 251 : 244, ri % 2 === 0 ? 253 : 247, 255);
-          row.forEach((cell, ci) => {
-            doc.setDrawColor(...C.blockBdr);
+        if (v.type === 'tableau' && v.colonnes && v.lignes) {
+          const cols = v.colonnes;
+          const rows = v.lignes;
+          const colW = maxW / cols.length;
+          const cellH = 7;
+          // Header
+          doc.setFillColor(...C.sectionBg);
+          doc.setDrawColor(...C.sectionBdr);
+          doc.setLineWidth(0.2);
+          cols.forEach((col, ci) => {
             doc.rect(M + ci * colW, y, colW, cellH, 'FD');
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(8);
-            doc.setTextColor(...C.dark);
-            const cellLines = doc.splitTextToSize(String(cell), colW - 4);
-            doc.text(cellLines[0], M + ci * colW + 3, y + 4.5);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(...C.accentDark);
+            const t = doc.splitTextToSize(String(col), colW - 3);
+            doc.text(t[0], M + ci * colW + 2, y + 4.5);
           });
           y += cellH;
-        });
-        y += 6;
+          // Lignes
+          rows.forEach((row, ri) => {
+            checkPage(cellH + 2);
+            doc.setFillColor(ri % 2 === 0 ? 251 : 244, ri % 2 === 0 ? 253 : 247, 255);
+            row.forEach((cell, ci) => {
+              doc.setDrawColor(...C.blockBdr);
+              doc.rect(M + ci * colW, y, colW, cellH, 'FD');
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(7.5);
+              doc.setTextColor(...C.dark);
+              const t = doc.splitTextToSize(String(cell), colW - 3);
+              doc.text(t[0], M + ci * colW + 2, y + 4.5);
+            });
+            y += cellH;
+          });
+          y += 6;
+
+        } else if (v.type === 'barres' && v.labels && v.valeurs) {
+          const max = Math.max(...v.valeurs);
+          const barH = 7;
+          const labelW = 35;
+          const valueW = 25;
+          const barW = maxW - labelW - valueW - 4;
+          v.labels.forEach((label, i) => {
+            checkPage(barH + 3);
+            const ratio = max > 0 ? v.valeurs[i] / max : 0;
+            // Label
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7.5);
+            doc.setTextColor(...C.muted);
+            doc.text(doc.splitTextToSize(label, labelW)[0], M, y + 5);
+            // Fond barre
+            doc.setFillColor(232, 240, 255);
+            doc.roundedRect(M + labelW + 2, y + 1, barW, barH - 2, 1, 1, 'F');
+            // Barre colorée
+            doc.setFillColor(...C.accent);
+            doc.roundedRect(M + labelW + 2, y + 1, Math.max(2, barW * ratio), barH - 2, 1, 1, 'F');
+            // Valeur
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(...C.accent);
+            doc.text(String(v.valeurs[i]) + (v.unite ? ' ' + v.unite : ''), M + labelW + barW + 5, y + 5);
+            y += barH + 2;
+          });
+          y += 4;
+
+        } else if (v.type === 'camembert' && v.labels && v.valeurs) {
+          const colors = [[74,127,212],[61,184,122],[224,122,48],[138,85,212],[224,85,85],[48,168,212]];
+          const total = v.valeurs.reduce((a,b) => a+b, 0);
+          // Légende en grille
+          const itemW = maxW / 2;
+          v.labels.forEach((label, i) => {
+            const col = i % 2;
+            const row = Math.floor(i / 2);
+            if (col === 0) checkPage(10);
+            const px = M + col * itemW;
+            const py = y + row * 9;
+            doc.setFillColor(...colors[i % colors.length]);
+            doc.circle(px + 3, py + 3, 2.5, 'F');
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7.5);
+            doc.setTextColor(...C.dark);
+            doc.text(label, px + 8, py + 4.5);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(...colors[i % colors.length]);
+            doc.text(Math.round((v.valeurs[i]/total)*100) + '%', px + itemW - 12, py + 4.5);
+          });
+          y += Math.ceil(v.labels.length / 2) * 9 + 4;
+
+        } else if (v.type === 'courbe' && v.labels && v.valeurs) {
+          const chartW = maxW;
+          const chartH = 30;
+          const max = Math.max(...v.valeurs);
+          const min = Math.min(...v.valeurs);
+          const range = max - min || 1;
+          const n = v.valeurs.length;
+          checkPage(chartH + 20);
+
+          // Fond
+          doc.setFillColor(243, 246, 253);
+          doc.setDrawColor(...C.blockBdr);
+          doc.setLineWidth(0.2);
+          doc.rect(M, y, chartW, chartH, 'FD');
+
+          // Points et ligne
+          const pts = v.valeurs.map((val, i) => ({
+            x: M + (i / (n-1)) * chartW,
+            y: y + chartH - ((val - min) / range) * (chartH - 4) - 2
+          }));
+          doc.setDrawColor(...C.accent);
+          doc.setLineWidth(1);
+          for (let i = 0; i < pts.length - 1; i++) {
+            doc.line(pts[i].x, pts[i].y, pts[i+1].x, pts[i+1].y);
+          }
+          // Points
+          pts.forEach(pt => {
+            doc.setFillColor(...C.accent);
+            doc.circle(pt.x, pt.y, 1.2, 'F');
+          });
+          y += chartH + 3;
+
+          // Labels axe X
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7);
+          doc.setTextColor(...C.muted);
+          v.labels.forEach((label, i) => {
+            const px = M + (i / (n-1)) * chartW;
+            doc.text(label, px, y + 4, { align: i === 0 ? 'left' : i === n-1 ? 'right' : 'center' });
+          });
+          y += 8;
+        }
       }
 
       y += 5;
