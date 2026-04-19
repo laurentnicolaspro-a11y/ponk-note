@@ -1466,21 +1466,113 @@
         document.getElementById('calendrierInfo').style.display = 'block';
 
         const prefCal = localStorage.getItem('ponk_pref_cal') || 'google';
-        const titre = encodeURIComponent(data.titre);
-        const desc = encodeURIComponent(data.description || '');
-        const calUrls = {
-          'google': `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&details=${desc}`,
-          'outlook': `https://outlook.live.com/calendar/0/deeplink/compose?subject=${titre}&body=${desc}`,
-          'apple': `webcal://`
-        };
         const calNames = {'google':'Google Calendar','outlook':'Outlook','apple':'Apple Calendar'};
-        document.getElementById('calendrierCalBtn').innerHTML = `<a href="${calUrls[prefCal]}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);text-decoration:none;color:var(--text)"><span>📅</span><div style="flex:1;font-size:13px;font-weight:600">Ajouter à ${calNames[prefCal]}</div><div style="width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="12" height="12" fill="white"><path d="M8 5v14l11-7z"/></svg></div></a>`;
+
+        // Extraire heure et durée depuis les données Gemini
+        const heureDefault = data.heure ? data.heure.replace(/[^0-9:]/g,'').substring(0,5) : '09:00';
+        const dureeDefault = (() => {
+          if (!data.duree) return '60';
+          const m = data.duree.match(/(\d+)\s*h/);
+          const min = data.duree.match(/(\d+)\s*min/);
+          if (m) return String(parseInt(m[1]) * 60 + (min ? parseInt(min[1]) : 0));
+          if (min) return min[1];
+          return '60';
+        })();
+
+        document.getElementById('calendrierCalBtn').innerHTML = `
+          <div style="background:rgba(74,127,212,0.06);border:1px solid rgba(74,127,212,0.15);border-radius:12px;padding:12px;margin-bottom:8px">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:10px">Détails de l'événement</div>
+            <div style="display:flex;gap:8px;margin-bottom:8px">
+              <div style="flex:1">
+                <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px">HEURE</div>
+                <input type="time" id="calHeureInput" value="${heureDefault}"
+                  style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:14px;color:var(--text);outline:none"/>
+              </div>
+              <div style="flex:1">
+                <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px">DURÉE</div>
+                <select id="calDureeInput"
+                  style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:14px;color:var(--text);outline:none;cursor:pointer">
+                  <option value="30" ${dureeDefault==='30' ? 'selected' : ''}>30 min</option>
+                  <option value="60" ${dureeDefault==='60' ? 'selected' : ''}>1h</option>
+                  <option value="90" ${dureeDefault==='90' ? 'selected' : ''}>1h30</option>
+                  <option value="120" ${dureeDefault==='120' ? 'selected' : ''}>2h</option>
+                  <option value="180" ${dureeDefault==='180' ? 'selected' : ''}>3h</option>
+                  <option value="240" ${dureeDefault==='240' ? 'selected' : ''}>4h</option>
+                  <option value="480" ${dureeDefault==='480' ? 'selected' : ''}>Journée</option>
+                </select>
+              </div>
+            </div>
+            <button onclick="openCalendrierUrl()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:11px 14px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">
+              <span>📅</span>
+              <span>Ajouter à ${calNames[prefCal]}</span>
+            </button>
+          </div>`;
         document.getElementById('calendrierCalBtn').style.display = 'block';
         document.getElementById('calendrierOrganiseBtn').style.display = 'block';
       }
     } catch(e) {
       document.getElementById('calendrierLoading').textContent = 'Service indisponible';
     }
+  }
+
+  function openCalendrierUrl() {
+    const prefCal = localStorage.getItem('ponk_pref_cal') || 'google';
+    const data = calendrierData;
+
+    const titre = encodeURIComponent(data.titre || data.text || '');
+    const desc  = encodeURIComponent(data.description || '');
+
+    // Construire la date+heure de début au format Google Calendar : YYYYMMDDTHHmmss
+    const heureInput = document.getElementById('calHeureInput');
+    const dureeInput = document.getElementById('calDureeInput');
+    const heure  = heureInput  ? heureInput.value  : '09:00';
+    const duree  = dureeInput  ? parseInt(dureeInput.value) : 60;
+
+    // Parser la date depuis calendrierData
+    let dateStr = data.date || '';
+    let startISO = '';
+    let endISO   = '';
+
+    try {
+      // Tenter de construire une date ISO depuis la date extraite par Gemini
+      // Formats possibles : "18 juin 2026", "2026-06-18", "lundi 20 avril 2026"
+      const moisFr = {'janvier':'01','février':'02','mars':'03','avril':'04','mai':'05',
+        'juin':'06','juillet':'07','août':'08','septembre':'09','octobre':'10',
+        'novembre':'11','décembre':'12'};
+      let yyyy, mm, dd;
+      const isoMatch = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/);
+      const frMatch  = dateStr.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/);
+      if (isoMatch) {
+        [, yyyy, mm, dd] = isoMatch;
+      } else if (frMatch) {
+        dd   = frMatch[1].padStart(2,'0');
+        mm   = moisFr[frMatch[2].toLowerCase()] || '01';
+        yyyy = frMatch[3];
+      }
+      if (yyyy && mm && dd) {
+        const [hh, min] = heure.split(':');
+        const start = new Date(`${yyyy}-${mm}-${dd}T${hh}:${min}:00`);
+        const end   = new Date(start.getTime() + duree * 60000);
+        const fmt = d => d.toISOString().replace(/[-:]/g,'').split('.')[0];
+        startISO = fmt(start);
+        endISO   = fmt(end);
+      }
+    } catch(e) {}
+
+    let url = '';
+    if (prefCal === 'google') {
+      url = startISO
+        ? `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&details=${desc}&dates=${startISO}/${endISO}`
+        : `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&details=${desc}`;
+    } else if (prefCal === 'outlook') {
+      url = startISO
+        ? `https://outlook.live.com/calendar/0/deeplink/compose?subject=${titre}&body=${desc}&startdt=${startISO.substring(0,8)}&enddt=${startISO.substring(0,8)}`
+        : `https://outlook.live.com/calendar/0/deeplink/compose?subject=${titre}&body=${desc}`;
+    } else {
+      url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&details=${desc}`;
+    }
+
+    window.open(url, '_blank');
   }
 
   function startCalendrierOrganise() {
