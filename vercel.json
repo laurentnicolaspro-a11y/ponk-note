@@ -1,7 +1,6 @@
 {
   "version": 2,
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1" },
     { "src": "/results.html", "dest": "/results.html" },
     { "src": "/library.html", "dest": "/library.html" },
     { "src": "/settings.html", "dest": "/settings.html" },
