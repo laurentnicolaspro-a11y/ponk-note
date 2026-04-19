@@ -20,52 +20,10 @@ module.exports = async function handler(req, res) {
       const apiKey = process.env.OPENWEATHER_API_KEY;
       if (!apiKey) return res.status(200).json({ error: 'Clé météo manquante' });
 
-      const { date, heure } = body;
-      const now = new Date();
-      const targetDate = date ? new Date(date + 'T' + (heure || '12:00') + ':00') : now;
-      const diffHours = (targetDate - now) / 3600000;
-
-      let weatherData;
-
-      if (diffHours > 3) {
-        // Utiliser l'API forecast (prévisions jusqu'à 5 jours, par tranches de 3h)
-        const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=fr`;
-        const r = await fetch(url);
-        const data = await r.json();
-        if (data.cod != 200) return res.status(200).json({ error: 'Météo indisponible', detail: data.message });
-
-        // Trouver la tranche la plus proche de l'heure cible
-        const targetTs = targetDate.getTime() / 1000;
-        const closest = data.list.reduce((prev, curr) =>
-          Math.abs(curr.dt - targetTs) < Math.abs(prev.dt - targetTs) ? curr : prev
-        );
-        weatherData = {
-          temp:        Math.round(closest.main.temp),
-          feels_like:  Math.round(closest.main.feels_like),
-          description: closest.weather[0].description,
-          icon:        closest.weather[0].icon,
-          wind:        Math.round(closest.wind.speed * 3.6),
-          humidity:    closest.main.humidity,
-          city:        data.city.name,
-          forecast:    true
-        };
-      } else {
-        // Météo actuelle
-        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=fr`;
-        const r = await fetch(url);
-        const data = await r.json();
-        if (data.cod != 200) return res.status(200).json({ error: 'Météo indisponible', detail: data.message });
-        weatherData = {
-          temp:        Math.round(data.main.temp),
-          feels_like:  Math.round(data.main.feels_like),
-          description: data.weather[0].description,
-          icon:        data.weather[0].icon,
-          wind:        Math.round(data.wind.speed * 3.6),
-          humidity:    data.main.humidity,
-          city:        data.name,
-          forecast:    false
-        };
-      }
+      const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=fr`;
+      const r = await fetch(url);
+      const data = await r.json();
+      if (data.cod != 200) return res.status(200).json({ error: 'Météo indisponible', detail: data.message });
 
       const iconMap = {
         '01d':'☀️','01n':'🌙','02d':'⛅','02n':'⛅',
@@ -74,9 +32,16 @@ module.exports = async function handler(req, res) {
         '11d':'⛈️','11n':'⛈️','13d':'❄️','13n':'❄️',
         '50d':'🌫️','50n':'🌫️'
       };
-      weatherData.icon = iconMap[weatherData.icon] || '🌤️';
 
-      return res.status(200).json(weatherData);
+      return res.status(200).json({
+        temp:        Math.round(data.main.temp),
+        feels_like:  Math.round(data.main.feels_like),
+        description: data.weather[0].description,
+        icon:        iconMap[data.weather[0].icon] || '🌤️',
+        wind:        Math.round(data.wind.speed * 3.6),
+        humidity:    data.main.humidity,
+        city:        data.name
+      });
     }
 
     // ── POI à proximité (OpenStreetMap Overpass) ──────────────────────────────
