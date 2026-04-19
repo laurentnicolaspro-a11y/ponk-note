@@ -2257,13 +2257,21 @@
       const modeLabels = { car:'En voiture', transit:'En transport', walk:'À pied', bike:'À vélo' };
       document.getElementById('mapsModeIcon').textContent = modeIcons[mapsState.mode] || '🚗';
 
-      if (duration && duration.duration_min) {
+      if (mapsState.mode === 'transit') {
+        // Transit : durée non fiable sans API temps réel
+        document.getElementById('mapsDuree').textContent = 'Transport en commun';
+        document.getElementById('mapsDistance').textContent = duration ? duration.distance_km + ' km (à vol d\'oiseau)' : '—';
+        document.getElementById('mapsHeureDep').textContent = '—';
+        document.getElementById('mapsTrajet').querySelector('[id="mapsHeureDep"]') && (document.getElementById('mapsTrajet').style.background = 'rgba(255,255,255,0.4)');
+        const distEl = document.getElementById('mapsDistance');
+        distEl.innerHTML = (duration ? duration.distance_km + ' km · ' : '') + '<span style="color:var(--accent);font-weight:600">Durée exacte via Google Maps</span>';
+      } else if (duration && duration.duration_min) {
         const mins = duration.duration_min;
         const dureeStr = mins >= 60 ? `${Math.floor(mins/60)}h${String(mins%60).padStart(2,'0')}` : `${mins} min`;
         document.getElementById('mapsDuree').textContent = dureeStr + ' · ' + modeLabels[mapsState.mode];
         document.getElementById('mapsDistance').textContent = duration.distance_km + ' km (estimation)';
 
-        // Heure de départ pour arriver à l'heure actuelle + 15min de marge
+        // Heure de départ pour arriver à l'heure actuelle + 10min de marge
         const now = new Date();
         now.setMinutes(now.getMinutes() + mins + 10);
         const hh = String(now.getHours()).padStart(2,'0');
@@ -2286,16 +2294,21 @@
 
       // ── POI ──
       if (poi && poi.pois && poi.pois.length > 0) {
-        document.getElementById('mapsPOIList').innerHTML = poi.pois.map(p => `
-          <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8)">
+        const city = (weather && weather.city) ? weather.city : '';
+        document.getElementById('mapsPOIList').innerHTML = poi.pois.map(p => {
+          const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(p.name + (city ? ' ' + city : ''))}`;
+          return `<a href="${searchUrl}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);text-decoration:none;-webkit-tap-highlight-color:transparent" onmouseover="this.style.background='rgba(255,255,255,0.95)'" onmouseout="this.style.background='rgba(255,255,255,0.6)'">
             <span style="font-size:20px">${p.emoji}</span>
             <div style="flex:1">
               <div style="font-size:13px;font-weight:600;color:var(--text)">${p.name}</div>
               <div style="font-size:11px;color:var(--muted)">${p.address || ''}</div>
             </div>
-            <div style="font-size:11px;font-weight:600;color:var(--accent)">${p.distance}m</div>
-          </div>
-        `).join('');
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="font-size:11px;font-weight:600;color:var(--accent)">${p.distance}m</div>
+              <div style="font-size:10px;color:var(--muted)">🔍</div>
+            </div>
+          </a>`;
+        }).join('');
         document.getElementById('mapsPOIWrap').style.display = 'block';
       }
 
