@@ -43,7 +43,7 @@ Sujet : "${text}"
 ${profile ? `Contexte utilisateur : ${profile}` : ''}
 
 Génère une analyse approfondie en JSON uniquement.
-Quand une comparaison ou des données chiffrées sont pertinentes, génère un tableau.
+Quand c'est pertinent, ajoute UN visuel par section (tableau, barres, camembert ou courbe).
 
 JSON :
 {
@@ -58,12 +58,46 @@ JSON :
           "detail": "Explication factuelle en 1-2 phrases avec chiffres si possible"
         }
       ],
-      "tableau": {
+      "visuel": {
+        "type": "tableau",
+        "titre": "Titre du visuel",
         "colonnes": ["Critère", "Option A", "Option B"],
         "lignes": [
           ["Prix", "999€", "799€"],
           ["Batterie", "20h", "25h"]
         ]
+      }
+    },
+    {
+      "titre": "Autre section",
+      "points": [...],
+      "visuel": {
+        "type": "barres",
+        "titre": "Titre du graphique",
+        "labels": ["Apple", "Samsung", "Xiaomi"],
+        "valeurs": [383, 200, 45],
+        "unite": "Mrd USD"
+      }
+    },
+    {
+      "titre": "Répartition",
+      "points": [...],
+      "visuel": {
+        "type": "camembert",
+        "titre": "Parts de marché mondiales",
+        "labels": ["Samsung", "Apple", "Xiaomi", "Autres"],
+        "valeurs": [20, 17, 13, 50]
+      }
+    },
+    {
+      "titre": "Évolution",
+      "points": [...],
+      "visuel": {
+        "type": "courbe",
+        "titre": "Évolution du chiffre d'affaires",
+        "labels": ["2020", "2021", "2022", "2023"],
+        "valeurs": [274, 365, 394, 383],
+        "unite": "Mrd USD"
       }
     }
   ]
@@ -72,11 +106,12 @@ JSON :
 Règles :
 - 3 à 5 sections
 - 2 à 4 points par section
-- Ajoute un tableau UNIQUEMENT si le sujet s'y prête naturellement (comparaison, données chiffrées, classement)
-- Si pas de tableau pertinent pour une section, omets le champ "tableau"
-- Maximum 1 tableau par section, maximum 2 tableaux au total
-- Colonnes : 2 à 5 maximum
-- Lignes : 3 à 8 maximum
+- Ajoute un visuel UNIQUEMENT si les données s'y prêtent naturellement
+- Maximum 2 visuels au total sur toute l'analyse
+- Pour "barres" et "camembert" : 2 à 6 éléments max
+- Pour "courbe" : 3 à 8 points temporels
+- Pour "tableau" : 2 à 5 colonnes, 3 à 8 lignes
+- Valeurs numériques uniquement pour barres/camembert/courbe (pas de symboles €, %, les mettre dans "unite")
 - Tout en français, factuel et concret
 - JSON uniquement, aucun texte autour`;
 
