@@ -912,6 +912,21 @@
   </div>
 </div>
 
+<!-- Rappel modal -->
+<div class="bubble-modal hidden" id="rappelModal">
+  <div class="bubble-modal-card">
+    <div style="font-size:36px;text-align:center;margin-bottom:8px">🔔</div>
+    <div class="bubble-modal-type">Rappel</div>
+    <div style="background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);border-radius:12px;padding:14px;margin:12px 0;font-size:14px;line-height:1.6;color:var(--text);text-align:center" id="rappelText"></div>
+    <button onclick="copyRappel()" id="rappelCopyBtn"
+      style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:8px">
+      📋 Copier
+    </button>
+    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted)"
+      onclick="document.getElementById('rappelModal').classList.add('hidden')">Fermer</button>
+  </div>
+</div>
+
 <!-- Bubble modal -->
 <div class="bubble-modal hidden" id="bubbleModal">
   <div class="bubble-modal-card">
@@ -1473,21 +1488,10 @@
     }
 
     if (bubble.type === 'RAPPEL') {
-      const ta = document.createElement('textarea');
-      ta.value = bubble.text;
-      ta.style.position = 'fixed';
-      ta.style.top = '0';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
+      document.getElementById('bubbleModal').classList.add('hidden');
       bubble.confirmed = true;
       removeBubbleEl(currentBubbleIndex);
-      document.getElementById('bubbleModal').classList.add('hidden');
-      setStatus('active', '📋 Rappel copié dans le presse-papier');
-      setTimeout(() => setStatus('', 'Prêt'), 3000);
+      showRappelModal(bubble.text);
       return;
     }
 
@@ -2369,6 +2373,39 @@
       document.getElementById('mapsResult').innerHTML = '<div style="text-align:center;color:var(--muted);padding:16px">Service temporairement indisponible</div>';
       document.getElementById('mapsResult').style.display = 'block';
     }
+  }
+
+  function showRappelModal(text) {
+    document.getElementById('rappelText').textContent = text;
+    document.getElementById('rappelCopyBtn').textContent = '📋 Copier';
+    document.getElementById('rappelModal').classList.remove('hidden');
+  }
+
+  function copyRappel() {
+    const text = document.getElementById('rappelText').textContent;
+    const btn = document.getElementById('rappelCopyBtn');
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ Copié !';
+      setTimeout(() => {
+        btn.textContent = '📋 Copier';
+        document.getElementById('rappelModal').classList.add('hidden');
+      }, 1500);
+    }).catch(() => {
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0.01;';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      btn.textContent = '✓ Copié !';
+      setTimeout(() => {
+        btn.textContent = '📋 Copier';
+        document.getElementById('rappelModal').classList.add('hidden');
+      }, 1500);
+    });
   }
 
   // ── Profile ──
