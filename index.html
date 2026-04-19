@@ -1609,16 +1609,14 @@
         'VERSION:2.0',
         'PRODID:-//Ponk Note//FR',
         'BEGIN:VEVENT',
-        `UID:${uid}`,
-        `SUMMARY:${titreRaw}`,
-        `DESCRIPTION:${descRaw.replace(/
-/g, '\n')}`,
-        `DTSTART;TZID=Europe/Paris:${icsStart}`,
-        `DTEND;TZID=Europe/Paris:${icsEnd}`,
+        'UID:' + uid,
+        'SUMMARY:' + titreRaw,
+        'DESCRIPTION:' + descRaw.split('\n').join('\\n'),
+        'DTSTART;TZID=Europe/Paris:' + icsStart,
+        'DTEND;TZID=Europe/Paris:' + icsEnd,
         'END:VEVENT',
         'END:VCALENDAR'
-      ].join('
-');
+      ].join('\r\n');
       const blob = new Blob([ics], { type: 'text/calendar' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
