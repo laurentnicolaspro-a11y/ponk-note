@@ -63,6 +63,7 @@ module.exports = async function handler(req, res) {
     }
 
     // ── APPEL 1 : Transcription brute ──
+    const audioBase64 = audioFile.data.toString('base64');
     let transcriptResult;
     try {
       transcriptResult = await tryGenerate([
@@ -70,7 +71,6 @@ module.exports = async function handler(req, res) {
         { text: `Transcris cet audio mot par mot en français. Sois fidèle à ce qui est dit. Réponds UNIQUEMENT avec le texte transcrit, sans commentaire.` }
       ]);
     } catch(e) { throw e; }
-    const audioBase64 = audioFile.data.toString('base64');
     const transcript = transcriptResult.response.text().trim();
 
     // ── APPEL 2 : Analyse structurée ──
