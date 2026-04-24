@@ -207,6 +207,28 @@
     }
     .export-row .export-cb { margin-top:3px; }
 
+    .edit-btn {
+      background:none; border:none; cursor:pointer;
+      color:var(--muted); font-size:12px; padding:2px 6px;
+      border-radius:6px; flex-shrink:0; opacity:0.6;
+      transition:opacity 0.15s;
+    }
+    .edit-btn:hover { opacity:1; background:rgba(255,255,255,0.5); }
+    .edit-input {
+      flex:1; background:rgba(255,255,255,0.7);
+      border:1.5px solid var(--accent); border-radius:8px;
+      padding:6px 10px; font-family:inherit; font-size:13px;
+      color:var(--text); outline:none;
+    }
+    .add-btn {
+      display:flex; align-items:center; gap:5px;
+      background:none; border:1.5px dashed rgba(74,127,212,0.3);
+      border-radius:8px; padding:6px 12px; width:100%;
+      font-family:inherit; font-size:12px; color:var(--accent);
+      cursor:pointer; margin-top:6px; transition:all 0.15s;
+    }
+    .add-btn:hover { background:rgba(74,127,212,0.06); border-color:var(--accent); }
+
     /* ── Synthèse structurée ── */
     .summary-contexte {
       font-size:13px; color:var(--muted); line-height:1.5;
@@ -452,70 +474,142 @@ function render(data, meta) {
 }
 
 // ── Construit le HTML de la synthèse structurée ──
+function saveSummary(s) {
+  const data = JSON.parse(localStorage.getItem('ponk_result') || '{}');
+  data.summary = s;
+  localStorage.setItem('ponk_result', JSON.stringify(data));
+}
+
+function editItem(el, field, s, key, subkey) {
+  const current = subkey !== undefined ? s[field][key][subkey] : s[field][key] || s[field];
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'edit-input';
+  input.value = typeof current === 'string' ? current : '';
+  const confirm = () => {
+    const val = input.value.trim();
+    if (!val) return;
+    if (subkey !== undefined) s[field][key][subkey] = val;
+    else if (Array.isArray(s[field])) s[field][key] = val;
+    else s[field] = val;
+    saveSummary(s);
+    renderSummary(s);
+  };
+  input.onblur = confirm;
+  input.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); confirm(); } if (e.key === 'Escape') renderSummary(s); };
+  el.replaceWith(input);
+  input.focus();
+}
+
+function addItem(field, s, placeholder) {
+  const data = JSON.parse(localStorage.getItem('ponk_result') || '{}');
+  const s2 = data.summary;
+  if (Array.isArray(s2[field])) s2[field].push('');
+  else if (field === 'actions') s2[field].push({ qui: '', quoi: '', quand: '' });
+  saveSummary(s2);
+  renderSummary(s2);
+  // Focus sur le dernier item vide
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('.edit-input');
+    if (inputs.length) inputs[inputs.length-1].focus();
+  }, 50);
+}
+
+function renderSummary(s) {
+  const card = document.querySelector('.card');
+  if (!card) return;
+  const bd = card.querySelector('.card-bd');
+  if (!bd) return;
+  bd.innerHTML = buildSummaryHTML(s);
+}
+
 function buildSummaryHTML(s) {
   let html = '';
   let cbId = 0;
-  function cb(label, content, checked=true) {
+
+  function cb(label, content, checked=true, onEdit=null) {
     const id = 'ecb_' + (cbId++);
-    return `<div class="export-row" data-export="${label}">
-      <input type="checkbox" class="export-cb" id="${id}" ${checked?'checked':''} data-export-label="${label}" data-export-content="${encodeURIComponent(content)}">
+    const editBtnHtml = onEdit ? `<button class="edit-btn" onclick="${onEdit}" title="Modifier">✏️</button>` : '';
+    return `<div class="export-row" data-export="${label}" style="align-items:center;">
+      <input type="checkbox" class="export-cb" id="${id}" ${checked?'checked':''} data-export-label="${label}" data-export-content="${encodeURIComponent(typeof content === 'string' ? content.replace(/<[^>]*>/g,'') : '')}">
       <div style="flex:1">${content}</div>
+      ${editBtnHtml}
     </div>`;
   }
 
   // Contexte
   if (s.contexte) {
-    html += `<div style="margin-top:14px">${cb('contexte', `<div class="summary-contexte" style="margin-top:0">ℹ️ ${s.contexte}</div>`, true)}</div>`;
+    html += `<div style="margin-top:14px">${cb('contexte',
+      `<div class="summary-contexte" style="margin-top:0;cursor:pointer" onclick="editItem(this,'contexte',${JSON.stringify(s).replace(/"/g,'&quot;')},null,null)">ℹ️ ${s.contexte}</div>`,
+      true
+    )}</div>`;
   }
 
-  // Résumé en prose
+  // Résumé
   if (s.resume) {
     html += `<div class="summary-section">
       <div class="summary-section-title">📝 Résumé</div>
-      ${cb('resume', `<div style="font-size:14px;line-height:1.7;color:var(--text);font-style:italic;padding:10px 14px;background:rgba(255,255,255,0.4);border-radius:10px;border-left:3px solid var(--accent);">${s.resume}</div>`, true)}
+      ${cb('resume',
+        `<div style="font-size:14px;line-height:1.7;color:var(--text);font-style:italic;padding:10px 14px;background:rgba(255,255,255,0.4);border-radius:10px;border-left:3px solid var(--accent);cursor:pointer" onclick="editItem(this,'resume',${JSON.stringify(s).replace(/"/g,'&quot;')},null,null)">${s.resume}</div>`,
+        true
+      )}
     </div>`;
   }
 
   // Points discutés
-  if (s.points_discutes?.length) {
-    html += `<div class="summary-section">
-      <div class="summary-section-title">💬 Points discutés</div>
-      <div class="points-list">
-        ${s.points_discutes.map(p => cb('point:'+p, `<div class="point-item" style="background:none;padding:0">${p}</div>`, true)).join('')}
-      </div>
-    </div>`;
-  }
+  html += `<div class="summary-section">
+    <div class="summary-section-title">💬 Points discutés</div>
+    <div class="points-list" id="list-points">
+      ${(s.points_discutes||[]).map((p,i) => cb('point:'+p,
+        `<div class="point-item" style="background:none;padding:0;cursor:pointer" onclick="editItem(this,'points_discutes',${JSON.stringify(s).replace(/"/g,'&quot;')},${i},null)">${p}</div>`,
+        true
+      )).join('')}
+    </div>
+    <button class="add-btn" onclick="addItem('points_discutes',${JSON.stringify(s).replace(/"/g,'&quot;')})">+ Ajouter un point</button>
+  </div>`;
 
   // Décisions
-  if (s.decisions?.length) {
-    html += `<div class="summary-section">
-      <div class="summary-section-title">✅ Décisions</div>
-      <div class="decisions-list">
-        ${s.decisions.map(d => cb('decision:'+d, `<div class="decision-item" style="margin:0"><div class="decision-dot"></div><span>${d}</span></div>`, true)).join('')}
-      </div>
-    </div>`;
-  }
+  html += `<div class="summary-section">
+    <div class="summary-section-title">✅ Décisions</div>
+    <div class="decisions-list" id="list-decisions">
+      ${(s.decisions||[]).map((d,i) => cb('decision:'+d,
+        `<div class="decision-item" style="margin:0;cursor:pointer" onclick="editItem(this,'decisions',${JSON.stringify(s).replace(/"/g,'&quot;')},${i},null)"><div class="decision-dot"></div><span>${d}</span></div>`,
+        true
+      )).join('')}
+    </div>
+    <button class="add-btn" onclick="addItem('decisions',${JSON.stringify(s).replace(/"/g,'&quot;')})">+ Ajouter une décision</button>
+  </div>`;
 
   // Actions
-  if (s.actions?.length) {
-    html += `<div class="summary-section">
-      <div class="summary-section-title">⚡ Actions</div>
-      <div style="display:flex;flex-direction:column;gap:5px;">
-        ${s.actions.map(a => {
-          const qui = a.qui ? `<span class="qui-badge">${a.qui}</span>` : `<span class="indefini">À définir</span>`;
-          const quand = a.quand ? `<span class="quand-badge">${a.quand}</span>` : '';
-          const txt = `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:rgba(255,255,255,0.3);border-radius:8px;">${qui}<span style="flex:1;font-size:13px">${a.quoi||''}</span>${quand}</div>`;
-          return cb('action:'+(a.qui||'?')+':'+(a.quoi||''), txt, true);
-        }).join('')}
-      </div>
-    </div>`;
-  }
+  html += `<div class="summary-section">
+    <div class="summary-section-title">⚡ Actions</div>
+    <div style="display:flex;flex-direction:column;gap:5px;" id="list-actions">
+      ${(s.actions||[]).map((a,i) => {
+        const qui = a.qui ? `<span class="qui-badge">${a.qui}</span>` : `<span class="indefini">À définir</span>`;
+        const quand = a.quand ? `<span class="quand-badge">${a.quand}</span>` : '';
+        const sJson = JSON.stringify(s).replace(/"/g,'&quot;');
+        const txt = `<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:rgba(255,255,255,0.3);border-radius:8px;">
+          <span style="cursor:pointer" onclick="editItem(this,'actions',${sJson},${i},'qui')">${qui}</span>
+          <span style="flex:1;font-size:13px;cursor:pointer" onclick="editItem(this,'actions',${sJson},${i},'quoi')">${a.quoi||'<span style=\'color:var(--muted);font-style:italic\'>Cliquer pour éditer</span>'}</span>
+          <span style="cursor:pointer" onclick="editItem(this,'actions',${sJson},${i},'quand')">${quand||'<span style=\'color:var(--muted);font-size:11px;font-style:italic\'>+ délai</span>'}</span>
+        </div>`;
+        return cb('action:'+(a.qui||'?')+':'+(a.quoi||''), txt, true);
+      }).join('')}
+    </div>
+    <button class="add-btn" onclick="addItem('actions',${JSON.stringify(s).replace(/"/g,'&quot;')})">+ Ajouter une action</button>
+  </div>`;
 
   // Prochaine étape
-  if (s.prochaine_etape) {
+  if (s.prochaine_etape !== undefined) {
     html += `<div class="summary-section">
       <div class="summary-section-title">📅 Prochaine étape</div>
-      ${cb('prochaine', `<div class="prochaine-wrap">${s.prochaine_etape}</div>`, true)}
+      ${cb('prochaine',
+        `<div class="prochaine-wrap" style="cursor:pointer" onclick="editItem(this,'prochaine_etape',${JSON.stringify(s).replace(/"/g,'&quot;')},null,null)">
+          <span class="prochaine-icon">📅</span>
+          <span class="prochaine-text">${s.prochaine_etape || '<span style=\'color:var(--muted);font-style:italic\'>Cliquer pour ajouter</span>'}</span>
+        </div>`,
+        true
+      )}
     </div>`;
   }
 
@@ -547,14 +641,20 @@ function buildActionCard(a) {
   // Bulle "Faire" déjà exécutée → badge vert ✓ à la place de la flèche
   // ✓ vert UNIQUEMENT si bulle explicitement exécutée (_done = confirmed 'done')
   if (a._done) {
-    return `<div class="action-ia-card" style="opacity:0.75;cursor:default;">
-      <div class="action-ia-icon">${a.icone}</div>
-      <div class="action-ia-info">
-        <div class="action-ia-titre">${a.titre}</div>
-        <div class="action-ia-desc">${a.description}</div>
-      </div>
-      <div style="width:28px;height:28px;border-radius:50%;background:rgba(61,184,122,0.15);border:1.5px solid rgba(61,184,122,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <span style="color:#3db87a;font-size:14px;font-weight:700">✓</span>
+    const doneId = 'ecb_done_' + (actionIdCounter++);
+    const doneLabel = 'action_ia_done:' + (a.titre||'');
+    const doneContent = encodeURIComponent('✓ ' + (a.titre||'') + ' — ' + (a.description||''));
+    return `<div style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" class="export-cb" id="${doneId}" checked data-export-label="${doneLabel}" data-export-content="${doneContent}">
+      <div class="action-ia-card" style="opacity:0.75;cursor:default;flex:1;margin:0">
+        <div class="action-ia-icon">${a.icone}</div>
+        <div class="action-ia-info">
+          <div class="action-ia-titre">${a.titre}</div>
+          <div class="action-ia-desc">${a.description}</div>
+        </div>
+        <div style="width:28px;height:28px;border-radius:50%;background:rgba(61,184,122,0.15);border:1.5px solid rgba(61,184,122,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span style="color:#3db87a;font-size:14px;font-weight:700">✓</span>
+        </div>
       </div>
     </div>`;
   }
@@ -565,14 +665,20 @@ function buildActionCard(a) {
   // ✓ vert si cliqué depuis les résultats (localStorage) — seulement pour actions Gemini
   const alreadyDone = !a._fromBubble && localStorage.getItem('ponk_done_' + actionId);
   if (alreadyDone) {
-    return `<div class="action-ia-card" style="opacity:0.75;cursor:default;">
-      <div class="action-ia-icon">${a.icone}</div>
-      <div class="action-ia-info">
-        <div class="action-ia-titre">${a.titre}</div>
-        <div class="action-ia-desc">${a.description}</div>
-      </div>
-      <div style="width:28px;height:28px;border-radius:50%;background:rgba(61,184,122,0.15);border:1.5px solid rgba(61,184,122,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <span style="color:#3db87a;font-size:14px;font-weight:700">✓</span>
+    const adId = 'ecb_done_' + (actionIdCounter++);
+    const adLabel = 'action_ia_done:' + (a.titre||'');
+    const adContent = encodeURIComponent('✓ ' + (a.titre||'') + ' — ' + (a.description||''));
+    return `<div style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" class="export-cb" id="${adId}" checked data-export-label="${adLabel}" data-export-content="${adContent}">
+      <div class="action-ia-card" style="opacity:0.75;cursor:default;flex:1;margin:0">
+        <div class="action-ia-icon">${a.icone}</div>
+        <div class="action-ia-info">
+          <div class="action-ia-titre">${a.titre}</div>
+          <div class="action-ia-desc">${a.description}</div>
+        </div>
+        <div style="width:28px;height:28px;border-radius:50%;background:rgba(61,184,122,0.15);border:1.5px solid rgba(61,184,122,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span style="color:#3db87a;font-size:14px;font-weight:700">✓</span>
+        </div>
       </div>
     </div>`;
   }
@@ -927,16 +1033,29 @@ async function exportPDF() {
   }
 
   // ── ACTIONS IA ──
-  const actionsIA = Object.entries(checked).filter(([k]) => k.startsWith('action_ia:'));
-  if (actionsIA.length) {
+  const actionsIA = Object.entries(checked).filter(([k]) => k.startsWith('action_ia:') && !k.startsWith('action_ia_done:'));
+  const actionsIADone = Object.entries(checked).filter(([k]) => k.startsWith('action_ia_done:'));
+  const allActionsIA = [...actionsIA, ...actionsIADone];
+
+  if (allActionsIA.length) {
     checkPage(22);
     pdfSectionHeader(doc, 'Actions IA', null, y, M, maxW, C);
     y += 13;
-    for (const [, v] of actionsIA) {
+    for (const [k, v] of allActionsIA) {
       checkPage(12);
-      const aL = doc.splitTextToSize('→ ' + v, maxW - 12);
+      const isDone = k.startsWith('action_ia_done:');
+      const aL = doc.splitTextToSize(v, maxW - 12);
       const aH = aL.length * 5.2 + 6;
-      pdfBlock(doc, aL, [], y, M, maxW, aH, C);
+      if (isDone) {
+        // Bloc vert pour les actions faites
+        doc.setFillColor(225, 245, 235); doc.setDrawColor(150, 210, 180); doc.setLineWidth(0.2);
+        doc.roundedRect(M, y, maxW, aH, 2.5, 2.5, 'FD');
+        doc.setFillColor(61, 184, 122); doc.roundedRect(M, y, 3.5, aH, 1.5, 1.5, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(25, 100, 60);
+        doc.text(aL, M + 7, y + 6);
+      } else {
+        pdfBlock(doc, aL, [], y, M, maxW, aH, C);
+      }
       y += aH + 4;
     }
     y += 4;
