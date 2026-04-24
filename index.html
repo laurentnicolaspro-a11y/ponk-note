@@ -1355,8 +1355,12 @@
       if (config.disabled) continue;
       if (config.words.some(w => lower.includes(w))) {
         const recent = actionBubbles.find(b => b.type === type && b.confirmed === null && Date.now() - b.time < 30000);
-        if (!recent) addActionBubble(type, config.icon, config.label, cleanTranscript(text));
-        return;
+        if (!recent) {
+          addActionBubble(type, config.icon, config.label, cleanTranscript(text));
+          return; // ← return uniquement si on a bien créé une bulle
+        }
+        // Si recent existe (doublon récent), on continue la boucle
+        // pour chercher d'autres types potentiels dans le même texte
       }
     }
   }
