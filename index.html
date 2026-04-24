@@ -593,7 +593,7 @@
         <span class="pill-label" id="pillLabel">A</span>
         <div class="toggle-switch" id="assistantToggle"></div>
       </div>
-      <div class="assistant-pill" onclick="openManualMenu()" style="padding:5px 12px;">
+      <div class="assistant-pill" id="manualMenuBtn" onclick="openManualMenu()" style="padding:5px 12px;opacity:0.35;pointer-events:none;">
         <span class="pill-label">+</span>
       </div>
       <div class="header-avatar" id="headerAvatar" onclick="goToLibrary()"></div>
@@ -1046,6 +1046,8 @@
       if (assistantActive) startSpeechRecognition();
       document.getElementById('recordBtn').classList.add('is-recording');
       document.getElementById('powerWrap').classList.add('is-recording');
+      document.getElementById('manualMenuBtn').style.opacity = '1';
+      document.getElementById('manualMenuBtn').style.pointerEvents = 'auto';
       document.getElementById('btnLabel').textContent = 'Appuyer pour arrêter';
       document.getElementById('timer').classList.add('recording');
       document.getElementById('spikyPath').setAttribute('stroke', 'rgba(224,85,85,0.45)');
@@ -1060,6 +1062,8 @@
     stopSpeechRecognition();
     document.getElementById('recordBtn').classList.remove('is-recording');
     document.getElementById('powerWrap').classList.remove('is-recording');
+    document.getElementById('manualMenuBtn').style.opacity = '0.35';
+    document.getElementById('manualMenuBtn').style.pointerEvents = 'none';
     document.getElementById('btnLabel').textContent = 'Appuyer pour enregistrer';
     document.getElementById('timer').classList.remove('recording');
     document.getElementById('spikyPath').setAttribute('stroke', assistantActive ? 'rgba(100,80,200,0.45)' : 'rgba(74,127,212,0.35)');
@@ -1640,6 +1644,8 @@
     actionBubbles[currentBubbleIndex].confirmed = 'kept';
     removeBubbleEl(currentBubbleIndex);
     document.getElementById('bubbleModal').classList.add('hidden');
+    // Sauvegarder immédiatement dans localStorage
+    saveBubbles();
   }
 
   function rejectBubble() {
