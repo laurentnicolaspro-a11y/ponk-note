@@ -287,6 +287,8 @@
 </div>
 
 <script>
+const ACTION_REGISTRY = {}; // stocke url par actionId
+
 const LABELS = {
   REUNION:'🏢 Réunion', COURSES:'🛒 Courses', CHANTIER:'🔨 Chantier',
   IDEES:'💡 Idées', DEPLACEMENT:'📍 Déplacement', FINANCE:'💰 Finance',
@@ -539,6 +541,8 @@ function buildActionCard(a) {
     </div>`;
   }
   const actionId = 'action_' + btoa(encodeURIComponent((a.type||'') + (a.titre||''))).substring(0,16);
+  // Stocker l'URL dans le registre (évite les problèmes de caractères spéciaux en inline)
+  ACTION_REGISTRY[actionId] = url || '';
   const alreadyDone = localStorage.getItem('ponk_done_' + actionId);
   if (alreadyDone || a._done) {
     return `<div class="action-ia-card" style="opacity:0.75;cursor:default;">
@@ -552,7 +556,7 @@ function buildActionCard(a) {
       </div>
     </div>`;
   }
-  return `<div class="action-ia-card" id="${actionId}" onclick="markActionDone('${actionId}', '${url ? url.replace(/'/g, "\'") : ''}')">
+  return `<div class="action-ia-card" id="${actionId}" onclick="markActionDone('${actionId}')">
     <div class="action-ia-icon">${a.icone}</div>
     <div class="action-ia-info">
       <div class="action-ia-titre">${a.titre}</div>
@@ -590,7 +594,8 @@ async function runDeepAnalysis(id, query) {
   if (arrow) arrow.style.display = 'flex';
 }
 
-function markActionDone(actionId, url) {
+function markActionDone(actionId) {
+  const url = ACTION_REGISTRY[actionId] || '';
   // Ouvrir l'URL
   if (url && url !== 'null' && url !== '') window.open(url, '_blank');
   // Marquer comme fait dans localStorage
