@@ -45,16 +45,12 @@ module.exports = async function handler(req, res) {
     const bubbles  = JSON.parse(fields['bubbles'] || '[]');
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    let model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
-    const audioBase64 = audioFile.data.toString('base64');
-
-    // Triple fallback helper - timeout adapté à la taille de l'audio
     const audioSizeMB = audioFile.data.length / (1024 * 1024);
-    const timeoutMs = Math.max(30000, Math.min(120000, audioSizeMB * 10000)); // 30s min, 120s max
+    const timeoutMs = Math.max(30000, Math.min(120000, audioSizeMB * 10000));
     console.log('[analyze] audio size:', audioSizeMB.toFixed(1), 'MB, timeout:', timeoutMs/1000, 's');
 
     async function tryGenerate(content_arg) {
-      const _models = ['gemini-3.1-flash-lite-preview', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+      const _models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash'];
       for (const _mn of _models) {
         try {
           const _m = genAI.getGenerativeModel({ model: _mn });
@@ -74,6 +70,7 @@ module.exports = async function handler(req, res) {
         { text: `Transcris cet audio mot par mot en français. Sois fidèle à ce qui est dit. Réponds UNIQUEMENT avec le texte transcrit, sans commentaire.` }
       ]);
     } catch(e) { throw e; }
+    const audioBase64 = audioFile.data.toString('base64');
     const transcript = transcriptResult.response.text().trim();
 
     // ── APPEL 2 : Analyse structurée ──
@@ -82,7 +79,7 @@ IMPORTANT : Réponds OBLIGATOIREMENT en FRANÇAIS.
 
 Contexte : ${title ? 'Titre : ' + title + '.' : ''} ${duration ? 'Durée : ' + duration + '.' : ''} ${datetime ? 'Date : ' + datetime + '.' : ''}
 ${bubbles.length > 0 ? `
-Actions identifiées par l'utilisateur pendant l'enregistrement (utilise ces informations pour enrichir les actions_ia correspondantes avec un contenu précis) :
+Actions identifiées par l'utilisateur pendant l'enregistrement :
 ${bubbles.map(b => `- ${b.type} : "${b.text}"`).join('\n')}
 ` : ''}
 
@@ -94,11 +91,23 @@ ${transcript}
 Détecte automatiquement quels types de contenu sont présents parmi :
 REUNION, COURSES, CHANTIER, IDEES, DEPLACEMENT, FINANCE, APPEL, MEDICAL, COURS, MEMO
 
+REUNION s'applique dès que : plusieurs personnes sont mentionnées OU un sujet professionnel/collectif est discuté OU des décisions/actions sont attribuées à des personnes.
+
 Réponds UNIQUEMENT avec un JSON valide, sans markdown, sans backticks.
 
 {
   "modes": ["MODE1", "MODE2"],
-  "summary": "Ce qui a été dit : ... Décisions prises : ... Points importants : ...",
+
+  "summary": {
+    "contexte": "Une phrase : qui, sujet, durée si connue. Ex: Réunion budget Q3 avec Jean et Marie, 45 minutes.",
+    "points_discutes": ["Point 1", "Point 2"],
+    "decisions": ["Décision 1", "Décision 2"],
+    "actions": [
+      { "qui": "Prénom si prononcé dans l'audio, sinon chaîne vide", "quoi": "Action claire et concrète", "quand": "Délai si mentionné, sinon chaîne vide" }
+    ],
+    "prochaine_etape": "Prochaine réunion ou deadline si mentionnée, sinon chaîne vide"
+  },
+
   "reunion": {
     "participants": ["Nom 1"],
     "decisions": ["Décision 1"],
@@ -150,7 +159,15 @@ Réponds UNIQUEMENT avec un JSON valide, sans markdown, sans backticks.
   }
 }
 
-Règles :
+Règles pour summary :
+- "contexte" : toujours rempli, même pour un mémo solo ("Note personnelle de [prénom si connu], durée X")
+- "points_discutes" : les sujets abordés, 1 à 6 éléments maximum
+- "decisions" : uniquement ce qui a été acté/décidé. Si rien → tableau vide []
+- "actions.qui" : UNIQUEMENT si un prénom est explicitement prononcé dans l'audio. Sinon "". Ne devine jamais.
+- "actions.quand" : UNIQUEMENT si un délai est explicitement mentionné. Sinon "".
+- "prochaine_etape" : si rien mentionné → ""
+
+Règles générales :
 - Ne mets que les sections correspondant aux modes détectés
 - Tout en français
 - Réponds UNIQUEMENT avec le JSON
@@ -166,14 +183,13 @@ Types possibles : EMAIL, WHATSAPP, CALENDRIER, MAPS, RAPPEL, RECHERCHE, COMMANDE
     "description": "Commander 5 tapis rouges",
     "destinataire": "Xavier",
     "sujet": "Commander 5 tapis rouges",
-    "corps": "Bonjour Xavier,\n\nSuite à notre réunion, pourrais-tu commander 5 tapis rouges ?\n\nMerci,\n[Votre nom]"
+    "corps": "Bonjour Xavier,\\n\\nSuite à notre réunion, pourrais-tu commander 5 tapis rouges ?\\n\\nMerci,\\n[Votre nom]"
   },
   {
     "type": "WHATSAPP",
     "icone": "💬",
     "titre": "WhatsApp à Paul",
     "description": "On est en retard de 10 minutes",
-    "destinataire": "Paul",
     "message": "Bonjour Paul, on est en retard d'environ 10 minutes."
   },
   {
@@ -216,17 +232,15 @@ Types possibles : EMAIL, WHATSAPP, CALENDRIER, MAPS, RAPPEL, RECHERCHE, COMMANDE
   }
 ]
 
-Si aucune action détectée, mets "actions_ia": []
 Règles STRICTES pour les actions_ia :
-- Ne détecte une action que si quelqu'un exprime clairement une INTENTION de faire quelque chose ("je vais envoyer", "il faut appeler", "on doit commander", "fais une analyse sur...")
-- Une QUESTION ("combien de km entre Paris et Marseille ?") n'est PAS une action
+- Ne détecte une action que si quelqu'un exprime clairement une INTENTION de faire quelque chose
+- Une QUESTION n'est PAS une action
 - Une information mentionnée en passant n'est PAS une action
 - Si tu génères une action ANALYSE sur un sujet, ne génère PAS de RECHERCHE sur le même sujet
 - Maximum 3 actions par transcription
 - Si aucune action claire n'est détectée, mets "actions_ia": []`;
 
-    let analysisResult;
-    analysisResult = await tryGenerate(analysisPrompt);
+    const analysisResult = await tryGenerate(analysisPrompt);
     const rawText = analysisResult.response.text();
     const clean = rawText.replace(/```json|```/g, '').trim();
 
@@ -234,12 +248,20 @@ Règles STRICTES pour les actions_ia :
     try {
       parsed = JSON.parse(clean);
     } catch {
-      parsed = { modes: ['MEMO'], summary: clean, memo: { notes: clean } };
+      parsed = {
+        modes: ['MEMO'],
+        summary: {
+          contexte: '',
+          points_discutes: [],
+          decisions: [],
+          actions: [],
+          prochaine_etape: ''
+        },
+        memo: { notes: clean }
+      };
     }
 
-    // Ajoute la transcription au résultat
     parsed.transcript = transcript;
-
     return res.status(200).json(parsed);
 
   } catch (err) {
