@@ -343,7 +343,8 @@ function render(data, meta) {
       const saved = JSON.parse(localStorage.getItem('ponk_action_bubbles') || '[]');
       return saved.map(b => ({
         type: b.type, icone: b.icon || '💬',
-        titre: b.label || b.type, description: b.text, _fromBubble: true
+        titre: b.label || b.type, description: b.text,
+        _fromBubble: true, _done: b.confirmed === 'done'
       }));
     } catch(e) { return []; }
   })();
@@ -513,6 +514,19 @@ function buildActionCard(a) {
     </div>`;
   }
   const url = getActionUrl(a);
+  // Bulle "Faire" déjà exécutée → badge vert ✓ à la place de la flèche
+  if (a._done) {
+    return `<div class="action-ia-card" style="opacity:0.75;cursor:default;">
+      <div class="action-ia-icon">${a.icone}</div>
+      <div class="action-ia-info">
+        <div class="action-ia-titre">${a.titre}</div>
+        <div class="action-ia-desc">${a.description}</div>
+      </div>
+      <div style="width:28px;height:28px;border-radius:50%;background:rgba(61,184,122,0.15);border:1.5px solid rgba(61,184,122,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span style="color:#3db87a;font-size:14px;font-weight:700">✓</span>
+      </div>
+    </div>`;
+  }
   return `<a class="action-ia-card" href="${url}" target="_blank" rel="noopener">
     <div class="action-ia-icon">${a.icone}</div>
     <div class="action-ia-info">
