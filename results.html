@@ -538,14 +538,28 @@ function buildActionCard(a) {
       </div>
     </div>`;
   }
-  return `<a class="action-ia-card" href="${url}" target="_blank" rel="noopener">
+  const actionId = 'action_' + btoa(encodeURIComponent((a.type||'') + (a.titre||''))).substring(0,16);
+  const alreadyDone = localStorage.getItem('ponk_done_' + actionId);
+  if (alreadyDone || a._done) {
+    return `<div class="action-ia-card" style="opacity:0.75;cursor:default;">
+      <div class="action-ia-icon">${a.icone}</div>
+      <div class="action-ia-info">
+        <div class="action-ia-titre">${a.titre}</div>
+        <div class="action-ia-desc">${a.description}</div>
+      </div>
+      <div style="width:28px;height:28px;border-radius:50%;background:rgba(61,184,122,0.15);border:1.5px solid rgba(61,184,122,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span style="color:#3db87a;font-size:14px;font-weight:700">✓</span>
+      </div>
+    </div>`;
+  }
+  return `<div class="action-ia-card" id="${actionId}" onclick="markActionDone('${actionId}', '${url ? url.replace(/'/g, "\'") : ''}')">
     <div class="action-ia-icon">${a.icone}</div>
     <div class="action-ia-info">
       <div class="action-ia-titre">${a.titre}</div>
       <div class="action-ia-desc">${a.description}</div>
     </div>
     <div class="action-ia-arrow"><svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg></div>
-  </a>`;
+  </div>`;
 }
 
 async function runDeepAnalysis(id, query) {
@@ -574,6 +588,21 @@ async function runDeepAnalysis(id, query) {
   }
   loading.classList.remove('visible');
   if (arrow) arrow.style.display = 'flex';
+}
+
+function markActionDone(actionId, url) {
+  // Ouvrir l'URL
+  if (url && url !== 'null' && url !== '') window.open(url, '_blank');
+  // Marquer comme fait dans localStorage
+  localStorage.setItem('ponk_done_' + actionId, '1');
+  // Mettre à jour visuellement la carte
+  const el = document.getElementById(actionId);
+  if (!el) return;
+  el.onclick = null;
+  el.style.opacity = '0.75';
+  el.style.cursor = 'default';
+  const arrow = el.querySelector('.action-ia-arrow');
+  if (arrow) arrow.outerHTML = `<div style="width:28px;height:28px;border-radius:50%;background:rgba(61,184,122,0.15);border:1.5px solid rgba(61,184,122,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="color:#3db87a;font-size:14px;font-weight:700">✓</span></div>`;
 }
 
 function getActionUrl(a) {
