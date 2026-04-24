@@ -1021,16 +1021,14 @@ async function exportPDF() {
   if (pdfBtn) { pdfBtn.textContent = '⏳ Gemini relit…'; pdfBtn.disabled = true; }
 
   try {
-    const elements = Object.entries(checked)
-      .filter(([k]) => !k.startsWith('action_ia') && k !== 'transcript')
-      .map(([k,v]) => k + ': ' + v).join('\n');
-
-    const prompt = 'Améliore ce compte-rendu de réunion. Formulations claires et professionnelles, corrige les fautes, complète si la transcription le permet. Ne supprime rien.\n\nÉléments:\n"""\n' + elements + '\n"""\n\nTranscription:\n"""\n' + (data.transcript||'') + '\n"""\n\nRéponds UNIQUEMENT JSON:\n{"resume":"...","contexte":"...","points_discutes":["..."],"decisions":["..."],"actions":[{"qui":"","quoi":"","quand":""}],"prochaine_etape":"..."}';
-
     const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transcript_only: true, transcript: prompt })
+      body: JSON.stringify({
+        rewrite: true,
+        summary: s,
+        transcript: data.transcript || ''
+      })
     });
 
     if (res.ok) {
@@ -1041,7 +1039,7 @@ async function exportPDF() {
         if (result.points_discutes?.length) s.points_discutes = result.points_discutes;
         if (result.decisions?.length) s.decisions = result.decisions;
         if (result.actions?.length) s.actions = result.actions;
-        if (result.prochaine_etape) s.prochaine_etape = result.prochaine_etape;
+        if (result.prochaine_etape !== undefined) s.prochaine_etape = result.prochaine_etape;
         saveSummary(s);
         renderSummary(s);
       }
