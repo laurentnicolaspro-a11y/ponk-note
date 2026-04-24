@@ -1199,19 +1199,42 @@
   async function startSpeechRecognition() {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let isRestarting = false;
+
     function createAndStart() {
+      if (isRestarting) return;
+      isRestarting = true;
+
       speechRecognition = new SR();
       speechRecognition.continuous = false;
       speechRecognition.interimResults = false;
       speechRecognition.lang = 'fr-FR';
+
       speechRecognition.onresult = e => {
         const t = e.results[0][0].transcript.trim();
         detectActionKeywords(t);
         if (isQuestion(t)) askGemini(t);
+        // Forcer l'arrêt pour déclencher onend proprement
+        try { speechRecognition.stop(); } catch(err) {}
       };
-      speechRecognition.onerror = e => { if (e.error !== 'aborted' && assistantActive && recording) setTimeout(createAndStart, 500); };
-      speechRecognition.onend = () => { if (assistantActive && recording) setTimeout(createAndStart, 300); };
-      try { speechRecognition.start(); } catch(e) {}
+
+      speechRecognition.onerror = e => {
+        if (e.error === 'aborted') return;
+        isRestarting = false;
+        if (assistantActive && recording) setTimeout(createAndStart, 500);
+      };
+
+      speechRecognition.onend = () => {
+        isRestarting = false;
+        if (assistantActive && recording) setTimeout(createAndStart, 300);
+      };
+
+      try {
+        speechRecognition.start();
+      } catch(e) {
+        isRestarting = false;
+        if (assistantActive && recording) setTimeout(createAndStart, 500);
+      }
     }
     createAndStart();
   }
