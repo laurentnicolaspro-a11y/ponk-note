@@ -11,43 +11,17 @@ module.exports = async function handler(req, res) {
       req.on('error', reject);
     });
 
-    const body = Buffer.concat(chunks);
-    const contentType = req.headers['content-type'] || '';
-    const boundaryMatch = contentType.match(/boundary=(.+)/);
-    if (!boundaryMatch) return res.status(400).json({ error: 'No boundary' });
+    const body = JSON.parse(Buffer.concat(chunks).toString());
+    const { fileName, title = '', duration = '', datetime = '', bubbles = [] } = body;
 
-    const boundary = '--' + boundaryMatch[1];
-    const parts = body.toString('binary').split(boundary);
-    const fields = {};
-    const files = {};
+    if (!fileName) return res.status(400).json({ error: 'fileName manquant' });
 
-    for (const part of parts) {
-      if (part === '--\r\n' || part.trim() === '--') continue;
-      const [rawHeaders, ...bodyParts] = part.split('\r\n\r\n');
-      if (!rawHeaders) continue;
-      const bodyStr = bodyParts.join('\r\n\r\n').replace(/\r\n$/, '');
-      const nameMatch = rawHeaders.match(/name="([^"]+)"/);
-      const filenameMatch = rawHeaders.match(/filename="([^"]+)"/);
-      if (!nameMatch) continue;
-      if (filenameMatch) {
-        files[nameMatch[1]] = { filename: filenameMatch[1], data: Buffer.from(bodyStr, 'binary') };
-      } else {
-        fields[nameMatch[1]] = bodyStr.trim();
-      }
-    }
-
-    const audioFile = files['audio'];
-    if (!audioFile) return res.status(400).json({ error: 'Aucun fichier audio reçu' });
-
-    const title    = fields['title']    || '';
-    const duration = fields['duration'] || '';
-    const datetime = fields['datetime'] || '';
-    const bubbles  = JSON.parse(fields['bubbles'] || '[]');
+    // Construire l'URL publique Supabase
+    const audioUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/audio/${fileName}`;
+    console.log('[analyze] audio URL:', audioUrl);
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const audioSizeMB = audioFile.data.length / (1024 * 1024);
-    const timeoutMs = Math.max(30000, Math.min(120000, audioSizeMB * 10000));
-    console.log('[analyze] audio size:', audioSizeMB.toFixed(1), 'MB, timeout:', timeoutMs/1000, 's');
+    const timeoutMs = 120000; // 2 min max pour les longues réunions
 
     async function tryGenerate(content_arg) {
       const _models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash'];
@@ -62,12 +36,11 @@ module.exports = async function handler(req, res) {
       throw new Error('All models failed');
     }
 
-    // ── APPEL 1 : Transcription brute ──
-    const audioBase64 = audioFile.data.toString('base64');
+    // ── APPEL 1 : Transcription via URL Supabase ──
     let transcriptResult;
     try {
       transcriptResult = await tryGenerate([
-        { inlineData: { mimeType: 'audio/webm', data: audioBase64 } },
+        { fileData: { mimeType: 'audio/webm', fileUri: audioUrl } },
         { text: `Transcris cet audio mot par mot en français. Sois fidèle à ce qui est dit. Réponds UNIQUEMENT avec le texte transcrit, sans commentaire.` }
       ]);
     } catch(e) { throw e; }
