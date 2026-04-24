@@ -289,6 +289,22 @@
     }
     .listening-text { font-size:12px; color:var(--muted); }
 
+
+
+    /* Manual action button */
+    .btn-manual-action {
+      width:36px; height:36px; border-radius:50%;
+      background:var(--glass); border:1.5px solid var(--glass-border);
+      backdrop-filter:blur(20px);
+      display:flex; align-items:center; justify-content:center;
+      font-size:18px; cursor:pointer; font-weight:300;
+      color:var(--muted); font-size:22px; line-height:1;
+      -webkit-tap-highlight-color:transparent;
+      transition:background 0.15s, transform 0.1s;
+      box-shadow:0 2px 8px rgba(0,0,0,0.08);
+    }
+    .btn-manual-action:active { transform:scale(0.93); }
+
     .manual-action-menu {
       position:fixed; inset:0; z-index:400;
       display:flex; align-items:flex-end; justify-content:center;
@@ -334,6 +350,14 @@
     }
 
     /* Manual bubble modal */
+    .manual-bubble-modal {
+      position:fixed; inset:0; z-index:500;
+      display:flex; align-items:center; justify-content:center;
+      padding:20px;
+      background:rgba(0,0,0,0.3);
+      backdrop-filter:blur(8px);
+    }
+    .manual-bubble-modal.hidden { display:none; }
 
     /* Bubble slots counter */
     .bubbles-col {
@@ -449,6 +473,14 @@
       font-style:italic; text-align:center;
     }
 
+    /* Chat bubble */
+    .assistant-bubble {
+      width:100%;
+      background:var(--glass); border:1.5px solid var(--glass-border);
+      backdrop-filter:blur(20px); border-radius:16px;
+      padding:14px 16px;
+      animation:popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
     @keyframes popIn {
       from{opacity:0;transform:scale(0.92) translateY(8px)}
       to{opacity:1;transform:scale(1) translateY(0)}
@@ -989,6 +1021,7 @@
 </div>
 
 <script>
+  // ── Spiky ring ──
   function buildSpiky(n, r, spike, cx, cy) {
     let d = '';
     for (let i = 0; i < n * 2; i++) {
@@ -1001,6 +1034,8 @@
     return d + 'Z';
   }
   document.getElementById('spikyPath').setAttribute('d', buildSpiky(32, 88, 8, 110, 110));
+
+  // ── Recording state ──
   let recorder=null, chunks=[], blob=null, interval=null, seconds=0, recording=false;
 
   async function checkQuota() {
@@ -1071,6 +1106,8 @@
   async function uploadAudio() {
     if (!blob) return;
     const profile = localStorage.getItem('ponk_profile') || 'user';
+
+    // Check quota before upload
     try {
       const checkRes = await fetch('/api/list?uid=' + encodeURIComponent(profile));
       const checkData = await checkRes.json();
@@ -1130,6 +1167,7 @@
     fd.append('audio', blob, 'rec.webm');
     fd.append('title', title); fd.append('duration', duration); fd.append('datetime', datetime);
     fd.append('profile', localStorage.getItem('ponk_profile') || 'user');
+    // Send saved bubbles for enriched action generation
     const savedBubbles = actionBubbles.filter(b => b.confirmed !== false);
     fd.append('bubbles', JSON.stringify(savedBubbles));
     try {
@@ -1162,6 +1200,8 @@
     document.getElementById('dot').className = 'dot'+(type?' '+type:'');
     document.getElementById('status').textContent = text;
   }
+
+  // ── Assistant IA ──
   let assistantActive = false;
   let speechRecognition = null;
   let assistantStream = null;
@@ -1283,6 +1323,8 @@
     document.getElementById('bubbleEmpty').style.display = 'none';
     document.getElementById('bubbleContent').style.display = 'block';
   }
+
+  // ── Manual action menu ──
   function openManualMenu() {
     const items = document.getElementById('manualActionItems');
     items.innerHTML = Object.entries(ACTION_KEYWORDS).map(([type, config]) =>
@@ -1312,16 +1354,22 @@
     document.getElementById('bubbleModal').classList.remove('hidden');
     setTimeout(() => document.getElementById('bubbleModalText').focus(), 100);
   }
+
+  // ── Action bubbles ──
   const ACTION_KEYWORDS = {
+    // ── Communication ──
     'EMAIL':      { icon:'📧', label:'Email',      words:['envoie','envoyer un mail','envoyer un email','mail','email','écris','rédige','envoie un message','envoyer un message'] },
     'APPEL':      { icon:'📞', label:'Appel',       words:['appelle','appeler','téléphone','contacte','rappelle','passer un appel','donner un coup de fil'] },
     'WHATSAPP':   { icon:'💬', label:'Message',     words:['whatsapp','sms','texto','envoie un message','envoyer un message','envoie un texto','envoyer un texto','écris un message','message à'] },
+    // ── Organisation ──
     'CALENDRIER': { icon:'📅', label:'Calendrier',  words:['réunion','rendez-vous','rdv','planifie','prévois','agenda','meeting','noter dans','bloquer','fixer un'] },
     'MAPS':       { icon:'🗺️', label:'Itinéraire',  words:['aller à','va chez','adresse','itinéraire','trajet','navigation','se rendre','chemin pour'] },
     'RESERVATION':{ icon:'🎫', label:'Réservation', words:['réserve','réserver','book','booking','billet','hôtel','airbnb','sncf','train','vol','nuit'] },
+    // ── Action ──
     'COMMANDE':   { icon:'🛒', label:'Commande',    words:['commande','commander','achète','acheter','réserve','réserver','passer une commande','faire une commande'] },
     'RECHERCHE':  { icon:'🔍', label:'Recherche',   words:['cherche','recherche','trouve','googler','renseigne','regarde sur','vérifier','voir si'] },
     'ANALYSE':    { icon:'🧠', label:'Analyse',     words:['analyse','étudie','compare','rapport','bilan','étude de','faire un point','synthèse sur'] },
+    // ── Bientôt ──
     'RAPPEL':     { icon:'🔔', label:'Rappel',      words:['rappelle-moi','oublie pas','oubliez pas','pense à','pensez à','note que','rappel','ne pas oublier','faut penser'], disabled: true },
     'FINANCE':    { icon:'💰', label:'Finance',     words:['paye','rembourse','virement','transfère','paiement','dépense','facture','budget','doit de largent','note de frais'], disabled: true },
   };
@@ -1580,6 +1628,8 @@
     bubble.confirmed = true;
     removeBubbleEl(currentBubbleIndex);
     document.getElementById('bubbleModal').classList.add('hidden');
+
+    // Rebond automatique pour EMAIL et actions directes
     setTimeout(() => declencherRebond(
       bubble.type + ' : ' + bubble.text,
       'action: ' + bubble.type + ', texte: ' + bubble.text,
@@ -1666,6 +1716,8 @@
 
         const prefCal = localStorage.getItem('ponk_pref_cal') || 'google';
         const calNames = {'google':'Google Calendar','outlook':'Outlook','apple':'Apple Calendar'};
+
+        // Extraire heure et durée depuis les données Gemini
         const heureDefault = data.heure ? data.heure.replace(/[^0-9:]/g,'').substring(0,5) : '09:00';
         const dureeDefault = (() => {
           if (!data.duree) return '60';
@@ -1711,6 +1763,9 @@
           </div>`;
         document.getElementById('calendrierCalBtn').style.display = 'block';
         document.getElementById('calendrierOrganiseBtn').style.display = 'block';
+
+        // Déclencher rebond après fermeture
+        // Déclencher rebond automatiquement
         setTimeout(() => declencherRebond(
           'Calendrier : ' + (data.titre || text),
           'date: ' + (data.date || '') + ', lieu: ' + (data.description || ''),
@@ -1734,10 +1789,13 @@
     const dateInput  = document.getElementById('calDateInput');
     const heure = heureInput ? heureInput.value : '09:00';
     const duree = dureeInput ? parseInt(dureeInput.value) : 60;
+
+    // Parser la date — depuis input HTML date (YYYY-MM-DD) en priorité
     let yyyy = '', mm = '', dd = '';
     if (dateInput && dateInput.value) {
       [yyyy, mm, dd] = dateInput.value.split('-');
     } else {
+      // Fallback : parser la date texte de Gemini
       const dateStr = data.date || '';
       const moisFr = {
         'janvier':'01','fevrier':'02','février':'02','mars':'03','avril':'04',
@@ -1753,11 +1811,15 @@
         yyyy = frMatch[3];
       }
     }
+
+    // Construire start/end SANS passer par Date() pour éviter le décalage UTC
+    // Format Google : YYYYMMDDTHHmmss (heure locale, pas UTC)
     const [hh, min] = heure.split(':');
     const startMins = parseInt(hh) * 60 + parseInt(min);
     const endMins   = startMins + duree;
     const endHH  = String(Math.floor(endMins / 60) % 24).padStart(2, '0');
     const endMin = String(endMins % 60).padStart(2, '0');
+    // Gérer passage minuit
     const endDD = endMins >= 1440
       ? String(parseInt(dd) + 1).padStart(2, '0')
       : dd;
@@ -1768,6 +1830,8 @@
     const endLocal = yyyy && mm && endDD
       ? `${yyyy}${mm}${endDD}T${endHH}${endMin}00`
       : '';
+
+    // Dates formatées pour Outlook (ISO 8601 local)
     const startOutlook = yyyy && mm && dd
       ? `${yyyy}-${mm}-${dd}T${hh}:${min}:00`
       : '';
@@ -1793,6 +1857,7 @@
       window.open(url, '_blank');
 
     } else if (prefCal === 'apple') {
+      // Générer un fichier .ics téléchargeable
       const icsStart = startLocal || `${new Date().getFullYear()}0101T090000`;
       const icsEnd   = endLocal   || `${new Date().getFullYear()}0101T100000`;
       const uid = Date.now() + '@ponknote';
@@ -1903,6 +1968,248 @@
     }
   }
 
+  async function downloadCalendrierPDF() {
+    const pdf = window._calendrierPDF;
+    if (!pdf) return;
+
+    if (!window.jspdf) {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const M = 16;
+    const maxW = pageW - M * 2;
+    let y = M;
+
+    const C = {
+      accent:      [74, 127, 212],
+      accentDark:  [50, 95, 170],
+      accentLight: [210, 225, 248],
+      dark:        [25, 30, 50],
+      muted:       [110, 118, 140],
+      light:       [243, 246, 253],
+      white:       [255, 255, 255],
+      sectionBg:   [232, 240, 255],
+      sectionBdr:  [190, 210, 245],
+      blockBg:     [251, 253, 255],
+      blockBdr:    [215, 228, 248],
+      detail:      [85, 95, 118],
+      ideeline:    [195, 225, 195],
+      ideelabel:   [45, 120, 70],
+      ideetext:    [55, 115, 75],
+      ideetick:    [120, 190, 130],
+      footerbg:    [244, 247, 253],
+    };
+
+    function checkPage(needed = 10) {
+      if (y + needed > pageH - 14) { doc.addPage(); y = M; }
+    }
+
+    // ── BANDEAU TITRE ─────────────────────────────────────────────────────────
+    // Fond dégradé simulé : deux rectangles
+    doc.setFillColor(...C.accentDark);
+    doc.rect(0, 0, pageW, 32, 'F');
+    doc.setFillColor(...C.accent);
+    doc.rect(0, 8, pageW, 24, 'F');
+
+    // Ligne déco bas du bandeau
+    doc.setFillColor(...C.accentLight);
+    doc.rect(0, 30, pageW, 1.2, 'F');
+
+    // Titre
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...C.white);
+    const titleLines = doc.splitTextToSize(pdf.titre, pageW - 40);
+    doc.text(titleLines, M, titleLines.length > 1 ? 11 : 14);
+
+    // Badge Ponk Note
+    doc.setFillColor(...C.accentDark);
+    doc.roundedRect(pageW - M - 22, 4, 22, 7, 1.5, 1.5, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(...C.accentLight);
+    doc.text('PONK NOTE', pageW - M - 11, 9, { align: 'center' });
+
+    y = 40;
+
+    // ── FICHE RÉCAP ───────────────────────────────────────────────────────────
+    const meta = pdf.meta || {};
+    const metaItems = [
+      { label: 'Date',         val: meta.date         || '-' },
+      { label: 'Lieu',         val: meta.lieu         || '-' },
+      { label: 'Duree',        val: meta.duree        || '-' },
+      { label: 'Participants', val: meta.participants  || '-' },
+    ];
+
+    // Ombre simulée
+    doc.setFillColor(225, 230, 245);
+    doc.roundedRect(M + 0.8, y + 0.8, maxW, 30, 3, 3, 'F');
+    // Fond principal
+    doc.setFillColor(...C.light);
+    doc.setDrawColor(...C.sectionBdr);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(M, y, maxW, 30, 3, 3, 'FD');
+    // Bordure gauche colorée
+    doc.setFillColor(...C.accent);
+    doc.roundedRect(M, y, 3, 30, 1.5, 1.5, 'F');
+
+    const colW = maxW / 2;
+    metaItems.forEach((item, i) => {
+      const cx = M + (i % 2) * colW + 6;
+      const cy = y + 9 + Math.floor(i / 2) * 12;
+      // Label
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(...C.muted);
+      doc.text(item.label.toUpperCase(), cx, cy);
+      // Valeur
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(...C.accent);
+      const valLines = doc.splitTextToSize(item.val, colW - 12);
+      doc.text(valLines[0], cx, cy + 5);
+    });
+    y += 38;
+
+    // ── SECTIONS ──────────────────────────────────────────────────────────────
+    const sections = pdf.sections || [];
+
+    for (const section of sections) {
+      checkPage(22);
+
+      // Header section avec coins arrondis
+      doc.setFillColor(...C.sectionBg);
+      doc.setDrawColor(...C.sectionBdr);
+      doc.setLineWidth(0.25);
+      doc.roundedRect(M, y, maxW, 10, 2.5, 2.5, 'FD');
+      // Barre gauche
+      doc.setFillColor(...C.accent);
+      doc.roundedRect(M, y, 3.5, 10, 1.5, 1.5, 'F');
+      // Numéro de section
+      const sIdx = sections.indexOf(section) + 1;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(...C.white);
+      doc.text(String(sIdx), M + 1.75, y + 6.5, { align: 'center' });
+      // Titre section
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(...C.accentDark);
+      doc.text(section.titre.toUpperCase(), M + 7, y + 6.5);
+      y += 13;
+
+      // Points
+      for (const point of (section.points || [])) {
+        const titreLines  = doc.splitTextToSize(point.titre, maxW - 12);
+        const detailLines = point.detail ? doc.splitTextToSize(point.detail, maxW - 14) : [];
+        const ideeLines   = (point.idees || []).map(id => doc.splitTextToSize(id, maxW - 22));
+
+        const titreH   = titreLines.length  * 5.8 + 4;
+        const detailH  = detailLines.length > 0 ? detailLines.length * 4.8 + 4 : 0;
+        const ideeSepH = ideeLines.length   > 0 ? 9 : 0;
+        const ideeH    = ideeLines.reduce((acc, l) => acc + l.length * 4.8 + 2, 0);
+        const totalH   = titreH + detailH + ideeSepH + ideeH + 5;
+
+        checkPage(totalH + 5);
+        const blockY = y;
+
+        // Ombre légère
+        doc.setFillColor(225, 232, 248);
+        doc.roundedRect(M + 0.6, blockY + 0.6, maxW, totalH, 2.5, 2.5, 'F');
+        // Fond blanc cassé
+        doc.setFillColor(...C.blockBg);
+        doc.setDrawColor(...C.blockBdr);
+        doc.setLineWidth(0.2);
+        doc.roundedRect(M, blockY, maxW, totalH, 2.5, 2.5, 'FD');
+        // Barre accent gauche
+        doc.setFillColor(...C.accentLight);
+        doc.roundedRect(M, blockY, 3, totalH, 1.5, 1.5, 'F');
+
+        // Titre point
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(...C.dark);
+        y = blockY + 6;
+        doc.text(titreLines, M + 6, y);
+        y += titreLines.length * 5.8 + 1;
+
+        // Détail
+        if (detailLines.length > 0) {
+          doc.setFont('helvetica', 'italic');
+          doc.setFontSize(8.5);
+          doc.setTextColor(...C.detail);
+          doc.text(detailLines, M + 8, y + 2);
+          y += detailLines.length * 4.8 + 3;
+        }
+
+        // Zone idées
+        if (ideeLines.length > 0) {
+          // Fond vert très léger pour toute la zone idées
+          const ideeZoneH = ideeSepH + ideeH + 2;
+          doc.setFillColor(245, 252, 246);
+          doc.setDrawColor(...C.ideeline);
+          doc.setLineWidth(0.15);
+          doc.roundedRect(M + 4, y, maxW - 4, ideeZoneH, 1.5, 1.5, 'FD');
+
+          y += 3;
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(6.5);
+          doc.setTextColor(...C.ideelabel);
+          doc.text('SUGGESTIONS', M + 7, y);
+          y += 5;
+
+          for (const lines of ideeLines) {
+            // Puce ronde simulée
+            doc.setFillColor(...C.ideetick);
+            doc.circle(M + 9, y - 1.2, 0.9, 'F');
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(...C.ideetext);
+            doc.text(lines, M + 12, y);
+            y += lines.length * 4.8 + 2;
+          }
+        }
+
+        y = blockY + totalH + 4;
+      }
+      y += 5;
+    }
+
+    // ── FOOTER ────────────────────────────────────────────────────────────────
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFillColor(...C.footerbg);
+      doc.rect(0, pageH - 11, pageW, 11, 'F');
+      doc.setDrawColor(...C.sectionBdr);
+      doc.setLineWidth(0.2);
+      doc.line(0, pageH - 11, pageW, pageH - 11);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(...C.muted);
+      doc.text('Genere par Ponk Note' + (pdf.generatedAt ? ' — ' + pdf.generatedAt : ''), M, pageH - 4);
+      // Badge page
+      doc.setFillColor(...C.accent);
+      doc.roundedRect(pageW - M - 14, pageH - 9, 14, 6, 1.5, 1.5, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(...C.white);
+      doc.text(i + ' / ' + totalPages, pageW - M - 7, pageH - 4.8, { align: 'center' });
+    }
+
+    const filename = pdf.titre.replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '_') + '.pdf';
+    doc.save(filename);
+  }
+
   async function showCommandeModal(text) {
     const modal = document.getElementById('commandeModal');
     document.getElementById('commandeModalTitle').textContent = text.substring(0, 40) + (text.length > 40 ? '…' : '');
@@ -1931,6 +2238,7 @@
         ).join('');
         document.getElementById('commandeLoading').style.display = 'none';
         document.getElementById('commandeBrief').style.display = 'block';
+        // Déclencher rebond automatiquement
         setTimeout(() => declencherRebond(
           'Commande : ' + text,
           'produit: ' + (data.produit || text),
@@ -1957,6 +2265,7 @@
       `;
     }
     document.getElementById('waModal').classList.remove('hidden');
+    // Rebond automatique
     setTimeout(() => declencherRebond(
       'Message WhatsApp : ' + message,
       'message envoye par whatsapp',
@@ -1986,6 +2295,7 @@
       `;
     }
     document.getElementById('callModal').classList.remove('hidden');
+    // Rebond automatique
     setTimeout(() => declencherRebond(
       'Appel : ' + (name || phone),
       'appel telephone vers ' + (name || phone),
@@ -2001,6 +2311,8 @@
       setTimeout(() => btn.textContent = '📋 Copier', 2000);
     });
   }
+
+  // ── Maps / Itinéraire ──
   let mapsState = { mode: 'car', departLat: null, departLon: null, arriveeLat: null, arriveeLon: null };
 
   function showMapsModal(text) {
@@ -2054,15 +2366,22 @@
     document.getElementById('mapsResult').style.display = 'none';
 
     try {
+      // Géocoder départ si pas de coords GPS
       if (!mapsState.departLat && departVal && departVal !== 'Ma position actuelle') {
         const geo = await geocodeAddress(departVal);
         if (geo) { mapsState.departLat = geo.lat; mapsState.departLon = geo.lon; }
       }
+
+      // Géocoder arrivée
       const geoArr = await geocodeAddress(arriveeVal);
       if (!geoArr) { alert('Destination introuvable, vérifiez l\'adresse'); return; }
       mapsState.arriveeLat = geoArr.lat;
       mapsState.arriveeLon = geoArr.lon;
+
+      // Appels parallèles
       const promises = [];
+
+      // Durée trajet
       if (mapsState.departLat) {
         promises.push(fetch('/api/itineraire', {
           method: 'POST', headers: {'Content-Type':'application/json'},
@@ -2072,10 +2391,14 @@
       } else {
         promises.push(Promise.resolve(null));
       }
+
+      // Météo destination
       promises.push(fetch('/api/itineraire', {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ action:'weather', lat: mapsState.arriveeLat, lon: mapsState.arriveeLon })
       }).then(r => r.json()).catch(() => null));
+
+      // POI destination
       promises.push(fetch('/api/itineraire', {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ action:'poi', lat: mapsState.arriveeLat, lon: mapsState.arriveeLon })
@@ -2085,11 +2408,14 @@
 
       document.getElementById('mapsLoading').style.display = 'none';
       document.getElementById('mapsResult').style.display = 'block';
+
+      // ── Trajet ──
       const modeIcons = { car:'🚗', transit:'🚌', walk:'🚶', bike:'🚲' };
       const modeLabels = { car:'En voiture', transit:'En transport', walk:'À pied', bike:'À vélo' };
       document.getElementById('mapsModeIcon').textContent = modeIcons[mapsState.mode] || '🚗';
 
       if (mapsState.mode === 'transit') {
+        // Transit : durée non fiable sans API temps réel
         document.getElementById('mapsDuree').textContent = 'Transport en commun';
         document.getElementById('mapsDistance').textContent = duration ? duration.distance_km + ' km (à vol d\'oiseau)' : '—';
         document.getElementById('mapsHeureDep').textContent = '—';
@@ -2101,6 +2427,8 @@
         const dureeStr = mins >= 60 ? `${Math.floor(mins/60)}h${String(mins%60).padStart(2,'0')}` : `${mins} min`;
         document.getElementById('mapsDuree').textContent = dureeStr + ' · ' + modeLabels[mapsState.mode];
         document.getElementById('mapsDistance').textContent = duration.distance_km + ' km (estimation)';
+
+        // Heure de départ pour arriver à l'heure actuelle + 10min de marge
         const now = new Date();
         now.setMinutes(now.getMinutes() + mins + 10);
         const hh = String(now.getHours()).padStart(2,'0');
@@ -2111,6 +2439,8 @@
         document.getElementById('mapsDistance').textContent = 'Distance non calculée';
         document.getElementById('mapsHeureDep').textContent = '--';
       }
+
+      // ── Météo ──
       if (weather && weather.temp !== undefined) {
         document.getElementById('mapsMeteoIcon').textContent = weather.icon;
         document.getElementById('mapsMeteoTemp').textContent = weather.temp + '°C · ' + weather.city;
@@ -2118,6 +2448,8 @@
         document.getElementById('mapsMeteoWind').textContent = '💨 ' + weather.wind + ' km/h  💧 ' + weather.humidity + '%';
         document.getElementById('mapsMeteo').style.display = 'block';
       }
+
+      // ── POI ──
       if (poi && poi.pois && poi.pois.length > 0) {
         const city = (weather && weather.city) ? weather.city : '';
         document.getElementById('mapsPOIList').innerHTML = poi.pois.map(p => {
@@ -2136,6 +2468,8 @@
         }).join('');
         document.getElementById('mapsPOIWrap').style.display = 'block';
       }
+
+      // ── Boutons app ──
       const dep = mapsState.departLat ? `${mapsState.departLat},${mapsState.departLon}` : encodeURIComponent(departVal || '');
       const arr = `${mapsState.arriveeLat},${mapsState.arriveeLon}`;
       const arrEnc = encodeURIComponent(arriveeVal);
@@ -2151,9 +2485,13 @@
         waze:   `<a href="${wazeUrl}"   target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:#33ccff;color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">🚗 Ouvrir dans Waze</a>`,
         apple:  `<a href="${appleUrl}"  target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:#555;color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">🍎 Ouvrir dans Apple Maps</a>`,
       };
+
+      // Afficher l'app préférée en premier + les autres
       const allApps = ['google','waze','apple'];
       const ordered = [prefMaps, ...allApps.filter(a => a !== prefMaps)];
       document.getElementById('mapsAppBtns').innerHTML = ordered.map(a => appLinks[a]).join('');
+
+      // Rebond automatique
       setTimeout(() => declencherRebond(
         'Itineraire : ' + (arriveeVal || ''),
         'trajet vers ' + (arriveeVal || '') + ', mode: ' + mapsState.mode,
@@ -2167,6 +2505,111 @@
     }
   }
 
+  // ── Rebond ──
+  let rebondContexte = {};
+  let rebondEnCours = false;
+  let rebondDepuisRebond = false;
+
+  function getVilleUtilisateur() {
+    return localStorage.getItem('ponk_ville') || '';
+  }
+
+  async function declencherRebond(actionFaite, contexte, texteResume) {
+    // Éviter les appels multiples simultanés
+    if (rebondEnCours) return;
+    // Éviter un rebond déclenché depuis un rebond
+    if (rebondDepuisRebond) { rebondDepuisRebond = false; return; }
+    rebondEnCours = true;
+
+    // Afficher la modal avec le résumé
+    rebondContexte = { actionFaite, contexte };
+    document.getElementById('rebondResumeText').textContent = texteResume;
+    document.getElementById('rebondSuggestions').style.display = 'none';
+    document.getElementById('rebondBtns').innerHTML = '';
+    document.getElementById('rebondModal').classList.remove('hidden');
+
+    // Appeler Gemini pour les suggestions
+    try {
+      const ville = getVilleUtilisateur();
+      const contexteEnrichi = contexte + (ville ? ', ville utilisateur: ' + ville : '');
+      const res = await fetch('/api/shopping', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'rebond', actionFaite, contexte: contexteEnrichi, text: actionFaite })
+      });
+      const data = await res.json();
+      const rebonds = data.rebonds || [];
+      console.log('[rebond] reçu:', rebonds.length, 'suggestions', rebonds);
+
+      if (rebonds.length === 0) return;
+
+      // Forcer la modal ouverte avec les suggestions
+      const modal = document.getElementById('rebondModal');
+      modal.classList.remove('hidden');
+      console.log('[rebond] modal forcée visible');
+
+      // Afficher les suggestions
+      document.getElementById('rebondSuggestions').style.display = 'block';
+      document.getElementById('rebondBtns').innerHTML = rebonds.map((r, i) => `
+        <button data-idx="${i}"
+          style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:12px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.6);font-family:inherit;cursor:pointer;text-align:left;width:100%;-webkit-tap-highlight-color:transparent">
+          <span style="font-size:24px">${r.icon}</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${r.label}</div>
+            <div style="font-size:11px;color:var(--muted)">${r.raison}</div>
+          </div>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#4a7fd4" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      `).join('');
+
+      // Stocker les rebonds et attacher les listeners
+      window._rebondsList = rebonds;
+      document.querySelectorAll('#rebondBtns button').forEach(btn => {
+        btn.addEventListener('mouseover', () => btn.style.background = 'rgba(255,255,255,0.95)');
+        btn.addEventListener('mouseout',  () => btn.style.background = 'rgba(255,255,255,0.6)');
+        btn.addEventListener('click', () => {
+          const r = window._rebondsList[parseInt(btn.dataset.idx)];
+          lancerRebond(r.type, r.texte);
+        });
+      });
+
+    } catch(e) {
+      console.log('[rebond] erreur:', e.message);
+    } finally {
+      rebondEnCours = false;
+    }
+  }
+
+  function lancerRebond(type, texte) {
+    document.getElementById('rebondModal').classList.add('hidden');
+    rebondEnCours = false;
+    rebondDepuisRebond = true; // La prochaine action ne déclenchera pas de rebond
+    // Lancer la bonne modal selon le type
+    if (type === 'CALENDRIER')  showCalendrierModal(texte);
+    else if (type === 'RESERVATION') showReservationModal(texte);
+    else if (type === 'MAPS')   showMapsModal(texte);
+    else if (type === 'COMMANDE') showCommandeModal(texte);
+    else if (type === 'ANALYSE') showAnalyseModal(texte);
+    else if (type === 'WHATSAPP') showWhatsAppModal('', texte);
+    else if (type === 'RECHERCHE') window.open('https://www.google.com/search?q=' + encodeURIComponent(texte), '_blank');
+    else if (type === 'EMAIL') {
+      const sujet = encodeURIComponent(texte);
+      const prefMail = localStorage.getItem('ponk_pref_mail') || 'gmail';
+      const urls = {
+        gmail: `https://mail.google.com/mail/?view=cm&fs=1&su=${sujet}`,
+        outlook: `https://outlook.live.com/mail/0/deeplink/compose?subject=${sujet}`,
+        yahoo: `https://compose.mail.yahoo.com/?subject=${sujet}`
+      };
+      window.open(urls[prefMail] || urls.gmail, '_blank');
+    }
+    else if (type === 'APPEL') showCallModal('', texte);
+  }
+
+  function fermerRebond() {
+    document.getElementById('rebondModal').classList.add('hidden');
+    rebondEnCours = false;
+  }
+
+  // ── Réservation ──
   async function showReservationModal(text) {
     document.getElementById('reservationModalTitle').textContent = text.substring(0, 40) + (text.length > 40 ? '…' : '');
     document.getElementById('reservationLoading').style.display = 'block';
@@ -2182,8 +2625,12 @@
 
       document.getElementById('reservationLoading').style.display = 'none';
       document.getElementById('reservationResult').style.display = 'block';
+
+      // Titre et résumé
       document.getElementById('reservationModalTitle').textContent = data.titre || text.substring(0, 40);
       document.getElementById('reservationResume').textContent = data.resume || '';
+
+      // Tags infos
       const infos = data.infos || {};
       const tags = [];
       if (infos.origine)      tags.push('🚩 ' + infos.origine);
@@ -2196,6 +2643,8 @@
       document.getElementById('reservationTags').innerHTML = tags.map(t =>
         `<span style="font-size:11px;background:rgba(74,127,212,0.1);color:var(--accent);padding:3px 10px;border-radius:100px;font-weight:500">${t}</span>`
       ).join('');
+
+      // Plateformes
       document.getElementById('reservationPlateformes').innerHTML = (data.plateformes || []).map(p => `
         <a href="${p.url}" target="_blank" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);text-decoration:none;-webkit-tap-highlight-color:transparent"
           onmouseover="this.style.background='rgba(255,255,255,0.95)'" onmouseout="this.style.background='rgba(255,255,255,0.6)'">
@@ -2209,6 +2658,8 @@
           </div>
         </a>
       `).join('');
+
+      // Déclencher rebond automatiquement
       setTimeout(() => declencherRebond(
         'Réservation : ' + (data.titre || text),
         'type: ' + (data.type || '') + ', destination: ' + (data.infos?.destination || '') + ', date: ' + (data.infos?.date_aller || ''),
@@ -2218,6 +2669,8 @@
       document.getElementById('reservationLoading').innerHTML = '<div style="font-size:13px;color:var(--muted)">Service indisponible</div>';
     }
   }
+
+  // ── Analyse ──
   let analyseData = {};
 
   async function showAnalyseModal(text) {
@@ -2237,6 +2690,8 @@
 
       document.getElementById('analyseLoading').style.display = 'none';
       document.getElementById('analyseResult').style.display = 'block';
+
+      // Rendu du contenu
       const sections = data.sections || [];
       document.getElementById('analyseContent').innerHTML = sections.map(s => {
         const v = s.visuel;
@@ -2300,6 +2755,8 @@
           ${visuelHtml}
         </div>`;
       }).join('');
+
+      // Boutons actions
       const prefMail = localStorage.getItem('ponk_pref_mail') || 'gmail';
       const sujet = encodeURIComponent('Analyse : ' + analyseData.titre);
       const corps = encodeURIComponent(sections.map(s =>
@@ -2316,6 +2773,8 @@
         <a href="${emailUrls[prefMail]}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:var(--accent);color:#fff;text-decoration:none;font-size:14px;font-weight:600">📧 Envoyer par email</a>
         <button onclick="downloadAnalysePDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.8);background:rgba(255,255,255,0.6);color:var(--text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;width:100%">📄 Exporter en PDF</button>
       `;
+
+      // Rebond automatique
       setTimeout(() => declencherRebond(
         'Analyse : ' + (data.titre || text),
         'analyse sur le sujet: ' + (data.titre || text),
@@ -2327,6 +2786,303 @@
     }
   }
 
+  async function downloadAnalysePDF() {
+    const data = analyseData;
+    if (!data.sections) return;
+
+    if (!window.jspdf) {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const M = 16;
+    const maxW = pageW - M * 2;
+    let y = M;
+
+    const C = {
+      accent:     [74, 127, 212],
+      accentDark: [50, 95, 170],
+      accentLight:[210, 225, 248],
+      dark:       [25, 30, 50],
+      muted:      [110, 118, 140],
+      light:      [243, 246, 253],
+      white:      [255, 255, 255],
+      sectionBg:  [232, 240, 255],
+      sectionBdr: [190, 210, 245],
+      blockBg:    [251, 253, 255],
+      blockBdr:   [215, 228, 248],
+      detail:     [85, 95, 118],
+      footerbg:   [244, 247, 253],
+    };
+
+    function checkPage(needed = 10) {
+      if (y + needed > pageH - 14) { doc.addPage(); y = M; }
+    }
+
+    // Bandeau titre
+    doc.setFillColor(...C.accentDark);
+    doc.rect(0, 0, pageW, 32, 'F');
+    doc.setFillColor(...C.accent);
+    doc.rect(0, 8, pageW, 24, 'F');
+    doc.setFillColor(...C.accentLight);
+    doc.rect(0, 30, pageW, 1.2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(...C.white);
+    const titleLines = doc.splitTextToSize('Analyse : ' + data.titre, pageW - 40);
+    doc.text(titleLines, M, titleLines.length > 1 ? 11 : 14);
+    doc.setFillColor(...C.accentDark);
+    doc.roundedRect(pageW - M - 22, 4, 22, 7, 1.5, 1.5, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(...C.accentLight);
+    doc.text('PONK NOTE', pageW - M - 11, 9, { align: 'center' });
+    y = 40;
+
+    // Date génération
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...C.muted);
+    doc.text('Généré le ' + new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }), M, y);
+    y += 10;
+
+    // Sections
+    for (const section of (data.sections || [])) {
+      checkPage(22);
+
+      // Header section
+      doc.setFillColor(...C.sectionBg);
+      doc.setDrawColor(...C.sectionBdr);
+      doc.setLineWidth(0.25);
+      doc.roundedRect(M, y, maxW, 10, 2.5, 2.5, 'FD');
+      doc.setFillColor(...C.accent);
+      doc.roundedRect(M, y, 3.5, 10, 1.5, 1.5, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(...C.accentDark);
+      doc.text(section.titre.toUpperCase(), M + 7, y + 6.5);
+      y += 13;
+
+      // Points
+      for (const point of (section.points || [])) {
+        const titreLines  = doc.splitTextToSize(point.titre, maxW - 12);
+        const detailLines = doc.splitTextToSize(point.detail, maxW - 14);
+        const totalH = titreLines.length * 5.8 + detailLines.length * 4.8 + 12;
+
+        checkPage(totalH + 5);
+        const blockY = y;
+
+        doc.setFillColor(225, 232, 248);
+        doc.roundedRect(M + 0.6, blockY + 0.6, maxW, totalH, 2.5, 2.5, 'F');
+        doc.setFillColor(...C.blockBg);
+        doc.setDrawColor(...C.blockBdr);
+        doc.setLineWidth(0.2);
+        doc.roundedRect(M, blockY, maxW, totalH, 2.5, 2.5, 'FD');
+        doc.setFillColor(...C.accentLight);
+        doc.roundedRect(M, blockY, 3, totalH, 1.5, 1.5, 'F');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(...C.dark);
+        y = blockY + 6;
+        doc.text(titreLines, M + 6, y);
+        y += titreLines.length * 5.8 + 1;
+
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(8.5);
+        doc.setTextColor(...C.detail);
+        doc.text(detailLines, M + 8, y + 2);
+        y = blockY + totalH + 4;
+      }
+
+      // Visuel si présent (tableau, barres, camembert, courbe)
+      const v = section.visuel;
+      if (v && v.type) {
+        checkPage(30);
+
+        // Titre du visuel
+        if (v.titre) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8);
+          doc.setTextColor(...C.accentDark);
+          doc.text(v.titre, M, y);
+          y += 6;
+        }
+
+        if (v.type === 'tableau' && v.colonnes && v.lignes) {
+          const cols = v.colonnes;
+          const rows = v.lignes;
+          const colW = maxW / cols.length;
+          const cellH = 7;
+          // Header
+          cols.forEach((col, ci) => {
+            doc.setFillColor(232, 240, 255);
+            doc.setDrawColor(190, 210, 245);
+            doc.setLineWidth(0.2);
+            doc.rect(M + ci * colW, y, colW, cellH, 'FD');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(50, 95, 170);
+            const t = doc.splitTextToSize(String(col), colW - 3);
+            doc.text(t[0], M + ci * colW + 2, y + 4.5);
+          });
+          y += cellH;
+          // Lignes
+          rows.forEach((row, ri) => {
+            checkPage(cellH + 2);
+            row.forEach((cell, ci) => {
+              // Forcer couleur fond explicitement
+              if (ri % 2 === 0) {
+                doc.setFillColor(251, 253, 255);
+              } else {
+                doc.setFillColor(244, 247, 255);
+              }
+              doc.setDrawColor(215, 228, 248);
+              doc.setLineWidth(0.2);
+              doc.rect(M + ci * colW, y, colW, cellH, 'FD');
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(7.5);
+              doc.setTextColor(25, 30, 50);
+              const t = doc.splitTextToSize(String(cell), colW - 3);
+              doc.text(t[0], M + ci * colW + 2, y + 4.5);
+            });
+            y += cellH;
+          });
+          y += 6;
+
+        } else if (v.type === 'barres' && v.labels && v.valeurs) {
+          const max = Math.max(...v.valeurs);
+          const barH = 7;
+          const labelW = 35;
+          const valueW = 25;
+          const barW = maxW - labelW - valueW - 4;
+          v.labels.forEach((label, i) => {
+            checkPage(barH + 3);
+            const ratio = max > 0 ? v.valeurs[i] / max : 0;
+            // Label
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7.5);
+            doc.setTextColor(...C.muted);
+            doc.text(doc.splitTextToSize(label, labelW)[0], M, y + 5);
+            // Fond barre
+            doc.setFillColor(232, 240, 255);
+            doc.roundedRect(M + labelW + 2, y + 1, barW, barH - 2, 1, 1, 'F');
+            // Barre colorée
+            doc.setFillColor(...C.accent);
+            doc.roundedRect(M + labelW + 2, y + 1, Math.max(2, barW * ratio), barH - 2, 1, 1, 'F');
+            // Valeur
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(...C.accent);
+            doc.text(String(v.valeurs[i]) + (v.unite ? ' ' + v.unite : ''), M + labelW + barW + 5, y + 5);
+            y += barH + 2;
+          });
+          y += 4;
+
+        } else if (v.type === 'camembert' && v.labels && v.valeurs) {
+          const colors = [[74,127,212],[61,184,122],[224,122,48],[138,85,212],[224,85,85],[48,168,212]];
+          const total = v.valeurs.reduce((a,b) => a+b, 0);
+          // Légende en grille
+          const itemW = maxW / 2;
+          v.labels.forEach((label, i) => {
+            const col = i % 2;
+            const row = Math.floor(i / 2);
+            if (col === 0) checkPage(10);
+            const px = M + col * itemW;
+            const py = y + row * 9;
+            doc.setFillColor(...colors[i % colors.length]);
+            doc.circle(px + 3, py + 3, 2.5, 'F');
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7.5);
+            doc.setTextColor(...C.dark);
+            doc.text(label, px + 8, py + 4.5);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(...colors[i % colors.length]);
+            doc.text(Math.round((v.valeurs[i]/total)*100) + '%', px + itemW - 12, py + 4.5);
+          });
+          y += Math.ceil(v.labels.length / 2) * 9 + 4;
+
+        } else if (v.type === 'courbe' && v.labels && v.valeurs) {
+          const chartW = maxW;
+          const chartH = 30;
+          const max = Math.max(...v.valeurs);
+          const min = Math.min(...v.valeurs);
+          const range = max - min || 1;
+          const n = v.valeurs.length;
+          checkPage(chartH + 20);
+
+          // Fond
+          doc.setFillColor(243, 246, 253);
+          doc.setDrawColor(...C.blockBdr);
+          doc.setLineWidth(0.2);
+          doc.rect(M, y, chartW, chartH, 'FD');
+
+          // Points et ligne
+          const pts = v.valeurs.map((val, i) => ({
+            x: M + (i / (n-1)) * chartW,
+            y: y + chartH - ((val - min) / range) * (chartH - 4) - 2
+          }));
+          doc.setDrawColor(...C.accent);
+          doc.setLineWidth(1);
+          for (let i = 0; i < pts.length - 1; i++) {
+            doc.line(pts[i].x, pts[i].y, pts[i+1].x, pts[i+1].y);
+          }
+          // Points
+          pts.forEach(pt => {
+            doc.setFillColor(...C.accent);
+            doc.circle(pt.x, pt.y, 1.2, 'F');
+          });
+          y += chartH + 3;
+
+          // Labels axe X
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7);
+          doc.setTextColor(...C.muted);
+          v.labels.forEach((label, i) => {
+            const px = M + (i / (n-1)) * chartW;
+            doc.text(label, px, y + 4, { align: i === 0 ? 'left' : i === n-1 ? 'right' : 'center' });
+          });
+          y += 8;
+        }
+      }
+
+      y += 5;
+    }
+
+    // Footer
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFillColor(...C.footerbg);
+      doc.rect(0, pageH - 11, pageW, 11, 'F');
+      doc.setDrawColor(...C.sectionBdr);
+      doc.setLineWidth(0.2);
+      doc.line(0, pageH - 11, pageW, pageH - 11);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(...C.muted);
+      doc.text('Ponk Note', M, pageH - 4);
+      doc.setFillColor(...C.accent);
+      doc.roundedRect(pageW - M - 14, pageH - 9, 14, 6, 1.5, 1.5, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(...C.white);
+      doc.text(i + ' / ' + totalPages, pageW - M - 7, pageH - 4.8, { align: 'center' });
+    }
+
+    const filename = data.titre.replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '_') + '.pdf';
+    doc.save(filename);
+  }
+
+  // ── Rappel ──
   function showRappelModal(text) {
     document.getElementById('rappelText').textContent = text;
     document.getElementById('rappelCopyBtn').textContent = '📋 Copier';
@@ -2343,6 +3099,7 @@
         document.getElementById('rappelModal').classList.add('hidden');
       }, 1500);
     }).catch(() => {
+      // Fallback
       const ta = document.createElement('textarea');
       ta.value = text;
       ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0.01;';
@@ -2358,6 +3115,8 @@
       }, 1500);
     });
   }
+
+  // ── Profile ──
   const COLORS = ['#4a7fd4','#e05555','#3db87a','#e07a30','#8a55d4','#d45580','#30a8d4','#50c87a'];
   function getColor(name) {
     let hash=0; for(let i=0;i<name.length;i++) hash=name.charCodeAt(i)+((hash<<5)-hash);
@@ -2449,7 +3208,5 @@
 
   initProfile();
 </script>
-<script src="/public/pdf.js"></script>
-<script src="/public/rebond.js"></script>
 </body>
 </html>
