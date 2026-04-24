@@ -72,6 +72,7 @@ Réponds UNIQUEMENT avec un JSON valide, sans markdown, sans backticks.
   "modes": ["MODE1", "MODE2"],
 
   "summary": {
+    "resume": "2 à 4 phrases rédigées qui racontent l'essentiel de la réunion/note comme un compte-rendu humain. Mentionne les participants, les sujets clés, les décisions et les actions.",
     "contexte": "Une phrase : qui, sujet, durée si connue. Ex: Réunion budget Q3 avec Jean et Marie, 45 minutes.",
     "points_discutes": ["Point 1", "Point 2"],
     "decisions": ["Décision 1", "Décision 2"],
@@ -133,6 +134,7 @@ Réponds UNIQUEMENT avec un JSON valide, sans markdown, sans backticks.
 }
 
 Règles pour summary :
+- "resume" : toujours rempli, rédigé en français naturel, 2 à 4 phrases maximum. Commence directement sans "La réunion a porté sur" — va droit au but.
 - "contexte" : toujours rempli, même pour un mémo solo ("Note personnelle de [prénom si connu], durée X")
 - "points_discutes" : les sujets abordés, 1 à 6 éléments maximum
 - "decisions" : uniquement ce qui a été acté/décidé. Si rien → tableau vide []
