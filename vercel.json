@@ -1,14 +1,13 @@
 {
   "version": 2,
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1" }
-  ],
-  "rewrites": [
-    { "source": "/public/(.*)", "destination": "/public/$1" },
-    { "source": "/results.html", "destination": "/results.html" },
-    { "source": "/library.html", "destination": "/library.html" },
-    { "source": "/settings.html", "destination": "/settings.html" },
-    { "source": "/test.html", "destination": "/test.html" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/public/(.*)", "dest": "/public/$1" },
+    { "src": "/results.html", "dest": "/results.html" },
+    { "src": "/library.html", "dest": "/library.html" },
+    { "src": "/settings.html", "dest": "/settings.html" },
+    { "src": "/test.html", "dest": "/test.html" },
+    { "src": "/index.html", "dest": "/index.html" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
