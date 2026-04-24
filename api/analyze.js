@@ -12,16 +12,10 @@ module.exports = async function handler(req, res) {
     });
 
     const body = JSON.parse(Buffer.concat(chunks).toString());
-    const { fileName, title = '', duration = '', datetime = '', bubbles = [] } = body;
-
-    if (!fileName) return res.status(400).json({ error: 'fileName manquant' });
-
-    // Construire l'URL publique Supabase
-    const audioUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/audio/${fileName}`;
-    console.log('[analyze] audio URL:', audioUrl);
+    const { fileName, title = '', duration = '', datetime = '', bubbles = [], transcript_only = false, transcript: transcriptPassed = '' } = body;
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const timeoutMs = 120000; // 2 min max pour les longues réunions
+    const timeoutMs = 120000;
 
     async function tryGenerate(content_arg) {
       const _models = ['gemini-3.1-flash-lite-preview', 'gemini-2.5-flash', 'gemini-2.5-flash-lite-preview-06-17'];
@@ -36,6 +30,21 @@ module.exports = async function handler(req, res) {
       throw new Error('All models failed');
     }
 
+    // Mode transcript_only : saute la transcription, détecte juste les actions
+    if (transcript_only && transcriptPassed) {
+      const actionsPrompt = 'Tu analyses une transcription et extrais les ACTIONS IA.\nTypes : EMAIL, WHATSAPP, CALENDRIER, MAPS, RECHERCHE, COMMANDE\n\nTranscription:\n"""\n' + transcriptPassed + '\n"""\n\nRègles:\n- Intention claire seulement\n- Pas de questions\n- Max 5 actions\n- Si rien: {"actions_ia":[]}\n\nRéponds UNIQUEMENT JSON valide:\n{"actions_ia":[{"type":"EMAIL","icone":"📧","titre":"Mail à X","description":"...","sujet":"...","corps":"..."}]}';
+
+      const result = await tryGenerate(actionsPrompt);
+      const raw = result.response.text().replace(/```json|```/g, '').trim();
+      try { return res.status(200).json(JSON.parse(raw)); }
+      catch { return res.status(200).json({ actions_ia: [] }); }
+    }
+
+    if (!fileName) return res.status(400).json({ error: 'fileName manquant' });
+
+    const audioUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/audio/${fileName}`;
+    console.log('[analyze] audio URL:', audioUrl);
+
     // ── APPEL 1 : Transcription via URL Supabase ──
     let transcriptResult;
     try {
@@ -45,6 +54,7 @@ module.exports = async function handler(req, res) {
       ]);
     } catch(e) { throw e; }
     const transcript = transcriptResult.response.text().trim();
+
 
     // ── APPEL 2 : Analyse structurée ──
     const analysisPrompt = `Tu es un assistant intelligent qui analyse des retranscriptions audio et en extrait les informations utiles.
