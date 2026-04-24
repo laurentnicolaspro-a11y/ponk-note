@@ -18,15 +18,14 @@
       --accent: #4a7fd4;
       --danger: #e05555;
       --green: #3db87a;
+      --surface: rgba(255,255,255,0.55);
     }
     html, body { min-height:100%; font-family:'Inter',-apple-system,sans-serif; color:var(--text); }
     body { background:var(--grad); padding-bottom:40px; }
+    body::before { content:''; position:fixed; inset:0; z-index:-1; background:var(--grad); }
 
-    /* Fixed bg */
-    body::before {
-      content:''; position:fixed; inset:0; z-index:-1;
-      background:var(--grad);
-    }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes spin { to { transform:rotate(360deg); } }
 
     /* Header */
     header {
@@ -46,9 +45,8 @@
     .header-right { display:flex; align-items:center; gap:10px; }
     .back-btn {
       background:var(--glass); border:1.5px solid var(--glass-border);
-      backdrop-filter:blur(12px);
-      color:var(--accent); padding:6px 14px; border-radius:100px;
-      font-family:inherit; font-size:13px; font-weight:500;
+      backdrop-filter:blur(12px); color:var(--accent); padding:6px 14px;
+      border-radius:100px; font-family:inherit; font-size:13px; font-weight:500;
       cursor:pointer; -webkit-tap-highlight-color:transparent;
     }
     .back-btn:active { background:rgba(255,255,255,0.7); }
@@ -60,16 +58,7 @@
     }
 
     .content { max-width:430px; margin:0 auto; padding:20px 20px 0; display:flex; flex-direction:column; gap:10px; }
-
     .meta { font-size:13px; color:var(--muted); padding:0 4px; }
-
-    .modes { display:flex; flex-wrap:wrap; gap:6px; padding:0 4px; }
-    .badge {
-      display:inline-flex; align-items:center; padding:5px 12px;
-      border-radius:100px; background:var(--glass); border:1.5px solid var(--glass-border);
-      backdrop-filter:blur(12px);
-      font-size:12px; font-weight:500; color:var(--text);
-    }
 
     /* Cards */
     .card {
@@ -113,12 +102,6 @@
     .cb { width:20px; height:20px; border-radius:50%; flex-shrink:0; border:1.5px solid rgba(255,255,255,0.8); background:rgba(255,255,255,0.5); display:flex; align-items:center; justify-content:center; font-size:11px; transition:all 0.15s; }
     ul.checks li.done .cb { background:var(--green); border-color:var(--green); color:#fff; }
 
-    .loc { display:flex; align-items:center; gap:12px; padding:12px 14px; background:rgba(255,255,255,0.4); border:1px solid rgba(255,255,255,0.6); border-radius:10px; margin-top:6px; text-decoration:none; color:var(--text); }
-    .loc:active { opacity:0.7; }
-    .loc-info { flex:1; }
-    .loc-name { font-size:14px; font-weight:500; }
-    .loc-addr { font-size:12px; color:var(--muted); margin-top:2px; }
-
     table { width:100%; margin-top:8px; border-collapse:collapse; }
     td { padding:9px 0; font-size:14px; border-bottom:1px solid rgba(255,255,255,0.4); }
     td:last-child { text-align:right; }
@@ -126,22 +109,7 @@
 
     .transcript-text { font-size:13px; line-height:1.85; color:var(--muted); padding-top:14px; white-space:pre-wrap; font-family:monospace; }
 
-    .play-simple {
-      width:44px; height:44px; border-radius:50%;
-      background:var(--accent); border:none; cursor:pointer;
-      display:flex; align-items:center; justify-content:center;
-      margin-top:14px; -webkit-tap-highlight-color:transparent;
-      box-shadow:0 4px 16px rgba(74,127,212,0.35);
-      transition:transform 0.1s;
-    }
-    .play-simple:active { transform:scale(0.93); }
-    .play-simple svg { fill:white; }
-
-    .action-btns {
-      padding:16px 0 0;
-      display:flex; flex-direction:column; gap:8px;
-    }
-
+    .action-btns { padding:16px 0 0; display:flex; flex-direction:column; gap:8px; }
     .btn-action {
       width:100%; padding:15px; border-radius:14px; border:none;
       font-family:inherit; font-size:16px; font-weight:600;
@@ -154,12 +122,8 @@
     .btn-pdf { background:var(--glass); color:var(--text); border:1.5px solid var(--glass-border); }
 
     /* Audio player */
-    .audio-player {
-      padding-top:14px; display:flex; flex-direction:column; gap:10px;
-    }
-    .player-controls {
-      display:flex; align-items:center; gap:12px;
-    }
+    .audio-player { padding-top:14px; display:flex; flex-direction:column; gap:10px; }
+    .player-controls { display:flex; align-items:center; gap:12px; }
     .play-btn {
       width:40px; height:40px; border-radius:50%; flex-shrink:0;
       background:var(--accent); border:none; cursor:pointer;
@@ -169,24 +133,13 @@
     }
     .play-btn:active { transform:scale(0.93); }
     .play-btn svg { fill:white; }
-    .progress-wrap {
-      flex:1; display:flex; flex-direction:column; gap:4px;
-    }
+    .progress-wrap { flex:1; display:flex; flex-direction:column; gap:4px; }
     .progress-bar {
       width:100%; height:4px; border-radius:2px;
-      background:rgba(255,255,255,0.4); cursor:pointer;
-      position:relative; overflow:hidden;
+      background:rgba(255,255,255,0.4); cursor:pointer; position:relative; overflow:hidden;
     }
-    .progress-fill {
-      height:100%; border-radius:2px;
-      background:var(--accent); width:0%;
-      transition:width 0.1s linear; pointer-events:none;
-    }
-    .progress-times {
-      display:flex; justify-content:space-between;
-      font-size:11px; color:var(--muted);
-      font-variant-numeric:tabular-nums;
-    }
+    .progress-fill { height:100%; border-radius:2px; background:var(--accent); width:0%; transition:width 0.1s linear; pointer-events:none; }
+    .progress-times { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums; }
 
     /* Actions IA */
     .actions-ia-wrap { display:flex; flex-direction:column; gap:8px; }
@@ -195,8 +148,7 @@
       background:var(--glass); border:1.5px solid var(--glass-border);
       backdrop-filter:blur(20px); border-radius:16px;
       padding:14px 16px; cursor:pointer;
-      -webkit-tap-highlight-color:transparent;
-      transition:background 0.15s;
+      -webkit-tap-highlight-color:transparent; transition:background 0.15s;
       text-decoration:none; color:var(--text);
     }
     .action-ia-card:active { background:rgba(255,255,255,0.7); }
@@ -221,23 +173,12 @@
       margin-top:12px; padding:14px;
       background:rgba(255,255,255,0.4); border-radius:12px;
       border:1px solid rgba(255,255,255,0.6);
-      font-size:13px; line-height:1.7; color:var(--text);
-      display:none;
+      font-size:13px; line-height:1.7; color:var(--text); display:none;
     }
     .analysis-result.visible { display:block; animation:fadeUp 0.3s ease; }
-    .analysis-result strong { color:var(--text); font-weight:600; }
-    .analysis-loading {
-      display:none; align-items:center; gap:8px;
-      margin-top:10px; font-size:12px; color:var(--muted);
-    }
+    .analysis-loading { display:none; align-items:center; gap:8px; margin-top:10px; font-size:12px; color:var(--muted); }
     .analysis-loading.visible { display:flex; }
-    .analysis-spinner {
-      width:14px; height:14px; border-radius:50%;
-      border:2px solid rgba(74,127,212,0.2);
-      border-top-color:var(--accent);
-      animation:spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform:rotate(360deg); } }
+    .analysis-spinner { width:14px; height:14px; border-radius:50%; border:2px solid rgba(74,127,212,0.2); border-top-color:var(--accent); animation:spin 0.8s linear infinite; }
 
     .copy-btn {
       background:rgba(255,255,255,0.4); border:1px solid rgba(255,255,255,0.6);
@@ -245,6 +186,84 @@
       font-size:12px; font-family:inherit; cursor:pointer;
     }
     .copy-btn:active { background:rgba(255,255,255,0.7); }
+
+    /* ── Synthèse structurée ── */
+    .summary-contexte {
+      font-size:13px; color:var(--muted); line-height:1.5;
+      padding:10px 12px; background:rgba(255,255,255,0.35);
+      border-radius:10px; margin-top:14px;
+    }
+
+    .summary-section { padding-top:14px; }
+    .summary-section + .summary-section { margin-top:8px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.4); }
+    .summary-section-title {
+      font-size:10px; font-weight:700; text-transform:uppercase;
+      letter-spacing:0.8px; color:var(--muted); margin-bottom:8px;
+      display:flex; align-items:center; gap:5px;
+    }
+
+    /* Points discutés */
+    .points-list { display:flex; flex-direction:column; gap:5px; }
+    .point-item {
+      display:flex; align-items:flex-start; gap:8px;
+      font-size:14px; color:var(--text); line-height:1.4;
+      padding:8px 12px; background:rgba(255,255,255,0.35);
+      border-radius:8px;
+    }
+    .point-item::before { content:'—'; color:var(--muted); flex-shrink:0; font-size:12px; margin-top:1px; }
+
+    /* Décisions */
+    .decisions-list { display:flex; flex-direction:column; gap:5px; }
+    .decision-item {
+      display:flex; align-items:flex-start; gap:8px;
+      font-size:14px; color:var(--text); line-height:1.4;
+      padding:8px 12px;
+      background:rgba(61,184,122,0.08);
+      border:1px solid rgba(61,184,122,0.2);
+      border-radius:8px;
+    }
+    .decision-dot {
+      width:8px; height:8px; border-radius:50%;
+      background:var(--green); flex-shrink:0; margin-top:4px;
+    }
+
+    /* Actions tableau */
+    .actions-table { width:100%; border-collapse:collapse; margin-top:4px; }
+    .actions-table th {
+      font-size:10px; font-weight:700; text-transform:uppercase;
+      letter-spacing:0.6px; color:var(--muted);
+      padding:6px 8px; text-align:left;
+      border-bottom:1px solid rgba(255,255,255,0.5);
+    }
+    .actions-table td {
+      padding:8px 8px; font-size:13px; color:var(--text);
+      border-bottom:1px solid rgba(255,255,255,0.3);
+      vertical-align:top; text-align:left;
+    }
+    .actions-table tr:last-child td { border-bottom:none; }
+    .actions-table tr:nth-child(even) td { background:rgba(255,255,255,0.2); }
+    .qui-badge {
+      display:inline-block; padding:2px 8px; border-radius:100px;
+      background:rgba(74,127,212,0.12); color:var(--accent);
+      font-size:12px; font-weight:600; white-space:nowrap;
+    }
+    .quand-badge {
+      display:inline-block; padding:2px 8px; border-radius:100px;
+      background:rgba(224,122,48,0.1); color:#c06020;
+      font-size:11px; font-weight:500; white-space:nowrap;
+    }
+    .indefini { color:var(--muted); font-size:12px; font-style:italic; }
+
+    /* Prochaine étape */
+    .prochaine-wrap {
+      display:flex; align-items:center; gap:10px;
+      padding:10px 14px;
+      background:rgba(74,127,212,0.08);
+      border:1px solid rgba(74,127,212,0.2);
+      border-radius:10px; margin-top:4px;
+    }
+    .prochaine-icon { font-size:18px; flex-shrink:0; }
+    .prochaine-text { font-size:14px; color:var(--text); line-height:1.4; }
   </style>
 </head>
 <body>
@@ -304,74 +323,60 @@ function render(data, meta) {
   if (meta && (meta.datetime || meta.duration))
     document.getElementById('meta').textContent = (meta.datetime||'') + (meta.duration?' · '+meta.duration:'');
 
-  // modes badges removed
-
+  // ── Synthèse ──
   if (data.summary) {
-    const summaryHtml = data.summary
-      .replace(/[*][*](.*?)[*][*]/g, '<strong>$1</strong>')
-      .replace(/\n/g, '<br>');
-    c.appendChild(makeCard('📝 Synthèse', `<div class="sec"><p>${summaryHtml}</p></div>`));
+    const s = data.summary;
+    // Rétrocompatibilité : si summary est un string (ancien format)
+    if (typeof s === 'string') {
+      const html = s.replace(/[*][*](.*?)[*][*]/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+      c.appendChild(makeCard('📝 Synthèse', `<div class="sec"><p>${html}</p></div>`, true));
+    } else {
+      // Nouveau format structuré
+      c.appendChild(makeCard('📝 Synthèse', buildSummaryHTML(s), true));
+    }
   }
 
-  // Actions IA - combine Gemini detected + bubble actions
+  // ── Actions IA ──
   const geminiActions = data.actions_ia || [];
   const bubbleActions = (() => {
     try {
       const saved = JSON.parse(localStorage.getItem('ponk_action_bubbles') || '[]');
       return saved.map(b => ({
-        type: b.type,
-        icone: b.icon || '💬',
-        titre: b.label || b.type,
-        description: b.text,
-        _fromBubble: true
+        type: b.type, icone: b.icon || '💬',
+        titre: b.label || b.type, description: b.text, _fromBubble: true
       }));
     } catch(e) { return []; }
   })();
 
   const combined = [...geminiActions, ...bubbleActions];
-
-  // Deduplicate - keep best action per type (Gemini over bubble, richer content wins)
   const seen = {};
   const allActions = combined.filter(a => {
     const key = a.type;
-    if (!seen[key]) {
-      seen[key] = a;
-      return true;
-    }
-    // Keep the one with richer content (has corps/sujet vs just description)
+    if (!seen[key]) { seen[key] = a; return true; }
     const current = seen[key];
     const currentScore = (current.corps ? 2 : 0) + (current.sujet ? 1 : 0);
     const newScore = (a.corps ? 2 : 0) + (a.sujet ? 1 : 0);
-    if (newScore > currentScore) {
-      // Replace with richer one
-      seen[key] = a;
-      combined[combined.indexOf(current)] = null;
-      return true;
-    }
+    if (newScore > currentScore) { seen[key] = a; combined[combined.indexOf(current)] = null; return true; }
     return false;
   }).filter(Boolean);
+
   if (allActions.length > 0) {
     const actionsHTML = `<div class="actions-ia-wrap">${allActions.map(a => buildActionCard(a)).join('')}</div>`;
     c.appendChild(makeCard('✨ Actions IA', actionsHTML));
   }
   localStorage.removeItem('ponk_action_bubbles');
 
-
+  // ── Courses ──
   if (modes.includes('COURSES') && data.courses?.items?.length) {
-    const list=data.courses.items.map(it=>`<li onclick="toggleCheck(this)"><div class="cb"></div><span>${it.quantite?it.quantite+' ':''}${it.nom}</span></li>`).join('');
-    c.appendChild(makeCard('🛒 Courses',`<ul class="checks">${list}</ul>`,true));
+    const list = data.courses.items.map(it =>
+      `<li onclick="toggleCheck(this)"><div class="cb"></div><span>${it.quantite ? it.quantite+' ' : ''}${it.nom}</span></li>`
+    ).join('');
+    c.appendChild(makeCard('🛒 Courses', `<ul class="checks">${list}</ul>`, true));
   }
 
-
-
-
-
-
-
-
+  // ── Audio ──
   if (audioData) {
     audioEl = new Audio(audioData);
-
     audioEl.ontimeupdate = () => {
       if (!audioEl.duration) return;
       const pct = (audioEl.currentTime / audioEl.duration) * 100;
@@ -390,44 +395,109 @@ function render(data, meta) {
       const fill = document.getElementById('progressFill');
       if (fill) fill.style.width = '0%';
     };
-
-    const playerHTML = `<div class="audio-player">
-      <div class="player-controls">
-        <button class="play-btn" id="playBtn" onclick="togglePlay()">
-          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M8 5v14l11-7z"/></svg>
-        </button>
-        <div class="progress-wrap">
-          <div class="progress-bar" id="progressBar" onclick="seekAudio(event)">
-            <div class="progress-fill" id="progressFill"></div>
-          </div>
-          <div class="progress-times">
-            <span id="timeCurrent">0:00</span>
-            <span id="timeDuration">0:00</span>
-          </div>
+    const playerHTML = `<div class="audio-player"><div class="player-controls">
+      <button class="play-btn" id="playBtn" onclick="togglePlay()">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <div class="progress-wrap">
+        <div class="progress-bar" id="progressBar" onclick="seekAudio(event)">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-times">
+          <span id="timeCurrent">0:00</span>
+          <span id="timeDuration">0:00</span>
         </div>
       </div>
-    </div>`;
-
+    </div></div>`;
     const aCard = makeCard('🎙 Réécouter', playerHTML);
     aCard.querySelector('.card-bd').classList.add('hidden');
     aCard.querySelector('.chevron').classList.add('closed');
     c.appendChild(aCard);
   }
+
+  // ── Transcription ──
   if (data.transcript) {
-    const tCard = makeCard('📄 Transcription',`<div class="transcript-text">${data.transcript}</div>`,true);
+    const tCard = makeCard('📄 Transcription', `<div class="transcript-text">${data.transcript}</div>`, true);
     tCard.querySelector('.card-bd').classList.add('hidden');
     tCard.querySelector('.chevron').classList.add('closed');
     c.appendChild(tCard);
   }
 }
 
+// ── Construit le HTML de la synthèse structurée ──
+function buildSummaryHTML(s) {
+  let html = '';
+
+  // Contexte
+  if (s.contexte) {
+    html += `<div class="summary-contexte">ℹ️ ${s.contexte}</div>`;
+  }
+
+  // Points discutés
+  if (s.points_discutes?.length) {
+    html += `<div class="summary-section">
+      <div class="summary-section-title">💬 Points discutés</div>
+      <div class="points-list">
+        ${s.points_discutes.map(p => `<div class="point-item">${p}</div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Décisions
+  if (s.decisions?.length) {
+    html += `<div class="summary-section">
+      <div class="summary-section-title">✅ Décisions</div>
+      <div class="decisions-list">
+        ${s.decisions.map(d => `
+          <div class="decision-item">
+            <div class="decision-dot"></div>
+            <span>${d}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Actions
+  if (s.actions?.length) {
+    const rows = s.actions.map(a => `
+      <tr>
+        <td>${a.qui ? `<span class="qui-badge">${a.qui}</span>` : `<span class="indefini">À définir</span>`}</td>
+        <td style="padding-left:8px">${a.quoi || ''}</td>
+        <td>${a.quand ? `<span class="quand-badge">${a.quand}</span>` : ''}</td>
+      </tr>`).join('');
+
+    html += `<div class="summary-section">
+      <div class="summary-section-title">⚡ Actions</div>
+      <table class="actions-table">
+        <thead><tr>
+          <th>Qui</th><th>Quoi</th><th>Quand</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }
+
+  // Prochaine étape
+  if (s.prochaine_etape) {
+    html += `<div class="summary-section">
+      <div class="summary-section-title">📅 Prochaine étape</div>
+      <div class="prochaine-wrap">
+        <span class="prochaine-icon">📅</span>
+        <span class="prochaine-text">${s.prochaine_etape}</span>
+      </div>
+    </div>`;
+  }
+
+  return html || '<div class="sec"><p style="color:var(--muted);font-style:italic">Aucune information extraite.</p></div>';
+}
+
 function buildActionCard(a) {
-  const isAnalyse = a.type === 'ANALYSE' || 
+  const isAnalyse = a.type === 'ANALYSE' ||
     (a.description && /analys|étude|compar|bilan|rapport/i.test(a.description)) ||
     (a.titre && /analys|étude|compar|bilan|rapport/i.test(a.titre));
   if (isAnalyse) {
     const id = 'analyse_' + (analyseCardCounter++);
-    return `<div class="action-ia-card" style="flex-direction:column;align-items:stretch;cursor:pointer;">
+    return `<div class="action-ia-card" style="flex-direction:column;align-items:stretch;">
       <div style="display:flex;align-items:center;gap:14px;" onclick="runDeepAnalysis('${id}', this.getAttribute('data-query'))" data-query="${(a.description || a.titre).replace(/"/g,'&quot;')}">
         <div class="action-ia-icon">${a.icone}</div>
         <div class="action-ia-info">
@@ -438,10 +508,7 @@ function buildActionCard(a) {
           <svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg>
         </div>
       </div>
-      <div class="analysis-loading" id="loading_${id}">
-        <div class="analysis-spinner"></div>
-        <span>Analyse en cours…</span>
-      </div>
+      <div class="analysis-loading" id="loading_${id}"><div class="analysis-spinner"></div><span>Analyse en cours…</span></div>
       <div class="analysis-result" id="result_${id}"></div>
     </div>`;
   }
@@ -452,21 +519,16 @@ function buildActionCard(a) {
       <div class="action-ia-titre">${a.titre}</div>
       <div class="action-ia-desc">${a.description}</div>
     </div>
-    <div class="action-ia-arrow">
-      <svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg>
-    </div>
+    <div class="action-ia-arrow"><svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg></div>
   </a>`;
 }
 
-async function runDeepAnalysis(id, query, el) {
-  if (!query && el) query = el.getAttribute('data-query');
+async function runDeepAnalysis(id, query) {
   const loading = document.getElementById('loading_' + id);
   const result  = document.getElementById('result_' + id);
   const arrow   = document.getElementById('arrow_' + id);
   if (!loading || !result) return;
-  if (result.classList.contains('visible')) {
-    result.classList.remove('visible'); return;
-  }
+  if (result.classList.contains('visible')) { result.classList.remove('visible'); return; }
   loading.classList.add('visible');
   if (arrow) arrow.style.display = 'none';
   try {
@@ -478,12 +540,11 @@ async function runDeepAnalysis(id, query, el) {
     if (data.analysis) {
       result.innerHTML = data.analysis
         .replace(/[*][*](.*?)[*][*]/g, '<strong>$1</strong>')
-        .replace(/\n\n/g, '</p><p>')
-        .replace(/\n/g, '<br>');
+        .replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
       result.classList.add('visible');
     }
   } catch(e) {
-    result.innerHTML = 'Erreur lors de lanalyse.';
+    result.innerHTML = 'Erreur lors de l\'analyse.';
     result.classList.add('visible');
   }
   loading.classList.remove('visible');
@@ -491,10 +552,9 @@ async function runDeepAnalysis(id, query, el) {
 }
 
 function getActionUrl(a) {
-  const prefMail  = localStorage.getItem('ponk_pref_mail')  || 'gmail';
-  const prefCal   = localStorage.getItem('ponk_pref_cal')   || 'google';
-  const prefMaps  = localStorage.getItem('ponk_pref_maps')  || 'google';
-
+  const prefMail = localStorage.getItem('ponk_pref_mail')  || 'gmail';
+  const prefCal  = localStorage.getItem('ponk_pref_cal')   || 'google';
+  const prefMaps = localStorage.getItem('ponk_pref_maps')  || 'google';
   switch(a.type) {
     case 'EMAIL': {
       const sujet = encodeURIComponent(a.sujet || a.titre || '');
@@ -504,18 +564,13 @@ function getActionUrl(a) {
       if (prefMail === 'yahoo')   return `https://compose.mail.yahoo.com/?subject=${sujet}&body=${corps}`;
       return `mailto:?subject=${sujet}&body=${corps}`;
     }
-    case 'WHATSAPP':
-      return `https://wa.me/?text=${encodeURIComponent(a.message || a.description)}`;
-    case 'APPEL': {
-      const phone = (a.telephone || a.phone || '').replace(/[^0-9+]/g,'');
-      return phone ? `tel:${phone}` : `tel:`;
-    }
+    case 'WHATSAPP': return `https://wa.me/?text=${encodeURIComponent(a.message || a.description)}`;
+    case 'APPEL': { const phone=(a.telephone||a.phone||'').replace(/[^0-9+]/g,''); return phone?`tel:${phone}`:`tel:`; }
     case 'CALENDRIER': {
       const titre = encodeURIComponent(a.evenement || a.titre);
       const desc  = encodeURIComponent(a.description || '');
       if (prefCal === 'google')  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&details=${desc}`;
       if (prefCal === 'outlook') return `https://outlook.live.com/calendar/0/deeplink/compose?subject=${titre}&body=${desc}`;
-      if (prefCal === 'apple')   return `webcal://`;
       return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&details=${desc}`;
     }
     case 'MAPS': {
@@ -525,24 +580,18 @@ function getActionUrl(a) {
       if (prefMaps === 'apple')  return `https://maps.apple.com/?q=${addr}`;
       return `https://www.google.com/maps/search/?api=1&query=${addr}`;
     }
-    case 'RAPPEL':
-      return `javascript:navigator.clipboard.writeText(${JSON.stringify(a.texte || a.description)}).then(()=>alert('Copié !'))`;
-    case 'RECHERCHE':
-      return `https://www.google.com/search?q=${encodeURIComponent(a.query || a.description)}`;
-    case 'COMMANDE':
-      return `https://www.google.com/search?q=${encodeURIComponent(a.query || a.description)}&tbm=shop`;
-    default:
-      return '#';
+    case 'RAPPEL': return `javascript:navigator.clipboard.writeText(${JSON.stringify(a.texte||a.description)}).then(()=>alert('Copié !'))`;
+    case 'RECHERCHE': return `https://www.google.com/search?q=${encodeURIComponent(a.query||a.description)}`;
+    case 'COMMANDE': return `https://www.google.com/search?q=${encodeURIComponent(a.query||a.description)}&tbm=shop`;
+    default: return '#';
   }
 }
 
 function makeCard(title, html, copyable=false) {
-  const d=document.createElement('div'); d.className='card';
-  d.innerHTML=`<div class="card-hd" onclick="toggleCard(this)"><span class="card-lbl">${title}</span><div class="card-controls">${copyable?`<button class="copy-btn" onclick="copyCard(this);event.stopPropagation()">Copier</button>`:''}<span class="chevron">▾</span></div></div><div class="card-bd">${html}</div>`;
+  const d = document.createElement('div'); d.className = 'card';
+  d.innerHTML = `<div class="card-hd" onclick="toggleCard(this)"><span class="card-lbl">${title}</span><div class="card-controls">${copyable?`<button class="copy-btn" onclick="copyCard(this);event.stopPropagation()">Copier</button>`:''}<span class="chevron">▾</span></div></div><div class="card-bd">${html}</div>`;
   return d;
 }
-function sec(title,content) { return `<div class="sec"><div class="sec-title">${title}</div><p>${content}</p></div>`; }
-function items(arr) { return `<ul class="items">${arr.map(i=>`<li>${i}</li>`).join('')}</ul>`; }
 function toggleCard(hd) { const bd=hd.nextElementSibling,ch=hd.querySelector('.chevron'); bd.classList.toggle('hidden'); ch.classList.toggle('closed'); }
 function toggleCheck(li) { li.classList.toggle('done'); li.querySelector('.cb').textContent=li.classList.contains('done')?'✓':''; }
 function togglePlay() {
@@ -556,61 +605,115 @@ function togglePlay() {
     btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M8 5v14l11-7z"/></svg>';
   }
 }
-
 function seekAudio(e) {
   if (!audioEl || !audioEl.duration) return;
   const bar = document.getElementById('progressBar');
   const rect = bar.getBoundingClientRect();
-  const pct = (e.clientX - rect.left) / rect.width;
-  audioEl.currentTime = pct * audioEl.duration;
+  audioEl.currentTime = ((e.clientX - rect.left) / rect.width) * audioEl.duration;
 }
-
 function fmtTime(s) {
   if (!s || isNaN(s)) return '0:00';
-  const m = Math.floor(s / 60);
-  const sec = Math.floor(s % 60);
-  return m + ':' + String(sec).padStart(2, '0');
+  return Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(2,'0');
 }
 function copyCard(btn) {
-  const bd=btn.closest('.card').querySelector('.card-bd');
+  const bd = btn.closest('.card').querySelector('.card-bd');
   navigator.clipboard.writeText(bd.innerText||bd.textContent).then(()=>{btn.textContent='✓';setTimeout(()=>btn.textContent='Copier',2000);});
 }
 
 function exportPDF() {
-  const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'mm',format:'a4'}); const margin=20,maxW=170; let y=24;
-  function ln(text,size,bold,color) { doc.setFontSize(size||11);doc.setFont('helvetica',bold?'bold':'normal');doc.setTextColor(color||'#2a2a3a'); const lines=doc.splitTextToSize(String(text||''),maxW); if(y+lines.length*(size||11)*0.45>272){doc.addPage();y=20;} doc.text(lines,margin,y); y+=lines.length*(size||11)*0.45+3; }
-  const data=JSON.parse(localStorage.getItem('ponk_result')||'{}'); const meta=JSON.parse(localStorage.getItem('ponk_meta')||'{}'); const modes=data.modes||[];
-  const LBLS={REUNION:'Réunion',COURSES:'Courses',CHANTIER:'Chantier',IDEES:'Idées',DEPLACEMENT:'Déplacement',FINANCE:'Finance',APPEL:'Appel',MEDICAL:'Médical',COURS:'Cours',MEMO:'Mémo'};
-  ln('Ponk Note',22,true); if(meta.datetime||meta.duration) ln((meta.datetime||'')+(meta.duration?' · '+meta.duration:''),9,false,'#86868b'); if(meta.title) ln(meta.title,14,true); y+=2; doc.setDrawColor(200,200,200); doc.line(margin,y,margin+maxW,y); y+=6;
-  if(modes.length) ln('Modes : '+modes.map(m=>LBLS[m]||m).join(', '),9,false,'#86868b'); y+=2;
-  if(data.summary){ln('SYNTHÈSE',8,true,'#86868b');ln(data.summary,11);y+=2;}
-  if(data.reunion){ln('RÉUNION',8,true,'#86868b');if(data.reunion.participants?.length)ln('Participants : '+data.reunion.participants.join(', '),11);if(data.reunion.actions?.length)data.reunion.actions.forEach(a=>ln('→ '+a,10));y+=2;}
-  if(data.memo){ln('MÉMO',8,true,'#86868b');if(data.memo.rappels?.length)data.memo.rappels.forEach(r=>ln('• '+r,11));if(data.memo.notes)ln(data.memo.notes,11);y+=2;}
-  if(data.idees?.liste?.length){ln('IDÉES',8,true,'#86868b');data.idees.liste.forEach(i=>ln('→ '+i,11));y+=2;}
-  if(data.finance?.montants?.length){ln('FINANCE',8,true,'#86868b');data.finance.montants.forEach(m=>ln(m.description+' : '+m.montant,11));if(data.finance.total)ln('Total : '+data.finance.total,11,true);}
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'a4'});
+  const margin = 20, maxW = 170; let y = 24;
+  function ln(text, size, bold, color) {
+    doc.setFontSize(size||11); doc.setFont('helvetica', bold?'bold':'normal');
+    doc.setTextColor(color||'#2a2a3a');
+    const lines = doc.splitTextToSize(String(text||''), maxW);
+    if (y + lines.length*(size||11)*0.45 > 272) { doc.addPage(); y = 20; }
+    doc.text(lines, margin, y); y += lines.length*(size||11)*0.45+3;
+  }
+  const data = JSON.parse(localStorage.getItem('ponk_result')||'{}');
+  const meta = JSON.parse(localStorage.getItem('ponk_meta')||'{}');
+  ln('Ponk Note', 22, true);
+  if (meta.datetime||meta.duration) ln((meta.datetime||'')+(meta.duration?' · '+meta.duration:''), 9, false, '#86868b');
+  if (meta.title) ln(meta.title, 14, true);
+  y+=2; doc.setDrawColor(200,200,200); doc.line(margin,y,margin+maxW,y); y+=6;
+
+  // Synthèse structurée dans le PDF
+  if (data.summary) {
+    const s = data.summary;
+    if (typeof s === 'string') {
+      ln('SYNTHÈSE', 8, true, '#86868b'); ln(s, 11); y+=2;
+    } else {
+      ln('SYNTHÈSE', 8, true, '#86868b');
+      if (s.contexte) { ln(s.contexte, 10, false, '#86868b'); y+=1; }
+      if (s.points_discutes?.length) {
+        ln('Points discutés :', 9, true); s.points_discutes.forEach(p => ln('— '+p, 10)); y+=1;
+      }
+      if (s.decisions?.length) {
+        ln('Décisions :', 9, true); s.decisions.forEach(d => ln('✓ '+d, 10)); y+=1;
+      }
+      if (s.actions?.length) {
+        ln('Actions :', 9, true);
+        s.actions.forEach(a => ln((a.qui||'À définir')+' → '+a.quoi+(a.quand?' ('+a.quand+')':''), 10));
+        y+=1;
+      }
+      if (s.prochaine_etape) { ln('Prochaine étape : '+s.prochaine_etape, 10, true); y+=1; }
+      y+=2;
+    }
+  }
   doc.save((meta.title||'ponk-note')+'-'+new Date().toISOString().slice(0,10)+'.pdf');
 }
 
 async function sendByEmail() {
-  const email=localStorage.getItem('ponk_email'); const name=localStorage.getItem('ponk_profile');
+  const email = localStorage.getItem('ponk_email');
+  const name  = localStorage.getItem('ponk_profile');
   if (!email) { alert('Aucune adresse email dans ton profil.'); return; }
-  const btn=document.getElementById('emailBtn'); btn.disabled=true; btn.textContent='⏳ Génération…';
+  const btn = document.getElementById('emailBtn');
+  btn.disabled = true; btn.textContent = '⏳ Génération…';
   try {
-    const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'mm',format:'a4'}); const margin=20,maxW=170; let y=24;
-    function ln(text,size,bold,color){doc.setFontSize(size||11);doc.setFont('helvetica',bold?'bold':'normal');doc.setTextColor(color||'#2a2a3a');const lines=doc.splitTextToSize(String(text||''),maxW);if(y+lines.length*(size||11)*0.45>272){doc.addPage();y=20;}doc.text(lines,margin,y);y+=lines.length*(size||11)*0.45+3;}
-    const data=JSON.parse(localStorage.getItem('ponk_result')||'{}'); const meta=JSON.parse(localStorage.getItem('ponk_meta')||'{}'); const modes=data.modes||[];
-    const LBLS={REUNION:'Réunion',COURSES:'Courses',CHANTIER:'Chantier',IDEES:'Idées',DEPLACEMENT:'Déplacement',FINANCE:'Finance',APPEL:'Appel',MEDICAL:'Médical',COURS:'Cours',MEMO:'Mémo'};
-    ln('Ponk Note',22,true); if(meta.datetime||meta.duration)ln((meta.datetime||'')+(meta.duration?' · '+meta.duration:''),9,false,'#86868b'); if(meta.title)ln(meta.title,14,true); y+=2; doc.setDrawColor(200,200,200); doc.line(margin,y,margin+maxW,y); y+=6;
-    if(modes.length)ln('Modes : '+modes.map(m=>LBLS[m]||m).join(', '),9,false,'#86868b'); y+=2;
-    if(data.summary){ln('SYNTHÈSE',8,true,'#86868b');ln(data.summary,11);y+=2;}
-    if(data.reunion){ln('RÉUNION',8,true,'#86868b');if(data.reunion.participants?.length)ln('Participants : '+data.reunion.participants.join(', '),11);if(data.reunion.actions?.length)data.reunion.actions.forEach(a=>ln('→ '+a,10));y+=2;}
-    if(data.memo){ln('MÉMO',8,true,'#86868b');if(data.memo.rappels?.length)data.memo.rappels.forEach(r=>ln('• '+r,11));if(data.memo.notes)ln(data.memo.notes,11);}
-    const pdfBase64=doc.output('datauristring'); btn.textContent='⏳ Envoi…';
-    const res=await fetch('/api/sendmail',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,name,pdfBase64,title:meta.title||'Analyse',datetime:meta.datetime||''})});
-    if(!res.ok) throw new Error('Erreur '+res.status);
-    btn.textContent='✅ Email envoyé !';
-    setTimeout(()=>{btn.disabled=false;btn.textContent='✉ Envoyer par email';},3000);
-  } catch(e) { btn.disabled=false; btn.textContent='✉ Envoyer par email'; alert('Erreur : '+e.message); }
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF({unit:'mm', format:'a4'});
+    const margin = 20, maxW = 170; let y = 24;
+    function ln(text, size, bold, color) {
+      doc.setFontSize(size||11); doc.setFont('helvetica', bold?'bold':'normal');
+      doc.setTextColor(color||'#2a2a3a');
+      const lines = doc.splitTextToSize(String(text||''), maxW);
+      if (y + lines.length*(size||11)*0.45 > 272) { doc.addPage(); y = 20; }
+      doc.text(lines, margin, y); y += lines.length*(size||11)*0.45+3;
+    }
+    const data = JSON.parse(localStorage.getItem('ponk_result')||'{}');
+    const meta = JSON.parse(localStorage.getItem('ponk_meta')||'{}');
+    ln('Ponk Note', 22, true);
+    if (meta.datetime||meta.duration) ln((meta.datetime||'')+(meta.duration?' · '+meta.duration:''), 9, false, '#86868b');
+    if (meta.title) ln(meta.title, 14, true);
+    y+=2; doc.setDrawColor(200,200,200); doc.line(margin,y,margin+maxW,y); y+=6;
+    if (data.summary) {
+      const s = data.summary;
+      if (typeof s === 'string') {
+        ln('SYNTHÈSE', 8, true, '#86868b'); ln(s, 11); y+=2;
+      } else {
+        ln('SYNTHÈSE', 8, true, '#86868b');
+        if (s.contexte) ln(s.contexte, 10, false, '#86868b');
+        if (s.points_discutes?.length) { ln('Points discutés :', 9, true); s.points_discutes.forEach(p => ln('— '+p, 10)); }
+        if (s.decisions?.length) { ln('Décisions :', 9, true); s.decisions.forEach(d => ln('✓ '+d, 10)); }
+        if (s.actions?.length) { ln('Actions :', 9, true); s.actions.forEach(a => ln((a.qui||'À définir')+' → '+a.quoi+(a.quand?' ('+a.quand+')':''), 10)); }
+        if (s.prochaine_etape) ln('Prochaine étape : '+s.prochaine_etape, 10, true);
+        y+=2;
+      }
+    }
+    const pdfBase64 = doc.output('datauristring');
+    btn.textContent = '⏳ Envoi…';
+    const res = await fetch('/api/sendmail', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email, name, pdfBase64, title: meta.title||'Analyse', datetime: meta.datetime||''})
+    });
+    if (!res.ok) throw new Error('Erreur '+res.status);
+    btn.textContent = '✅ Email envoyé !';
+    setTimeout(() => { btn.disabled=false; btn.textContent='✉ Envoyer par email'; }, 3000);
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '✉ Envoyer par email';
+    alert('Erreur : '+e.message);
+  }
 }
 </script>
 </body>
