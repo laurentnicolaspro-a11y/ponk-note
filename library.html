@@ -39,13 +39,11 @@
 
     .content { max-width:430px; margin:0 auto; padding:20px 20px 0; }
 
-    /* Profile */
     .profile-info { display:flex; align-items:center; gap:14px; margin-bottom:20px; }
     .profile-avatar-lg { width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:600; color:#fff; box-shadow:0 4px 16px rgba(0,0,0,0.15); flex-shrink:0; }
     .profile-name { font-size:18px; font-weight:600; letter-spacing:-0.3px; }
     .profile-email { font-size:13px; color:var(--muted); margin-top:2px; }
 
-    /* Quota */
     .quota-wrap { background:var(--glass); border:1.5px solid var(--glass-border); backdrop-filter:blur(20px); border-radius:16px; padding:16px; margin-bottom:20px; }
     .quota-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
     .quota-label { font-size:13px; font-weight:500; }
@@ -57,25 +55,18 @@
 
     .section-title { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:10px; padding:0 4px; }
 
-    /* Card */
     .card { background:var(--glass); border:1.5px solid var(--glass-border); backdrop-filter:blur(20px); border-radius:18px; margin-bottom:10px; overflow:hidden; }
     .card-main { padding:14px 16px 12px; }
     .card-title { font-size:15px; font-weight:500; letter-spacing:-0.2px; margin-bottom:3px; }
     .card-meta { font-size:12px; color:var(--muted); margin-bottom:12px; }
 
-    /* Player */
     .player { display:flex; align-items:center; gap:10px; cursor:pointer; }
     .play-btn-sm { width:34px; height:34px; border-radius:50%; background:var(--text); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; -webkit-tap-highlight-color:transparent; transition:transform 0.1s; }
     .play-btn-sm:active { transform:scale(0.92); }
     .play-btn-sm svg { fill:white; }
     .waveform { flex:1; height:40px; display:flex; align-items:center; gap:1.5px; cursor:pointer; }
-    .wave-bar {
-      flex:1; border-radius:3px;
-      background: linear-gradient(180deg, rgba(224,85,85,0.9) 0%, rgba(224,85,85,0.4) 100%);
-      min-height:3px; transition: opacity 0.15s;
-    }
+    .wave-bar { flex:1; border-radius:3px; background: linear-gradient(180deg, rgba(224,85,85,0.9) 0%, rgba(224,85,85,0.4) 100%); min-height:3px; transition: opacity 0.15s; }
 
-    /* Actions */
     .card-actions { display:none; padding:0 16px 14px; gap:8px; animation:slideDown 0.2s ease; }
     .card-actions.visible { display:flex; }
     @keyframes slideDown { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
@@ -86,7 +77,6 @@
     .btn-delete { width:42px; padding:11px; border-radius:10px; border:none; background:rgba(224,85,85,0.15); color:var(--danger); font-family:inherit; font-size:16px; cursor:pointer; }
     .btn-delete:active { background:rgba(224,85,85,0.25); }
 
-    /* Empty */
     .empty { text-align:center; padding:60px 20px; color:var(--muted); }
     .empty-icon { font-size:48px; margin-bottom:16px; }
     .empty p { font-size:15px; line-height:1.6; }
@@ -96,10 +86,7 @@
 
     .loading { text-align:center; padding:40px; color:var(--muted); font-size:14px; }
 
-    @keyframes cardIn {
-      from { opacity:0; transform:translateY(16px); }
-      to   { opacity:1; transform:translateY(0); }
-    }
+    @keyframes cardIn { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
     .card { animation: cardIn 0.35s ease both; }
 
     .spinner-sm { width:16px; height:16px; flex-shrink:0; }
@@ -209,19 +196,13 @@ function makeCard(file, index) {
   card.className = 'card';
   card.style.animationDelay = `${index * 80}ms`;
 
-  // Parse filename: profile-YYYY-MM-DDTHH-MM-SS-title.webm
   const nameParts = file.name.replace('.webm','').split('-');
-  // Extract time from filename parts (format: Nicolas-2026-04-16T14-33-10-enregistrement)
   let timeStr = '';
   let titleStr = 'Enregistrement';
   try {
-    // Find the T part that contains time
     const joined = nameParts.join('-');
     const timeMatch = joined.match(/T(\d{2})-(\d{2})-(\d{2})/);
-    if (timeMatch) {
-      timeStr = timeMatch[1] + 'h' + timeMatch[2];
-    }
-    // Title is everything after the timestamp
+    if (timeMatch) timeStr = timeMatch[1] + 'h' + timeMatch[2];
     const afterT = joined.split(/T\d{2}-\d{2}-\d{2}-?/)[1];
     if (afterT && afterT.trim()) titleStr = afterT.replace(/-/g,' ').trim();
   } catch(e) {}
@@ -231,14 +212,10 @@ function makeCard(file, index) {
     : timeStr ? 'Enregistrement · ' + timeStr : 'Enregistrement';
 
   const dateDisplay = formatDate(file.created_at);
-
-  // Duration from metadata
-  const meta = (() => { try { return JSON.parse(localStorage.getItem(`ponk_analyzed_${file.name}`) || '{}'); } catch(e){ return {}; } })();
   const duration = file.metadata?.size ? formatSize(file.metadata.size) : '';
-
   const analyzed = localStorage.getItem(`ponk_analyzed_${file.name}`);
+
   const bars = Array.from({length:40}, (_,i) => {
-    // Natural voice wave shape - bell curve with randomness
     const center = 20;
     const dist = Math.abs(i - center) / center;
     const base = Math.max(15, 90 * (1 - dist * dist * 0.7));
@@ -260,7 +237,7 @@ function makeCard(file, index) {
     </div>
     <div class="card-actions" id="actions_${file.name}">
       <button class="btn-analyze ${analyzed?'analyzed':''}" onclick="handleAnalyze('${file.name}',this)">
-        ${analyzed ? '✓ Voir l\'analyse' : 'Analyser'}
+        ${analyzed ? "✓ Voir l'analyse" : 'Analyser'}
       </button>
       <button class="btn-delete" onclick="handleDelete('${file.name}',this)">🗑</button>
     </div>`;
@@ -279,7 +256,7 @@ async function toggleAudio(fileName, e) {
     else { a.pause(); btn.innerHTML='<svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg>'; }
     return;
   }
-  const url = `https://nnppmsomwigihidjpwnp.supabase.co/storage/v1/object/public/audio/${uid||profile}/${fileName}`;
+  const url = `${window.location.origin}/api/audio-proxy?path=${encodeURIComponent((uid||profile) + '/' + fileName)}`;
   const audio = new Audio(url);
   audioPlayers[fileName] = audio;
   audio.onended = () => btn.innerHTML='<svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg>';
@@ -288,42 +265,67 @@ async function toggleAudio(fileName, e) {
 }
 
 async function handleAnalyze(fileName, btn) {
+  // Si déjà analysé → afficher le résultat
   const analyzed = localStorage.getItem(`ponk_analyzed_${fileName}`);
-  if (analyzed) { localStorage.setItem('ponk_result',analyzed); window.location.href='/results.html'; return; }
+  if (analyzed) {
+    localStorage.setItem('ponk_result', analyzed);
+    window.location.href = '/results.html';
+    return;
+  }
+
   btn.disabled = true;
   btn.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:8px"><div class="spinner-sm"><svg viewBox="0 0 24 24" width="16" height="16"><circle class="spinner-arc-sm" cx="12" cy="12" r="9"/></svg></div><span>Analyse en cours…</span></div>';
+
   try {
-    const url = `https://nnppmsomwigihidjpwnp.supabase.co/storage/v1/object/public/audio/${uid||profile}/${fileName}`;
-    const audioRes = await fetch(url);
-    if (!audioRes.ok) throw new Error('Audio introuvable');
-    const audioBlob = await audioRes.blob();
+    // Construire le fileName complet tel qu'uploadé : profile/fichier.webm
+    const fullFileName = `${uid||profile}/${fileName}`;
     const parts = fileName.replace('.webm','').split('-');
-    const title = parts.slice(6).join(' ')||'';
+    const title = parts.slice(6).join(' ')||'enregistrement';
     const datetime = parts.slice(0,6).join('-');
-    const formData = new FormData();
-    formData.append('audio',audioBlob,fileName);
-    formData.append('title',title);
-    formData.append('duration','');
-    formData.append('datetime',datetime);
-    const res = await fetch('/api/analyze',{method:'POST',body:formData});
-    if (!res.ok) throw new Error('Erreur analyse');
+
+    // Envoyer fileName en JSON — pas le fichier brut
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        fileName: fullFileName,
+        title,
+        duration: '',
+        datetime,
+        profile: uid||profile,
+        bubbles: []
+      })
+    });
+    if (!res.ok) throw new Error('Erreur analyse ' + res.status);
     const data = await res.json();
-    localStorage.setItem('ponk_result',JSON.stringify(data));
-    localStorage.setItem('ponk_meta',JSON.stringify({title,datetime}));
-    localStorage.setItem(`ponk_analyzed_${fileName}`,JSON.stringify(data));
+    localStorage.setItem('ponk_result', JSON.stringify(data));
+    localStorage.setItem('ponk_meta', JSON.stringify({title, datetime}));
+    localStorage.setItem(`ponk_analyzed_${fileName}`, JSON.stringify(data));
     window.location.href = '/results.html';
-  } catch(e) { btn.disabled=false; btn.innerHTML='Analyser'; alert('Erreur : '+e.message); }
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = 'Analyser';
+    alert('Erreur : ' + e.message);
+  }
 }
 
 async function handleDelete(fileName, btn) {
   if (!confirm('Supprimer cet enregistrement ?')) return;
   btn.disabled = true;
   try {
-    const res = await fetch('/api/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:`${uid||profile}/${fileName}`})});
+    // path = profile/fichier.webm (sans le préfixe "audio/" géré par l'API)
+    const res = await fetch('/api/delete', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ path: `${uid||profile}/${fileName}` })
+    });
     if (!res.ok) throw new Error('Erreur suppression');
     localStorage.removeItem(`ponk_analyzed_${fileName}`);
     loadRecordings();
-  } catch(e) { btn.disabled=false; alert('Erreur : '+e.message); }
+  } catch(e) {
+    btn.disabled = false;
+    alert('Erreur : ' + e.message);
+  }
 }
 
 function formatSize(bytes) {
