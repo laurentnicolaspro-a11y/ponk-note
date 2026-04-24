@@ -30,10 +30,19 @@ module.exports = async function handler(req, res) {
       throw new Error('All models failed');
     }
 
-    // Mode transcript_only : saute la transcription, détecte juste les actions
-    if (transcript_only && transcriptPassed) {
-      const actionsPrompt = 'Tu analyses une transcription et extrais les ACTIONS IA.\nTypes : EMAIL, WHATSAPP, CALENDRIER, MAPS, RECHERCHE, COMMANDE\n\nTranscription:\n"""\n' + transcriptPassed + '\n"""\n\nRègles:\n- Intention claire seulement\n- Pas de questions\n- Max 5 actions\n- Si rien: {"actions_ia":[]}\n\nRéponds UNIQUEMENT JSON valide:\n{"actions_ia":[{"type":"EMAIL","icone":"📧","titre":"Mail à X","description":"...","sujet":"...","corps":"..."}]}';
+    // ── Mode rewrite : améliore la synthèse avant export PDF ──
+    const { rewrite = false, summary: summaryToRewrite = null, transcript: transcriptForRewrite = '' } = body;
+    if (rewrite && summaryToRewrite) {
+      const rewritePrompt = 'Améliore ce compte-rendu. Formulations claires, corrige fautes, complète si transcription le permet. Ne supprime rien.\n\nSynthèse:\n' + JSON.stringify(summaryToRewrite) + '\n\nTranscription:\n"""\n' + transcriptForRewrite + '\n"""\n\nRéponds UNIQUEMENT JSON:\n{"resume":"...","contexte":"...","points_discutes":["..."],"decisions":["..."],"actions":[{"qui":"","quoi":"","quand":""}],"prochaine_etape":"..."}';
+      const result = await tryGenerate(rewritePrompt);
+      const raw = result.response.text().replace(/```json|```/g, '').trim();
+      try { return res.status(200).json(JSON.parse(raw)); }
+      catch(e) { return res.status(200).json(summaryToRewrite); }
+    }
 
+    // ── Mode transcript_only : détecte les actions IA ──
+    if (transcript_only && transcriptPassed) {
+      const actionsPrompt = 'Extrais les ACTIONS IA. Types: EMAIL, WHATSAPP, CALENDRIER, MAPS, RECHERCHE, COMMANDE\n\nTranscription:\n"""\n' + transcriptPassed + '\n"""\n\nRègles: intention claire, pas de questions, max 5.\n\nRéponds UNIQUEMENT JSON:\n{"actions_ia":[{"type":"EMAIL","icone":"📧","titre":"Mail à X","description":"..."}]}';
       const result = await tryGenerate(actionsPrompt);
       const raw = result.response.text().replace(/```json|```/g, '').trim();
       try { return res.status(200).json(JSON.parse(raw)); }
