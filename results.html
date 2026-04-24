@@ -351,7 +351,7 @@ function render(data, meta) {
 
   const combined = [...geminiActions, ...bubbleActions];
   const seen = {};
-  const allActions = combined.filter(a => {
+  const deduped = combined.filter(a => {
     const key = a.type;
     if (!seen[key]) { seen[key] = a; return true; }
     const current = seen[key];
@@ -360,6 +360,13 @@ function render(data, meta) {
     if (newScore > currentScore) { seen[key] = a; combined[combined.indexOf(current)] = null; return true; }
     return false;
   }).filter(Boolean);
+  // Si une action ANALYSE existe, supprimer les RECHERCHE (doublon thématique)
+  const hasAnalyse = deduped.some(a =>
+    a.type === 'ANALYSE' || (a.titre && /analys/i.test(a.titre)) || (a.description && /analys/i.test(a.description))
+  );
+  const allActions = hasAnalyse
+    ? deduped.filter(a => a.type !== 'RECHERCHE')
+    : deduped;
 
   if (allActions.length > 0) {
     const actionsHTML = `<div class="actions-ia-wrap">${allActions.map(a => buildActionCard(a)).join('')}</div>`;
