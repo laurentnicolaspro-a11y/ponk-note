@@ -187,6 +187,25 @@
     }
     .copy-btn:active { background:rgba(255,255,255,0.7); }
 
+    .export-cb {
+      width:16px; height:16px; border-radius:4px; flex-shrink:0;
+      border:1.5px solid rgba(74,127,212,0.4); background:rgba(255,255,255,0.6);
+      cursor:pointer; appearance:none; -webkit-appearance:none;
+      display:flex; align-items:center; justify-content:center;
+      transition:all 0.15s; margin-top:2px;
+    }
+    .export-cb:checked {
+      background:var(--accent); border-color:var(--accent);
+    }
+    .export-cb:checked::after {
+      content:'✓'; color:#fff; font-size:10px; font-weight:700;
+      display:block; text-align:center; line-height:1;
+    }
+    .export-row {
+      display:flex; align-items:flex-start; gap:8px;
+    }
+    .export-row .export-cb { margin-top:3px; }
+
     /* ── Synthèse structurée ── */
     .summary-contexte {
       font-size:13px; color:var(--muted); line-height:1.5;
@@ -311,6 +330,8 @@ if (profile) {
 const rawResult = localStorage.getItem('ponk_result');
 const rawMeta   = localStorage.getItem('ponk_meta');
 const audioData = localStorage.getItem('ponk_audio');
+const driveFile = (() => { try { return JSON.parse(localStorage.getItem('ponk_drive_file') || '{}'); } catch(e) { return {}; } })();
+const supabaseUrl = driveFile.fileName ? `${location.origin}/api/audio-proxy?path=${encodeURIComponent(driveFile.fileName)}` : null;
 
 if (!rawResult) { window.location.href = '/'; }
 else {
@@ -354,7 +375,7 @@ function render(data, meta) {
   })();
 
   if (allActions.length > 0) {
-    const actionsHTML = `<div class="actions-ia-wrap">${allActions.map(a => buildActionCard(a)).join('')}</div>`;
+    const actionsHTML = `<div class="actions-ia-wrap" id="actionsIAWrap">${allActions.map(a => buildActionCard(a)).join('')}</div>`;
     c.appendChild(makeCard('✨ Actions IA', actionsHTML));
   }
   localStorage.removeItem('ponk_action_bubbles');
@@ -402,7 +423,14 @@ function render(data, meta) {
         </div>
       </div>
     </div></div>`;
-    const aCard = makeCard('🎙 Réécouter', playerHTML);
+    // Bouton téléchargement
+    const downloadBtn = driveFile.fileName ? `
+      <a href="${`${location.origin}/api/audio-proxy?path=${encodeURIComponent(driveFile.fileName)}`}" download="ponk-note.webm"
+        style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:100px;background:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.7);font-size:12px;font-weight:500;color:var(--accent);text-decoration:none;cursor:pointer;">
+        ↓ Télécharger
+      </a>` : '';
+
+    const aCard = makeCard('🎙 Réécouter', playerHTML, false, downloadBtn);
     aCard.querySelector('.card-bd').classList.add('hidden');
     aCard.querySelector('.chevron').classList.add('closed');
     c.appendChild(aCard);
@@ -410,7 +438,12 @@ function render(data, meta) {
 
   // ── Transcription ──
   if (data.transcript) {
-    const tCard = makeCard('📄 Transcription', `<div class="transcript-text">${data.transcript}</div>`, true);
+    const transcriptHTML = `<div class="export-row" data-export="transcript">
+      <input type="checkbox" class="export-cb" id="ecb_transcript" data-export-label="transcript" data-export-content="${encodeURIComponent(data.transcript)}" style="margin-top:4px">
+      <div class="transcript-text" style="flex:1">${data.transcript}</div>
+    </div>`;
+    const genActionsBtn = `<button onclick="generateActionsIA()" style="background:rgba(74,127,212,0.12);border:1px solid rgba(74,127,212,0.3);color:var(--accent);padding:4px 10px;border-radius:100px;font-size:11px;font-weight:500;font-family:inherit;cursor:pointer;" id="genActionsBtn">✨ Générer actions</button>`;
+    const tCard = makeCard('📄 Transcription', transcriptHTML, true, genActionsBtn);
     tCard.querySelector('.card-bd').classList.add('hidden');
     tCard.querySelector('.chevron').classList.add('closed');
     c.appendChild(tCard);
@@ -420,10 +453,26 @@ function render(data, meta) {
 // ── Construit le HTML de la synthèse structurée ──
 function buildSummaryHTML(s) {
   let html = '';
+  let cbId = 0;
+  function cb(label, content, checked=true) {
+    const id = 'ecb_' + (cbId++);
+    return `<div class="export-row" data-export="${label}">
+      <input type="checkbox" class="export-cb" id="${id}" ${checked?'checked':''} data-export-label="${label}" data-export-content="${encodeURIComponent(content)}">
+      <div style="flex:1">${content}</div>
+    </div>`;
+  }
 
   // Contexte
   if (s.contexte) {
-    html += `<div class="summary-contexte">ℹ️ ${s.contexte}</div>`;
+    html += `<div style="margin-top:14px">${cb('contexte', `<div class="summary-contexte" style="margin-top:0">ℹ️ ${s.contexte}</div>`, true)}</div>`;
+  }
+
+  // Résumé en prose
+  if (s.resume) {
+    html += `<div class="summary-section">
+      <div class="summary-section-title">📝 Résumé</div>
+      ${cb('resume', `<div style="font-size:14px;line-height:1.7;color:var(--text);font-style:italic;padding:10px 14px;background:rgba(255,255,255,0.4);border-radius:10px;border-left:3px solid var(--accent);">${s.resume}</div>`, true)}
+    </div>`;
   }
 
   // Points discutés
@@ -431,7 +480,7 @@ function buildSummaryHTML(s) {
     html += `<div class="summary-section">
       <div class="summary-section-title">💬 Points discutés</div>
       <div class="points-list">
-        ${s.points_discutes.map(p => `<div class="point-item">${p}</div>`).join('')}
+        ${s.points_discutes.map(p => cb('point:'+p, `<div class="point-item" style="background:none;padding:0">${p}</div>`, true)).join('')}
       </div>
     </div>`;
   }
@@ -441,32 +490,23 @@ function buildSummaryHTML(s) {
     html += `<div class="summary-section">
       <div class="summary-section-title">✅ Décisions</div>
       <div class="decisions-list">
-        ${s.decisions.map(d => `
-          <div class="decision-item">
-            <div class="decision-dot"></div>
-            <span>${d}</span>
-          </div>`).join('')}
+        ${s.decisions.map(d => cb('decision:'+d, `<div class="decision-item" style="margin:0"><div class="decision-dot"></div><span>${d}</span></div>`, true)).join('')}
       </div>
     </div>`;
   }
 
   // Actions
   if (s.actions?.length) {
-    const rows = s.actions.map(a => `
-      <tr>
-        <td>${a.qui ? `<span class="qui-badge">${a.qui}</span>` : `<span class="indefini">À définir</span>`}</td>
-        <td style="padding-left:8px">${a.quoi || ''}</td>
-        <td>${a.quand ? `<span class="quand-badge">${a.quand}</span>` : ''}</td>
-      </tr>`).join('');
-
     html += `<div class="summary-section">
       <div class="summary-section-title">⚡ Actions</div>
-      <table class="actions-table">
-        <thead><tr>
-          <th>Qui</th><th>Quoi</th><th>Quand</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        ${s.actions.map(a => {
+          const qui = a.qui ? `<span class="qui-badge">${a.qui}</span>` : `<span class="indefini">À définir</span>`;
+          const quand = a.quand ? `<span class="quand-badge">${a.quand}</span>` : '';
+          const txt = `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:rgba(255,255,255,0.3);border-radius:8px;">${qui}<span style="flex:1;font-size:13px">${a.quoi||''}</span>${quand}</div>`;
+          return cb('action:'+(a.qui||'?')+':'+(a.quoi||''), txt, true);
+        }).join('')}
+      </div>
     </div>`;
   }
 
@@ -474,10 +514,7 @@ function buildSummaryHTML(s) {
   if (s.prochaine_etape) {
     html += `<div class="summary-section">
       <div class="summary-section-title">📅 Prochaine étape</div>
-      <div class="prochaine-wrap">
-        <span class="prochaine-icon">📅</span>
-        <span class="prochaine-text">${s.prochaine_etape}</span>
-      </div>
+      ${cb('prochaine', `<div class="prochaine-wrap">${s.prochaine_etape}</div>`, true)}
     </div>`;
   }
 
@@ -538,13 +575,17 @@ function buildActionCard(a) {
       </div>
     </div>`;
   }
-  return `<div class="action-ia-card" id="${actionId}" onclick="markActionDone('${actionId}')">
-    <div class="action-ia-icon">${a.icone}</div>
-    <div class="action-ia-info">
-      <div class="action-ia-titre">${a.titre}</div>
-      <div class="action-ia-desc">${a.description}</div>
+  const cbIdAction = 'ecb_action_' + actionId;
+  return `<div style="display:flex;align-items:center;gap:8px;">
+    <input type="checkbox" class="export-cb" id="${cbIdAction}" checked data-export-label="action_ia:${(a.titre||'').replace(/"/g,'')}" data-export-content="${encodeURIComponent((a.titre||'') + ' — ' + (a.description||''))}">
+    <div class="action-ia-card" id="${actionId}" onclick="markActionDone('${actionId}')" style="flex:1;margin:0">
+      <div class="action-ia-icon">${a.icone}</div>
+      <div class="action-ia-info">
+        <div class="action-ia-titre">${a.titre}</div>
+        <div class="action-ia-desc">${a.description}</div>
+      </div>
+      <div class="action-ia-arrow"><svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg></div>
     </div>
-    <div class="action-ia-arrow"><svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg></div>
   </div>`;
 }
 
@@ -574,6 +615,51 @@ async function runDeepAnalysis(id, query) {
   }
   loading.classList.remove('visible');
   if (arrow) arrow.style.display = 'flex';
+}
+
+async function generateActionsIA() {
+  const btn = document.getElementById('genActionsBtn');
+  if (btn) { btn.textContent = '⏳ Analyse…'; btn.disabled = true; }
+
+  const data = JSON.parse(localStorage.getItem('ponk_result') || '{}');
+  const transcript = data.transcript || '';
+  if (!transcript) { if (btn) { btn.textContent = '✨ Générer actions'; btn.disabled = false; } return; }
+
+  try {
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        transcript_only: true,
+        transcript,
+        title: JSON.parse(localStorage.getItem('ponk_meta') || '{}').title || ''
+      })
+    });
+    if (!res.ok) throw new Error('Erreur ' + res.status);
+    const result = await res.json();
+    const newActions = result.actions_ia || [];
+
+    if (!newActions.length) {
+      if (btn) { btn.textContent = 'Aucune action détectée'; btn.disabled = false; }
+      return;
+    }
+
+    // Ajouter les nouvelles actions dans la section Actions IA
+    const wrap = document.getElementById('actionsIAWrap');
+    if (wrap) {
+      newActions.forEach(a => {
+        const html = buildActionCard(a);
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        wrap.appendChild(div.firstChild);
+      });
+    }
+
+    if (btn) { btn.textContent = newActions.length + ' action(s) ajoutée(s) ✓'; btn.disabled = true; }
+  } catch(e) {
+    if (btn) { btn.textContent = '✨ Générer actions'; btn.disabled = false; }
+    console.error(e);
+  }
 }
 
 async function markActionDone(actionId) {
@@ -668,9 +754,9 @@ function getActionUrl(a) {
   }
 }
 
-function makeCard(title, html, copyable=false) {
+function makeCard(title, html, copyable=false, extraControl='') {
   const d = document.createElement('div'); d.className = 'card';
-  d.innerHTML = `<div class="card-hd" onclick="toggleCard(this)"><span class="card-lbl">${title}</span><div class="card-controls">${copyable?`<button class="copy-btn" onclick="copyCard(this);event.stopPropagation()">Copier</button>`:''}<span class="chevron">▾</span></div></div><div class="card-bd">${html}</div>`;
+  d.innerHTML = `<div class="card-hd" onclick="toggleCard(this)"><span class="card-lbl">${title}</span><div class="card-controls">${copyable?`<button class="copy-btn" onclick="copyCard(this);event.stopPropagation()">Copier</button>`:''}${extraControl}<span class="chevron">▾</span></div></div><div class="card-bd">${html}</div>`;
   return d;
 }
 function toggleCard(hd) { const bd=hd.nextElementSibling,ch=hd.querySelector('.chevron'); bd.classList.toggle('hidden'); ch.classList.toggle('closed'); }
@@ -701,48 +787,176 @@ function copyCard(btn) {
   navigator.clipboard.writeText(bd.innerText||bd.textContent).then(()=>{btn.textContent='✓';setTimeout(()=>btn.textContent='Copier',2000);});
 }
 
-function exportPDF() {
-  const {jsPDF} = window.jspdf;
-  const doc = new jsPDF({unit:'mm', format:'a4'});
-  const margin = 20, maxW = 170; let y = 24;
-  function ln(text, size, bold, color) {
-    doc.setFontSize(size||11); doc.setFont('helvetica', bold?'bold':'normal');
-    doc.setTextColor(color||'#2a2a3a');
-    const lines = doc.splitTextToSize(String(text||''), maxW);
-    if (y + lines.length*(size||11)*0.45 > 272) { doc.addPage(); y = 20; }
-    doc.text(lines, margin, y); y += lines.length*(size||11)*0.45+3;
-  }
+async function exportPDF() {
+  const jsPDF = await loadJsPDF();
+  const C = PDF_C;
+
+  // Cases cochées
+  const checked = {};
+  document.querySelectorAll('.export-cb:checked').forEach(cb => {
+    checked[cb.dataset.exportLabel] = decodeURIComponent(cb.dataset.exportContent || '');
+  });
+
   const data = JSON.parse(localStorage.getItem('ponk_result')||'{}');
   const meta = JSON.parse(localStorage.getItem('ponk_meta')||'{}');
-  ln('Ponk Note', 22, true);
-  if (meta.datetime||meta.duration) ln((meta.datetime||'')+(meta.duration?' · '+meta.duration:''), 9, false, '#86868b');
-  if (meta.title) ln(meta.title, 14, true);
-  y+=2; doc.setDrawColor(200,200,200); doc.line(margin,y,margin+maxW,y); y+=6;
+  const s = (typeof data.summary === 'object') ? data.summary : null;
 
-  // Synthèse structurée dans le PDF
-  if (data.summary) {
-    const s = data.summary;
-    if (typeof s === 'string') {
-      ln('SYNTHÈSE', 8, true, '#86868b'); ln(s, 11); y+=2;
-    } else {
-      ln('SYNTHÈSE', 8, true, '#86868b');
-      if (s.contexte) { ln(s.contexte, 10, false, '#86868b'); y+=1; }
-      if (s.points_discutes?.length) {
-        ln('Points discutés :', 9, true); s.points_discutes.forEach(p => ln('— '+p, 10)); y+=1;
-      }
-      if (s.decisions?.length) {
-        ln('Décisions :', 9, true); s.decisions.forEach(d => ln('✓ '+d, 10)); y+=1;
-      }
-      if (s.actions?.length) {
-        ln('Actions :', 9, true);
-        s.actions.forEach(a => ln((a.qui||'À définir')+' → '+a.quoi+(a.quand?' ('+a.quand+')':''), 10));
-        y+=1;
-      }
-      if (s.prochaine_etape) { ln('Prochaine étape : '+s.prochaine_etape, 10, true); y+=1; }
-      y+=2;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const M = 16, maxW = pageW - M * 2;
+  let y = M;
+  const checkPage = (n = 10) => { if (y + n > pageH - 14) { doc.addPage(); y = M; } };
+
+  // Titre du bandeau
+  const titre = meta.title || 'Compte-rendu';
+  pdfBandeau(doc, titre, pageW, M, C);
+  y = 40;
+
+  // Sous-titre date + durée
+  if (meta.datetime || meta.duration) {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...C.muted);
+    doc.text((meta.datetime||'') + (meta.duration ? ' · ' + meta.duration : ''), M, y);
+    y += 8;
+  }
+
+  // ── CONTEXTE ──
+  if (s && checked['contexte'] && s.contexte) {
+    checkPage(16);
+    doc.setFillColor(...C.sectionBg); doc.setDrawColor(...C.sectionBdr); doc.setLineWidth(0.2);
+    doc.roundedRect(M, y, maxW, 12, 2.5, 2.5, 'FD');
+    doc.setFillColor(...C.accent); doc.roundedRect(M, y, 3.5, 12, 1.5, 1.5, 'F');
+    doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(...C.accentDark);
+    const ctxL = doc.splitTextToSize(s.contexte, maxW - 10);
+    doc.text(ctxL, M + 7, y + 7.5);
+    y += 18;
+  }
+
+  // ── RÉSUMÉ ──
+  if (s && checked['resume'] && s.resume) {
+    checkPage(20);
+    pdfSectionHeader(doc, 'Résumé', null, y, M, maxW, C);
+    y += 13;
+    const resumeL = doc.splitTextToSize(s.resume, maxW - 12);
+    const resumeH = resumeL.length * 5.2 + 8;
+    pdfBlock(doc, resumeL, [], y, M, maxW, resumeH, C);
+    y += resumeH + 6;
+  }
+
+  // ── POINTS DISCUTÉS ──
+  const points = s ? (s.points_discutes||[]).filter(p => checked['point:'+p]) : [];
+  if (points.length) {
+    checkPage(22);
+    pdfSectionHeader(doc, 'Points discutés', null, y, M, maxW, C);
+    y += 13;
+    for (const p of points) {
+      checkPage(12);
+      const pL = doc.splitTextToSize('— ' + p, maxW - 12);
+      const pH = pL.length * 5.2 + 6;
+      pdfBlock(doc, pL, [], y, M, maxW, pH, C);
+      y += pH + 4;
+    }
+    y += 4;
+  }
+
+  // ── DÉCISIONS ──
+  const decisions = s ? (s.decisions||[]).filter(d => checked['decision:'+d]) : [];
+  if (decisions.length) {
+    checkPage(22);
+    pdfSectionHeader(doc, 'Décisions', null, y, M, maxW, C);
+    y += 13;
+    for (const d of decisions) {
+      checkPage(12);
+      const dL = doc.splitTextToSize('✓ ' + d, maxW - 12);
+      const dH = dL.length * 5.2 + 6;
+      doc.setFillColor(225, 245, 235); doc.setDrawColor(150, 210, 180); doc.setLineWidth(0.2);
+      doc.roundedRect(M, y, maxW, dH, 2.5, 2.5, 'FD');
+      doc.setFillColor(61, 184, 122); doc.roundedRect(M, y, 3.5, dH, 1.5, 1.5, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(25, 100, 60);
+      doc.text(dL, M + 7, y + 6);
+      y += dH + 4;
+    }
+    y += 4;
+  }
+
+  // ── ACTIONS ──
+  const actions = s ? (s.actions||[]).filter(a => checked['action:'+(a.qui||'?')+':'+(a.quoi||'')]) : [];
+  if (actions.length) {
+    checkPage(22);
+    pdfSectionHeader(doc, 'Actions', null, y, M, maxW, C);
+    y += 13;
+    // En-tête tableau
+    const colQui = 40, colQuand = 32, colQuoi = maxW - colQui - colQuand;
+    doc.setFillColor(...C.accentDark); doc.rect(M, y, maxW, 7, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...C.white);
+    doc.text('QUI', M + 3, y + 4.8);
+    doc.text('QUOI', M + colQui + 3, y + 4.8);
+    doc.text('QUAND', M + colQui + colQuoi + 3, y + 4.8);
+    y += 7;
+    actions.forEach((a, i) => {
+      checkPage(10);
+      const rowH = 9;
+      doc.setFillColor(i%2===0 ? 243 : 251, i%2===0 ? 246 : 253, 255);
+      doc.setDrawColor(...C.blockBdr); doc.setLineWidth(0.15);
+      doc.rect(M, y, maxW, rowH, 'FD');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...C.accent);
+      doc.text(doc.splitTextToSize(a.qui || 'À définir', colQui - 4)[0], M + 3, y + 5.8);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(...C.dark);
+      doc.text(doc.splitTextToSize(a.quoi || '', colQuoi - 4)[0], M + colQui + 3, y + 5.8);
+      doc.setFont('helvetica', 'italic'); doc.setTextColor(...C.muted);
+      doc.text(doc.splitTextToSize(a.quand || '', colQuand - 4)[0], M + colQui + colQuoi + 3, y + 5.8);
+      y += rowH;
+    });
+    y += 8;
+  }
+
+  // ── PROCHAINE ÉTAPE ──
+  if (s && checked['prochaine'] && s.prochaine_etape) {
+    checkPage(18);
+    pdfSectionHeader(doc, 'Prochaine étape', null, y, M, maxW, C);
+    y += 13;
+    const pL = doc.splitTextToSize(s.prochaine_etape, maxW - 12);
+    const pH = pL.length * 5.2 + 8;
+    doc.setFillColor(250, 240, 220); doc.setDrawColor(220, 180, 100); doc.setLineWidth(0.2);
+    doc.roundedRect(M, y, maxW, pH, 2.5, 2.5, 'FD');
+    doc.setFillColor(234, 158, 40); doc.roundedRect(M, y, 3.5, pH, 1.5, 1.5, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(140, 80, 10);
+    doc.text(pL, M + 7, y + 6);
+    y += pH + 8;
+  }
+
+  // ── ACTIONS IA ──
+  const actionsIA = Object.entries(checked).filter(([k]) => k.startsWith('action_ia:'));
+  if (actionsIA.length) {
+    checkPage(22);
+    pdfSectionHeader(doc, 'Actions IA', null, y, M, maxW, C);
+    y += 13;
+    for (const [, v] of actionsIA) {
+      checkPage(12);
+      const aL = doc.splitTextToSize('→ ' + v, maxW - 12);
+      const aH = aL.length * 5.2 + 6;
+      pdfBlock(doc, aL, [], y, M, maxW, aH, C);
+      y += aH + 4;
+    }
+    y += 4;
+  }
+
+  // ── TRANSCRIPTION ──
+  if (checked['transcript']) {
+    checkPage(22);
+    pdfSectionHeader(doc, 'Transcription', null, y, M, maxW, C);
+    y += 13;
+    const tL = doc.splitTextToSize(checked['transcript'], maxW - 12);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...C.muted);
+    for (const line of tL) {
+      checkPage(6);
+      doc.text(line, M + 4, y);
+      y += 5;
     }
   }
-  doc.save((meta.title||'ponk-note')+'-'+new Date().toISOString().slice(0,10)+'.pdf');
+
+  pdfFooter(doc, pageW, pageH, M, C, 'Généré par Ponk Note · ' + new Date().toLocaleDateString('fr-FR'));
+  doc.save((meta.title||'ponk-note').replace(/[^a-z0-9\s]/gi,'').trim().replace(/\s+/g,'_') + '-' + new Date().toISOString().slice(0,10) + '.pdf');
 }
 
 async function sendByEmail() {
