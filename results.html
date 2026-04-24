@@ -289,6 +289,7 @@
 <script>
 const ACTION_REGISTRY = {}; // stocke url par actionId
 const ACTION_META = {}; // stocke métadonnées action par actionId
+let actionIdCounter = 0; // garantit l'unicité des IDs
 
 const LABELS = {
   REUNION:'🏢 Réunion', COURSES:'🛒 Courses', CHANTIER:'🔨 Chantier',
@@ -519,8 +520,8 @@ function buildActionCard(a) {
       </div>
     </div>`;
   }
-  // Carte cliquable — ID unique basé sur type+titre+description pour éviter collisions
-  const actionId = 'action_' + btoa(encodeURIComponent((a.type||'') + (a.titre||'') + (a.description||'').substring(0,20))).substring(0,20);
+  // ID unique garanti par compteur incrémental
+  const actionId = 'action_' + (actionIdCounter++);
   ACTION_REGISTRY[actionId] = url || '';
   ACTION_META[actionId] = a; // stocker l'action complète pour generateaction
   // ✓ vert si cliqué depuis les résultats (localStorage) — seulement pour actions Gemini
