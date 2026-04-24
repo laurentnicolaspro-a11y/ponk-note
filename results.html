@@ -351,21 +351,17 @@ function render(data, meta) {
     } catch(e) { return []; }
   })();
 
-  const combined = [...geminiActions, ...bubbleActions];
-  const seen = {};
-  const deduped = combined.filter(a => {
-    const key = a.type;
-    if (!seen[key]) { seen[key] = a; return true; }
-    const current = seen[key];
-    // Une bulle _done gagne toujours — elle a été exécutée par l'utilisateur
-    if (a._done) { seen[key] = a; return true; }
-    if (current._done) return false;
-    // Sinon garder le plus riche (avec corps/sujet)
-    const currentScore = (current.corps ? 2 : 0) + (current.sujet ? 1 : 0);
-    const newScore = (a.corps ? 2 : 0) + (a.sujet ? 1 : 0);
-    if (newScore > currentScore) { seen[key] = a; return true; }
-    return false;
-  }).filter(Boolean);
+  // Séparer les bulles done, kept, et les actions Gemini
+  const bubblesDone  = bubbleActions.filter(b => b._done);
+  const bubblesKept  = bubbleActions.filter(b => !b._done); // confirmed === 'kept'
+
+  // Les bulles 'done' remplacent l'action Gemini du même type
+  const seenDone = {};
+  bubblesDone.forEach(b => seenDone[b.type] = true);
+  const geminiFiltered = geminiActions.filter(a => !seenDone[a.type]);
+
+  // Les bulles 'kept' s'ajoutent toujours (ne dédupliquent pas)
+  const deduped = [...bubblesDone, ...geminiFiltered, ...bubblesKept];
   // Si une action ANALYSE existe, supprimer les RECHERCHE (doublon thématique)
   const hasAnalyse = deduped.some(a =>
     a.type === 'ANALYSE' || (a.titre && /analys/i.test(a.titre)) || (a.description && /analys/i.test(a.description))
