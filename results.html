@@ -340,8 +340,8 @@ function render(data, meta) {
   }
 
   // ── Actions IA ──
-  const geminiActions = data.actions_ia || [];
-  const bubbleActions = (() => {
+  // Uniquement les bulles créées manuellement par l'utilisateur
+  const allActions = (() => {
     try {
       const saved = JSON.parse(localStorage.getItem('ponk_action_bubbles') || '[]');
       return saved.map(b => ({
@@ -351,37 +351,6 @@ function render(data, meta) {
       }));
     } catch(e) { return []; }
   })();
-
-  // Toutes les bulles s'affichent — jamais de déduplication entre bulles
-  // Une action Gemini est supprimée seulement si une bulle avec un contenu très similaire existe
-  function isSimilar(a, b) {
-    const textA = (a.description || a.titre || '').toLowerCase().trim();
-    const textB = (b.description || b.titre || '').toLowerCase().trim();
-    if (a.type !== b.type) return false;
-    if (!textA || !textB) return false;
-    // Similaire si l'un contient l'autre ou si >70% des mots en commun
-    if (textA.includes(textB) || textB.includes(textA)) return true;
-    const wordsA = textA.split(/\s+/);
-    const wordsB = textB.split(/\s+/);
-    const common = wordsA.filter(w => w.length > 3 && wordsB.includes(w));
-    return common.length / Math.min(wordsA.length, wordsB.length) > 0.7;
-  }
-
-  // Filtrer les actions Gemini qui ont un doublon dans les bulles
-  const geminiFiltered = geminiActions.filter(ga =>
-    !bubbleActions.some(ba => isSimilar(ga, ba))
-  );
-
-  // Résultat : toutes les bulles + actions Gemini non doublonnées
-  const deduped = [...bubbleActions, ...geminiFiltered];
-  // Si une action ANALYSE existe, supprimer les RECHERCHE (doublon thématique)
-  const hasAnalyse = deduped.some(a =>
-    a.type === 'ANALYSE' || (a.titre && /analys/i.test(a.titre)) || (a.description && /analys/i.test(a.description))
-  );
-  const allActions = hasAnalyse
-    ? deduped.filter(a => a.type !== 'RECHERCHE')
-    : deduped;
-  // Toujours au moins afficher quelque chose
 
   if (allActions.length > 0) {
     const actionsHTML = `<div class="actions-ia-wrap">${allActions.map(a => buildActionCard(a)).join('')}</div>`;
