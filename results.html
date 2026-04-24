@@ -398,8 +398,10 @@ function render(data, meta) {
   })();
 
   if (allActions.length > 0) {
-    const actionsHTML = `<div class="actions-ia-wrap" id="actionsIAWrap">${allActions.map(a => buildActionCard(a)).join('')}</div>`;
-    c.appendChild(makeCard('✨ Actions IA', actionsHTML));
+    const actionsHTML = `<div class="actions-ia-wrap" id="actionsIAWrap">${allActions.map(a => buildActionCard(a)).join('')}</div>
+      <button class="add-btn" onclick="openAddActionIA()" style="margin-top:8px">+ Ajouter une action</button>`;
+    const iaCard = makeCard('✨ Actions IA', actionsHTML);
+    c.appendChild(iaCard);
   }
   localStorage.removeItem('ponk_action_bubbles');
 
@@ -668,6 +670,7 @@ function buildActionCard(a) {
           <span style="color:#3db87a;font-size:14px;font-weight:700">✓</span>
         </div>
       </div>
+      <button class="edit-btn" style="color:var(--danger)" onclick="this.closest('[style*=flex]').remove()" title="Supprimer">🗑</button>
     </div>`;
   }
   // ID unique garanti par compteur incrémental
@@ -692,6 +695,7 @@ function buildActionCard(a) {
           <span style="color:#3db87a;font-size:14px;font-weight:700">✓</span>
         </div>
       </div>
+      <button class="edit-btn" style="color:var(--danger)" onclick="this.closest('[style*=flex]').remove()" title="Supprimer">🗑</button>
     </div>`;
   }
   const cbIdAction = 'ecb_action_' + actionId;
@@ -705,6 +709,7 @@ function buildActionCard(a) {
       </div>
       <div class="action-ia-arrow"><svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg></div>
     </div>
+    <button class="edit-btn" style="color:var(--danger)" onclick="deleteActionIA('${actionId}')" title="Supprimer">🗑</button>
   </div>`;
 }
 
@@ -734,6 +739,97 @@ async function runDeepAnalysis(id, query) {
   }
   loading.classList.remove('visible');
   if (arrow) arrow.style.display = 'flex';
+}
+
+// Supprimer une action IA
+function deleteActionIA(actionId, el) {
+  const container = el || document.getElementById(actionId)?.closest('[style*="display:flex"]');
+  if (container) {
+    container.style.transition = 'opacity 0.2s';
+    container.style.opacity = '0';
+    setTimeout(() => container.remove(), 200);
+  }
+}
+
+// Ouvrir le menu d'ajout d'action IA (même que l'enregistrement)
+const ACTION_TYPES_IA = {
+  'EMAIL':      { icon:'📧', label:'Email' },
+  'APPEL':      { icon:'📞', label:'Appel' },
+  'WHATSAPP':   { icon:'💬', label:'Message' },
+  'CALENDRIER': { icon:'📅', label:'Calendrier' },
+  'MAPS':       { icon:'🗺️', label:'Itinéraire' },
+  'RESERVATION':{ icon:'🎫', label:'Réservation' },
+  'COMMANDE':   { icon:'🛒', label:'Commande' },
+  'RECHERCHE':  { icon:'🔍', label:'Recherche' },
+  'ANALYSE':    { icon:'🧠', label:'Analyse' },
+};
+
+function openAddActionIA() {
+  // Créer le menu
+  let menu = document.getElementById('addIAMenu');
+  if (menu) { menu.remove(); return; }
+
+  menu = document.createElement('div');
+  menu.id = 'addIAMenu';
+  menu.style.cssText = 'position:fixed;inset:0;z-index:400;display:flex;align-items:flex-end;justify-content:center;padding:0 20px 20px;background:rgba(0,0,0,0.25);backdrop-filter:blur(6px);animation:fadeIn 0.2s ease;';
+  menu.innerHTML = `
+    <div style="background:var(--surface,rgba(255,255,255,0.95));border-radius:20px;padding:20px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+      <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:14px;text-align:center;">Ajouter une action</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
+        ${Object.entries(ACTION_TYPES_IA).map(([type, cfg]) => `
+          <div onclick="selectAddActionIA('${type}','${cfg.icon}','${cfg.label}')" style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 6px;border-radius:12px;background:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.7);cursor:pointer;">
+            <span style="font-size:22px;">${cfg.icon}</span>
+            <span style="font-size:9px;font-weight:500;color:var(--muted,#888);text-align:center;">${cfg.label}</span>
+          </div>`).join('')}
+      </div>
+      <button onclick="document.getElementById('addIAMenu').remove()" style="width:100%;padding:12px;border-radius:12px;border:none;background:rgba(0,0,0,0.06);color:var(--muted,#888);font-family:inherit;font-size:14px;cursor:pointer;">Annuler</button>
+    </div>`;
+  menu.onclick = e => { if (e.target === menu) menu.remove(); };
+  document.body.appendChild(menu);
+}
+
+function selectAddActionIA(type, icon, label) {
+  document.getElementById('addIAMenu')?.remove();
+
+  // Ouvrir modal de saisie
+  let modal = document.getElementById('addIAModal');
+  if (modal) modal.remove();
+
+  modal = document.createElement('div');
+  modal.id = 'addIAModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,0.3);backdrop-filter:blur(8px);';
+  modal.innerHTML = `
+    <div style="background:var(--surface,rgba(255,255,255,0.95));border-radius:20px;padding:24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+      <div style="font-size:36px;text-align:center;margin-bottom:8px;">${icon}</div>
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted,#888);text-align:center;margin-bottom:12px;">${label}</div>
+      <textarea id="addIAText" placeholder="Décris ton action ${label.toLowerCase()}…" style="width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid rgba(74,127,212,0.3);background:rgba(255,255,255,0.5);font-family:inherit;font-size:14px;outline:none;resize:none;min-height:80px;margin-bottom:16px;"></textarea>
+      <div style="display:flex;gap:10px;">
+        <button onclick="document.getElementById('addIAModal').remove()" style="flex:1;padding:13px;border-radius:12px;border:none;background:rgba(0,0,0,0.06);color:var(--muted,#888);font-family:inherit;font-size:15px;cursor:pointer;">Annuler</button>
+        <button onclick="confirmAddActionIA('${type}','${icon}','${label}')" style="flex:1;padding:13px;border-radius:12px;border:none;background:#4a7fd4;color:#fff;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;">Ajouter</button>
+      </div>
+    </div>`;
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+  document.body.appendChild(modal);
+  setTimeout(() => document.getElementById('addIAText')?.focus(), 100);
+}
+
+function confirmAddActionIA(type, icon, label) {
+  const text = document.getElementById('addIAText')?.value.trim();
+  if (!text) return;
+  document.getElementById('addIAModal')?.remove();
+
+  const newAction = {
+    type, icone: icon, titre: label,
+    description: text, _fromBubble: true, _done: false
+  };
+
+  const wrap = document.getElementById('actionsIAWrap');
+  if (wrap) {
+    const html = buildActionCard(newAction);
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    if (div.firstChild) wrap.insertBefore(div.firstChild, wrap.firstChild);
+  }
 }
 
 async function generateActionsIA() {
