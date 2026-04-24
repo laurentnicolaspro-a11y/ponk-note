@@ -355,9 +355,13 @@ function render(data, meta) {
     const key = a.type;
     if (!seen[key]) { seen[key] = a; return true; }
     const current = seen[key];
+    // Une bulle _done gagne toujours — elle a été exécutée par l'utilisateur
+    if (a._done) { seen[key] = a; return true; }
+    if (current._done) return false;
+    // Sinon garder le plus riche (avec corps/sujet)
     const currentScore = (current.corps ? 2 : 0) + (current.sujet ? 1 : 0);
     const newScore = (a.corps ? 2 : 0) + (a.sujet ? 1 : 0);
-    if (newScore > currentScore) { seen[key] = a; combined[combined.indexOf(current)] = null; return true; }
+    if (newScore > currentScore) { seen[key] = a; return true; }
     return false;
   }).filter(Boolean);
   // Si une action ANALYSE existe, supprimer les RECHERCHE (doublon thématique)
