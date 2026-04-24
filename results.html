@@ -288,6 +288,7 @@
 
 <script>
 const ACTION_REGISTRY = {}; // stocke url par actionId
+const ACTION_META = {}; // stocke métadonnées action par actionId
 
 const LABELS = {
   REUNION:'🏢 Réunion', COURSES:'🛒 Courses', CHANTIER:'🔨 Chantier',
@@ -538,6 +539,7 @@ function buildActionCard(a) {
   // Carte cliquable — ID unique basé sur type+titre+description pour éviter collisions
   const actionId = 'action_' + btoa(encodeURIComponent((a.type||'') + (a.titre||'') + (a.description||'').substring(0,20))).substring(0,20);
   ACTION_REGISTRY[actionId] = url || '';
+  ACTION_META[actionId] = a; // stocker l'action complète pour generateaction
   // ✓ vert si cliqué depuis les résultats (localStorage) — seulement pour actions Gemini
   const alreadyDone = !a._fromBubble && localStorage.getItem('ponk_done_' + actionId);
   if (alreadyDone) {
@@ -590,20 +592,60 @@ async function runDeepAnalysis(id, query) {
   if (arrow) arrow.style.display = 'flex';
 }
 
-function markActionDone(actionId) {
-  const url = ACTION_REGISTRY[actionId] || '';
+async function markActionDone(actionId) {
+  const action = ACTION_META[actionId];
+  const el = document.getElementById(actionId);
+
+  // Afficher spinner pendant la génération
+  if (el) {
+    el.onclick = null;
+    el.style.opacity = '0.6';
+    const arrow = el.querySelector('.action-ia-arrow');
+    if (arrow) arrow.outerHTML = `<div id="spinner_${actionId}" style="width:28px;height:28px;border-radius:50%;border:2px solid rgba(74,127,212,0.2);border-top-color:#4a7fd4;animation:spin 0.8s linear infinite;flex-shrink:0;"></div>`;
+  }
+
+  let url = ACTION_REGISTRY[actionId] || '';
+
+  // Pour EMAIL et WHATSAPP → générer le contenu avec l'IA
+  if (action && (action.type === 'EMAIL' || action.type === 'WHATSAPP')) {
+    try {
+      const profile = localStorage.getItem('ponk_profile') || '';
+      const contacts = (() => { try { return JSON.parse(localStorage.getItem('ponk_contacts') || '[]'); } catch(e) { return []; } })();
+      const res = await fetch('/api/generateaction', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ type: action.type, text: action.description || action.titre, profile, contacts })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const prefMail = localStorage.getItem('ponk_pref_mail') || 'gmail';
+        if (action.type === 'EMAIL') {
+          const sujet = encodeURIComponent(data.sujet || action.titre || '');
+          const corps = encodeURIComponent(data.corps || action.description || '');
+          const to    = encodeURIComponent(data.destinataire || action.destinataire || '');
+          if (prefMail === 'gmail')   url = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${sujet}&body=${corps}`;
+          if (prefMail === 'outlook') url = `https://outlook.live.com/mail/0/deeplink/compose?to=${to}&subject=${sujet}&body=${corps}`;
+          if (prefMail === 'yahoo')   url = `https://compose.mail.yahoo.com/?to=${to}&subject=${sujet}&body=${corps}`;
+        } else if (action.type === 'WHATSAPP') {
+          url = `https://wa.me/?text=${encodeURIComponent(data.message || action.description || '')}`;
+        }
+      }
+    } catch(e) { console.warn('generateaction failed:', e); }
+  }
+
   // Ouvrir l'URL
   if (url && url !== 'null' && url !== '') window.open(url, '_blank');
-  // Marquer comme fait dans localStorage
+
+  // Marquer comme fait
   localStorage.setItem('ponk_done_' + actionId, '1');
-  // Mettre à jour visuellement la carte
-  const el = document.getElementById(actionId);
-  if (!el) return;
-  el.onclick = null;
-  el.style.opacity = '0.75';
-  el.style.cursor = 'default';
-  const arrow = el.querySelector('.action-ia-arrow');
-  if (arrow) arrow.outerHTML = `<div style="width:28px;height:28px;border-radius:50%;background:rgba(61,184,122,0.15);border:1.5px solid rgba(61,184,122,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="color:#3db87a;font-size:14px;font-weight:700">✓</span></div>`;
+
+  // Mettre à jour visuellement
+  if (el) {
+    el.style.opacity = '0.75';
+    el.style.cursor = 'default';
+    const spinner = document.getElementById('spinner_' + actionId);
+    if (spinner) spinner.outerHTML = `<div style="width:28px;height:28px;border-radius:50%;background:rgba(61,184,122,0.15);border:1.5px solid rgba(61,184,122,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="color:#3db87a;font-size:14px;font-weight:700">✓</span></div>`;
+  }
 }
 
 function getActionUrl(a) {
