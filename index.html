@@ -1126,16 +1126,35 @@
     const duration = fmt(seconds);
     const now      = new Date();
     const datetime = now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) + ' à ' + now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-    const fd = new FormData();
-    fd.append('audio', blob, 'rec.webm');
-    fd.append('title', title); fd.append('duration', duration); fd.append('datetime', datetime);
-    fd.append('profile', localStorage.getItem('ponk_profile') || 'user');
+    const profile  = localStorage.getItem('ponk_profile') || 'user';
     const savedBubbles = actionBubbles.filter(b => b.confirmed !== false);
-    fd.append('bubbles', JSON.stringify(savedBubbles));
+
     try {
-      const res = await fetch('/api/analyze', {method:'POST', body:fd});
-      if(!res.ok) throw new Error('Erreur '+res.status);
-      const data = await res.json();
+      // Étape 1 : upload audio sur Supabase, récupérer le fileName
+      const uploadFd = new FormData();
+      uploadFd.append('audio', blob, 'rec.webm');
+      uploadFd.append('title', title);
+      uploadFd.append('profile', profile);
+      const uploadRes = await fetch('/api/upload', {method:'POST', body:uploadFd});
+      if (!uploadRes.ok) throw new Error('Upload audio échoué ' + uploadRes.status);
+      const uploadData = await uploadRes.json();
+      const fileName = uploadData.fileName;
+
+      // Étape 2 : envoyer fileName + métadonnées à analyze (pas le fichier brut)
+      const analyzeRes = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          fileName,
+          title,
+          duration,
+          datetime,
+          profile,
+          bubbles: savedBubbles
+        })
+      });
+      if (!analyzeRes.ok) throw new Error('Erreur analyse ' + analyzeRes.status);
+      const data = await analyzeRes.json();
       localStorage.setItem('ponk_result', JSON.stringify(data));
       localStorage.setItem('ponk_meta', JSON.stringify({title, duration, datetime}));
       saveBubbles();
