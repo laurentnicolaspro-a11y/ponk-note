@@ -1127,7 +1127,7 @@
     const now      = new Date();
     const datetime = now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) + ' à ' + now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
     const profile  = localStorage.getItem('ponk_profile') || 'user';
-    const savedBubbles = actionBubbles.filter(b => b.confirmed !== false);
+    const savedBubbles = actionBubbles.filter(b => b.confirmed === true || b.confirmed === 'done' || b.confirmed === 'kept');
 
     try {
       // Étape 1 : upload audio sur Supabase, récupérer le fileName
@@ -1502,7 +1502,7 @@
 
     if (bubble.type === 'CALENDRIER') {
       document.getElementById('bubbleModal').classList.add('hidden');
-      bubble.confirmed = true;
+      bubble.confirmed = 'done';
       removeBubbleEl(currentBubbleIndex);
       showCalendrierModal(bubble.text);
       return;
@@ -1510,7 +1510,7 @@
 
     if (bubble.type === 'COMMANDE') {
       document.getElementById('bubbleModal').classList.add('hidden');
-      bubble.confirmed = true;
+      bubble.confirmed = 'done';
       removeBubbleEl(currentBubbleIndex);
       showCommandeModal(bubble.text);
       return;
@@ -1518,7 +1518,7 @@
 
     if (bubble.type === 'WHATSAPP') {
       document.getElementById('bubbleModal').classList.add('hidden');
-      bubble.confirmed = true;
+      bubble.confirmed = 'done';
       removeBubbleEl(currentBubbleIndex);
       const contactsWA = (() => { try { return JSON.parse(localStorage.getItem('ponk_contacts') || '[]'); } catch(e) { return []; } })();
       const lowerWA = bubble.text.toLowerCase();
@@ -1542,7 +1542,7 @@
 
     if (bubble.type === 'MAPS') {
       document.getElementById('bubbleModal').classList.add('hidden');
-      bubble.confirmed = true;
+      bubble.confirmed = 'done';
       removeBubbleEl(currentBubbleIndex);
       showMapsModal(bubble.text);
       return;
@@ -1550,7 +1550,7 @@
 
     if (bubble.type === 'ANALYSE') {
       document.getElementById('bubbleModal').classList.add('hidden');
-      bubble.confirmed = true;
+      bubble.confirmed = 'done';
       removeBubbleEl(currentBubbleIndex);
       showAnalyseModal(bubble.text);
       return;
@@ -1558,7 +1558,7 @@
 
     if (bubble.type === 'RESERVATION') {
       document.getElementById('bubbleModal').classList.add('hidden');
-      bubble.confirmed = true;
+      bubble.confirmed = 'done';
       removeBubbleEl(currentBubbleIndex);
       showReservationModal(bubble.text);
       return;
@@ -1566,7 +1566,7 @@
 
     if (bubble.type === 'APPEL') {
       document.getElementById('bubbleModal').classList.add('hidden');
-      bubble.confirmed = true;
+      bubble.confirmed = 'done';
       removeBubbleEl(currentBubbleIndex);
       const contacts = (() => { try { return JSON.parse(localStorage.getItem('ponk_contacts') || '[]'); } catch(e) { return []; } })();
       const lower = bubble.text.toLowerCase();
@@ -1577,7 +1577,7 @@
 
     if (bubble.type === 'RAPPEL') {
       document.getElementById('bubbleModal').classList.add('hidden');
-      bubble.confirmed = true;
+      bubble.confirmed = 'done';
       removeBubbleEl(currentBubbleIndex);
       showRappelModal(bubble.text);
       return;
@@ -1623,7 +1623,7 @@
       if (url) window.open(url, '_blank');
     }
 
-    bubble.confirmed = true;
+    bubble.confirmed = 'done';
     removeBubbleEl(currentBubbleIndex);
     document.getElementById('bubbleModal').classList.add('hidden');
     setTimeout(() => declencherRebond(
@@ -1637,7 +1637,7 @@
     if (currentBubbleIndex === null) return;
     const edited = document.getElementById('bubbleModalText').value.trim();
     if (edited) actionBubbles[currentBubbleIndex].text = edited;
-    actionBubbles[currentBubbleIndex].confirmed = true;
+    actionBubbles[currentBubbleIndex].confirmed = 'kept';
     removeBubbleEl(currentBubbleIndex);
     document.getElementById('bubbleModal').classList.add('hidden');
   }
@@ -1659,7 +1659,7 @@
   }
 
   function saveBubbles() {
-    const kept = actionBubbles.filter(b => b.confirmed !== false);
+    const kept = actionBubbles.filter(b => b.confirmed === true || b.confirmed === 'done' || b.confirmed === 'kept');
     localStorage.setItem('ponk_action_bubbles', JSON.stringify(kept));
   }
 
