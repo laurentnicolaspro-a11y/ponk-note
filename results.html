@@ -522,6 +522,7 @@ function buildActionCard(a) {
   }
   const url = getActionUrl(a);
   // Bulle "Faire" déjà exécutée → badge vert ✓ à la place de la flèche
+  // ✓ vert UNIQUEMENT si bulle explicitement exécutée (_done = confirmed 'done')
   if (a._done) {
     return `<div class="action-ia-card" style="opacity:0.75;cursor:default;">
       <div class="action-ia-icon">${a.icone}</div>
@@ -534,11 +535,12 @@ function buildActionCard(a) {
       </div>
     </div>`;
   }
-  const actionId = 'action_' + btoa(encodeURIComponent((a.type||'') + (a.titre||''))).substring(0,16);
-  // Stocker l'URL dans le registre (évite les problèmes de caractères spéciaux en inline)
+  // Carte cliquable — ID unique basé sur type+titre+description pour éviter collisions
+  const actionId = 'action_' + btoa(encodeURIComponent((a.type||'') + (a.titre||'') + (a.description||'').substring(0,20))).substring(0,20);
   ACTION_REGISTRY[actionId] = url || '';
-  const alreadyDone = localStorage.getItem('ponk_done_' + actionId);
-  if (alreadyDone || a._done) {
+  // ✓ vert si cliqué depuis les résultats (localStorage) — seulement pour actions Gemini
+  const alreadyDone = !a._fromBubble && localStorage.getItem('ponk_done_' + actionId);
+  if (alreadyDone) {
     return `<div class="action-ia-card" style="opacity:0.75;cursor:default;">
       <div class="action-ia-icon">${a.icone}</div>
       <div class="action-ia-info">
