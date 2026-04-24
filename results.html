@@ -351,17 +351,15 @@ function render(data, meta) {
     } catch(e) { return []; }
   })();
 
-  // Séparer les bulles done, kept, et les actions Gemini
-  const bubblesDone  = bubbleActions.filter(b => b._done);
-  const bubblesKept  = bubbleActions.filter(b => !b._done); // confirmed === 'kept'
+  // Bulles done et kept remplacent toutes les deux l'action Gemini du même type
+  const seenBubble = {};
+  bubbleActions.forEach(b => seenBubble[b.type] = b);
 
-  // Les bulles 'done' remplacent l'action Gemini du même type
-  const seenDone = {};
-  bubblesDone.forEach(b => seenDone[b.type] = true);
-  const geminiFiltered = geminiActions.filter(a => !seenDone[a.type]);
+  // Garder les actions Gemini seulement si pas de bulle du même type
+  const geminiFiltered = geminiActions.filter(a => !seenBubble[a.type]);
 
-  // Les bulles 'kept' s'ajoutent toujours (ne dédupliquent pas)
-  const deduped = [...bubblesDone, ...geminiFiltered, ...bubblesKept];
+  // Résultat : bulles en premier, puis actions Gemini non écrasées
+  const deduped = [...bubbleActions, ...geminiFiltered];
   // Si une action ANALYSE existe, supprimer les RECHERCHE (doublon thématique)
   const hasAnalyse = deduped.some(a =>
     a.type === 'ANALYSE' || (a.titre && /analys/i.test(a.titre)) || (a.description && /analys/i.test(a.description))
