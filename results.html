@@ -451,7 +451,7 @@ function render(data, meta) {
     let memoHTML = '<div style="display:flex;flex-direction:column;gap:8px;">';
     memoHTML += '<div class="export-row" style="align-items:flex-start;">' +
       '<input type="checkbox" class="export-cb" id="ecb_memo_notes" checked data-export-label="memo_notes" data-export-content="" style="margin-top:10px;">' +
-      '<textarea id="memoNotesArea" placeholder="Vos notes…" oninput="document.getElementById('ecb_memo_notes').dataset.exportContent=encodeURIComponent(this.value)" style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.7);background:rgba(255,255,255,0.5);font-family:inherit;font-size:13px;color:var(--text);outline:none;resize:none;min-height:100px;"></textarea>' +
+      '<textarea id="memoNotesArea" placeholder="Vos notes…" oninput="saveMemoField(this)" style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.7);background:rgba(255,255,255,0.5);font-family:inherit;font-size:13px;color:var(--text);outline:none;resize:none;min-height:100px;"></textarea>' +
       '</div>';
     memoHTML += '</div>';
     c.appendChild(makeCard('📝 Mémo', memoHTML, true));
