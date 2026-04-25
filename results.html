@@ -446,23 +446,13 @@ function render(data, meta) {
   }
 
   // ── Audio ──
-  // Mémo — toujours visible
+  // Mémo — toujours visible, toujours vierge
   {
-    const memo = data.memo || {};
-    const rappels = memo.rappels || [];
     let memoHTML = '<div style="display:flex;flex-direction:column;gap:8px;">';
-    memoHTML += '<div style="display:flex;flex-direction:column;gap:5px;">';
-    rappels.forEach((r, i) => {
-      memoHTML += '<div class="export-row" style="align-items:center;">' +
-        '<input type="checkbox" class="export-cb" checked data-export-label="memo_rappel" data-export-content="' + encodeURIComponent(r) + '">' +
-        '<div class="point-item" style="background:none;padding:0;flex:1;">' + r + '</div>' +
-        '<button class="edit-btn" style="color:var(--danger)" onclick="this.closest(\'.export-row\').remove()">🗑</button>' +
-        '</div>';
-    });
-    memoHTML += '</div>';
-    const notes = memo.notes || '';
-    memoHTML += '<textarea placeholder="Notes libres…" onblur="saveMemoField(this)" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.7);background:rgba(255,255,255,0.5);font-family:inherit;font-size:13px;color:var(--text);outline:none;resize:none;min-height:80px;">' + notes + '</textarea>';
-    memoHTML += '<button class="add-btn" onclick="addMemoRappel(this)">+ Ajouter un rappel</button>';
+    memoHTML += '<div class="export-row" style="align-items:flex-start;">' +
+      '<input type="checkbox" class="export-cb" id="ecb_memo_notes" checked data-export-label="memo_notes" data-export-content="" style="margin-top:10px;">' +
+      '<textarea id="memoNotesArea" placeholder="Vos notes…" oninput="document.getElementById('ecb_memo_notes').dataset.exportContent=encodeURIComponent(this.value)" style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.7);background:rgba(255,255,255,0.5);font-family:inherit;font-size:13px;color:var(--text);outline:none;resize:none;min-height:100px;"></textarea>' +
+      '</div>';
     memoHTML += '</div>';
     c.appendChild(makeCard('📝 Mémo', memoHTML, true));
   }
@@ -547,6 +537,9 @@ function saveMemoField(textarea) {
   if (!data.memo) data.memo = {};
   data.memo.notes = textarea.value;
   localStorage.setItem('ponk_result', JSON.stringify(data));
+  // Mettre à jour le data-export-content de la case
+  const cb = document.getElementById('ecb_memo_notes');
+  if (cb) cb.dataset.exportContent = encodeURIComponent(textarea.value);
 }
 
 function addMemoRappel(btn) {
@@ -717,19 +710,24 @@ function buildActionCard(a) {
     (a.titre && /analys|étude|compar|bilan|rapport/i.test(a.titre));
   if (isAnalyse) {
     const id = 'analyse_' + (analyseCardCounter++);
-    return `<div class="action-ia-card" style="flex-direction:column;align-items:stretch;">
-      <div style="display:flex;align-items:center;gap:14px;" onclick="runDeepAnalysis('${id}', this.getAttribute('data-query'))" data-query="${(a.description || a.titre).replace(/"/g,'&quot;')}">
-        <div class="action-ia-icon">${a.icone}</div>
-        <div class="action-ia-info">
-          <div class="action-ia-titre">${a.titre}</div>
-          <div class="action-ia-desc">${a.description}</div>
+  const cbIdAnalyse = 'ecb_action_' + actionId;
+    return `<div style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" class="export-cb" id="${cbIdAnalyse}" checked data-export-label="action_ia:${(a.titre||'').replace(/"/g,'')}" data-export-content="${encodeURIComponent((a.titre||'') + ' — ' + (a.description||''))}">
+      <div class="action-ia-card" style="flex-direction:column;align-items:stretch;flex:1;margin:0">
+        <div style="display:flex;align-items:center;gap:14px;" onclick="runDeepAnalysis('${id}', this.getAttribute('data-query'))" data-query="${(a.description || a.titre).replace(/"/g,'&quot;')}">
+          <div class="action-ia-icon">${a.icone}</div>
+          <div class="action-ia-info">
+            <div class="action-ia-titre">${a.titre}</div>
+            <div class="action-ia-desc">${a.description}</div>
+          </div>
+          <div class="action-ia-arrow" id="arrow_${id}">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg>
+          </div>
         </div>
-        <div class="action-ia-arrow" id="arrow_${id}">
-          <svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg>
-        </div>
+        <div class="analysis-loading" id="loading_${id}"><div class="analysis-spinner"></div><span>Analyse en cours…</span></div>
+        <div class="analysis-result" id="result_${id}"></div>
       </div>
-      <div class="analysis-loading" id="loading_${id}"><div class="analysis-spinner"></div><span>Analyse en cours…</span></div>
-      <div class="analysis-result" id="result_${id}"></div>
+      <button class="edit-btn" style="color:var(--danger)" onclick="this.closest('[style*=display]').remove()" title="Supprimer">🗑</button>
     </div>`;
   }
   const url = getActionUrl(a);
@@ -803,15 +801,15 @@ async function runDeepAnalysis(id, query) {
   loading.classList.add('visible');
   if (arrow) arrow.style.display = 'none';
   try {
-    const res = await fetch('/api/calendrier', {
+    const res = await fetch('/api/analyze', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({query})
+      body: JSON.stringify({ transcript_only: true, transcript: 'Fais une analyse approfondie sur : ' + query })
     });
     const data = await res.json();
-    if (data.analysis) {
-      result.innerHTML = data.analysis
-        .replace(/[*][*](.*?)[*][*]/g, '<strong>$1</strong>')
-        .replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
+    const actions = data.actions_ia || [];
+    const analysisText = actions.map(a => '<strong>' + a.titre + '</strong><br>' + a.description).join('<br><br>') || query;
+    if (analysisText) {
+      result.innerHTML = '<p>' + analysisText + '</p>';
       result.classList.add('visible');
     }
   } catch(e) {
@@ -1353,6 +1351,30 @@ async function exportPDF() {
     doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(140, 80, 10);
     doc.text(pL, M + 7, y + 6);
     y += pH + 8;
+  }
+
+  // ── MÉMO ──
+  const memoRappels = Object.entries(checked).filter(([k]) => k === 'memo_rappel');
+  const memoNotes = checked['memo_notes'] || '';
+  if (memoRappels.length || memoNotes) {
+    checkPage(22);
+    pdfSectionHeader(doc, 'Mémo', null, y, M, maxW, C);
+    y += 13;
+    for (const [, v] of memoRappels) {
+      checkPage(12);
+      const rL = doc.splitTextToSize('• ' + v, maxW - 12);
+      const rH = rL.length * 5.2 + 6;
+      pdfBlock(doc, rL, [], y, M, maxW, rH, C);
+      y += rH + 4;
+    }
+    if (memoNotes) {
+      checkPage(16);
+      const nL = doc.splitTextToSize(memoNotes, maxW - 12);
+      doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(...C.muted);
+      nL.forEach(line => { doc.text(line, M + 4, y); y += 5; });
+      y += 4;
+    }
+    y += 4;
   }
 
   // ── ACTIONS IA ──
