@@ -84,6 +84,9 @@ Détecte automatiquement quels types de contenu sont présents parmi :
 REUNION, COURSES, CHANTIER, IDEES, DEPLACEMENT, FINANCE, APPEL, MEDICAL, COURS, MEMO
 
 REUNION s'applique dès que : plusieurs personnes sont mentionnées OU un sujet professionnel/collectif est discuté OU des décisions/actions sont attribuées à des personnes.
+IDEES s'applique dès que : quelqu'un fait une proposition ("et si on...", "on pourrait...", "j'ai pensé à...", "ce serait bien de...", "idée de...", "on devrait envisager...") ou suggère quelque chose qui n'est pas encore une décision actée.
+COURS s'applique dès que : quelqu'un explique un concept, donne une définition ("c'est quoi X", "X c'est..."), cite des règles/chiffres/délais à retenir, ou enseigne quelque chose à quelqu'un d'autre.
+MEMO s'applique toujours comme fallback si aucun autre mode n'est détecté, ou si des notes libres sont prises.
 
 Réponds UNIQUEMENT avec un JSON valide, sans markdown, sans backticks.
 
@@ -118,8 +121,8 @@ Réponds UNIQUEMENT avec un JSON valide, sans markdown, sans backticks.
     "planning": ["Étape 1"]
   },
   "idees": {
-    "liste": ["Idée 1"],
-    "aApprofondir": ["Sujet à creuser"]
+    "liste": ["Idée proposée 1 — formulée clairement"],
+    "aApprofondir": ["Sujet à explorer davantage"]
   },
   "deplacement": {
     "lieux": [{"nom": "Nom du lieu", "adresse": "Adresse complète si possible"}],
@@ -141,10 +144,10 @@ Réponds UNIQUEMENT avec un JSON valide, sans markdown, sans backticks.
     "rdv": "Date/lieu si mentionné"
   },
   "cours": {
-    "matiere": "Matière ou sujet",
-    "pointsCles": ["Point clé 1"],
-    "aRetenir": ["Définition importante"],
-    "questions": ["Question à poser"]
+    "matiere": "Sujet ou matière enseignée",
+    "pointsCles": ["Concept clé expliqué 1"],
+    "aRetenir": ["Définition ou règle importante à mémoriser"],
+    "questions": ["Question posée ou à approfondir"]
   },
   "memo": {
     "rappels": ["Rappel 1"],
@@ -163,6 +166,9 @@ Règles pour summary :
 
 Règles générales :
 - Ne mets que les sections correspondant aux modes détectés
+- Pour "idees" : ne met que les vraies propositions/suggestions, pas les faits ou décisions
+- Pour "cours" : ne met que ce qui est expliqué/enseigné, pas ce qui est juste mentionné
+- Pour "memo" : notes libres, rappels, tout ce qui ne rentre pas ailleurs
 - Tout en français
 - Réponds UNIQUEMENT avec le JSON
 
