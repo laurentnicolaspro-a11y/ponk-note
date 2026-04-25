@@ -710,7 +710,7 @@ function buildActionCard(a) {
     (a.titre && /analys|étude|compar|bilan|rapport/i.test(a.titre));
   if (isAnalyse) {
     const id = 'analyse_' + (analyseCardCounter++);
-  const cbIdAnalyse = 'ecb_action_' + actionId;
+    const cbIdAnalyse = 'ecb_action_' + id;
     return `<div style="display:flex;align-items:center;gap:8px;">
       <input type="checkbox" class="export-cb" id="${cbIdAnalyse}" checked data-export-label="action_ia:${(a.titre||'').replace(/"/g,'')}" data-export-content="${encodeURIComponent((a.titre||'') + ' — ' + (a.description||''))}">
       <div class="action-ia-card" style="flex-direction:column;align-items:stretch;flex:1;margin:0">
