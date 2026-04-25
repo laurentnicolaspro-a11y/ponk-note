@@ -437,25 +437,7 @@ function render(data, meta) {
   }
   localStorage.removeItem('ponk_action_bubbles');
 
-  // ── Courses ──
-  if (modes.includes('COURSES') && data.courses?.items?.length) {
-    const list = data.courses.items.map(it =>
-      `<li onclick="toggleCheck(this)"><div class="cb"></div><span>${it.quantite ? it.quantite+' ' : ''}${it.nom}</span></li>`
-    ).join('');
-    c.appendChild(makeCard('🛒 Courses', `<ul class="checks">${list}</ul>`, true));
-  }
 
-  // ── Audio ──
-  // Mémo — toujours visible, toujours vierge
-  {
-    let memoHTML = '<div style="display:flex;flex-direction:column;gap:8px;">';
-    memoHTML += '<div class="export-row" style="align-items:flex-start;">' +
-      '<input type="checkbox" class="export-cb" id="ecb_memo_notes" checked data-export-label="memo_notes" data-export-content="" style="margin-top:10px;">' +
-      '<textarea id="memoNotesArea" placeholder="Vos notes…" oninput="saveMemoField(this)" style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.7);background:rgba(255,255,255,0.5);font-family:inherit;font-size:13px;color:var(--text);outline:none;resize:none;min-height:100px;"></textarea>' +
-      '</div>';
-    memoHTML += '</div>';
-    c.appendChild(makeCard('📝 Mémo', memoHTML, true));
-  }
 
   if (audioData) {
     audioEl = new Audio(audioData);
@@ -569,24 +551,46 @@ function saveSummary(s) {
 }
 
 function editItem(el, field, s, key, subkey) {
-  const current = subkey !== undefined ? s[field][key][subkey] : s[field][key] || s[field];
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.className = 'edit-input';
-  input.value = typeof current === 'string' ? current : '';
+  if (!s) return;
+  // key peut arriver comme string 'null' depuis le HTML onclick
+  if (key === 'null') key = null;
+  if (subkey === 'null') subkey = null;
+  const current = subkey != null
+    ? (s[field]?.[key]?.[subkey] || '')
+    : (key != null ? (s[field]?.[key] || '') : (s[field] || ''));
+  // Rendre le div directement éditable comme Word
+  el.contentEditable = 'true';
+  el.style.outline = '1.5px solid var(--accent)';
+  el.style.borderRadius = '6px';
+  el.style.padding = '2px 6px';
+  el.style.cursor = 'text';
+  // Placer le curseur à la fin
+  const range = document.createRange();
+  const sel = window.getSelection();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(range);
+  el.focus();
+
   const confirm = () => {
-    const val = input.value.trim();
+    const val = el.innerText.trim();
+    el.contentEditable = 'false';
+    el.style.outline = '';
+    el.style.borderRadius = '';
+    el.style.padding = '';
+    el.style.cursor = '';
     if (!val) return;
     if (subkey !== undefined) s[field][key][subkey] = val;
-    else if (Array.isArray(s[field])) s[field][key] = val;
+    else if (key !== null && Array.isArray(s[field])) s[field][key] = val;
     else s[field] = val;
     saveSummary(s);
-    renderSummary(s);
   };
-  input.onblur = confirm;
-  input.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); confirm(); } if (e.key === 'Escape') renderSummary(s); };
-  el.replaceWith(input);
-  input.focus();
+  el.onblur = confirm;
+  el.onkeydown = e => {
+    if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+    if (e.key === 'Escape') { el.contentEditable = 'false'; renderSummary(s); }
+  };
 }
 
 function addItem(field, s, placeholder) {
@@ -668,24 +672,7 @@ function buildSummaryHTML(s) {
     <button class="add-btn" onclick="addItem('decisions',${JSON.stringify(s).replace(/"/g,'&quot;')})">+ Ajouter une décision</button>
   </div>`;
 
-  // Actions
-  html += `<div class="summary-section">
-    <div class="summary-section-title">⚡ Actions</div>
-    <div style="display:flex;flex-direction:column;gap:5px;" id="list-actions">
-      ${(s.actions||[]).map((a,i) => {
-        const qui = a.qui ? `<span class="qui-badge">${a.qui}</span>` : `<span class="indefini">À définir</span>`;
-        const quand = a.quand ? `<span class="quand-badge">${a.quand}</span>` : '';
-        const sJson = JSON.stringify(s).replace(/"/g,'&quot;');
-        const txt = `<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:rgba(255,255,255,0.3);border-radius:8px;">
-          <span style="cursor:pointer" onclick="editItem(this,'actions',${sJson},${i},'qui')">${qui}</span>
-          <span style="flex:1;font-size:13px;cursor:pointer" onclick="editItem(this,'actions',${sJson},${i},'quoi')">${a.quoi||'<span style=\'color:var(--muted);font-style:italic\'>Cliquer pour éditer</span>'}</span>
-          <span style="cursor:pointer" onclick="editItem(this,'actions',${sJson},${i},'quand')">${quand||'<span style=\'color:var(--muted);font-size:11px;font-style:italic\'>+ délai</span>'}</span>
-        </div>`;
-        return cb('action:'+(a.qui||'?')+':'+(a.quoi||''), txt, true, `deleteItem('actions',${JSON.stringify(s).replace(/"/g,'&quot;')},${i})`);
-      }).join('')}
-    </div>
-    <button class="add-btn" onclick="addItem('actions',${JSON.stringify(s).replace(/"/g,'&quot;')})">+ Ajouter une action</button>
-  </div>`;
+
 
   // Prochaine étape
   if (s.prochaine_etape !== undefined) {
@@ -989,7 +976,26 @@ async function markActionDone(actionId) {
   const action = ACTION_META[actionId];
   const el = document.getElementById(actionId);
 
-  // Afficher spinner pendant la génération
+  // Types qui ouvrent une modal — pas de spinner, juste ✓ vert direct
+  const modalTypes = ['CALENDRIER','COMMANDE','MAPS','RESERVATION','APPEL','RAPPEL','ANALYSE'];
+  if (action && modalTypes.includes(action.type)) {
+    const text = action.description || action.titre || '';
+    if (action.type === 'CALENDRIER') showCalendrierModal(text);
+    else if (action.type === 'COMMANDE') showCommandeModal(text);
+    else if (action.type === 'MAPS') showMapsModal(text);
+    else if (action.type === 'RESERVATION') showReservationModal(text);
+    else if (action.type === 'RAPPEL') showRappelModal(text);
+    else if (action.type === 'ANALYSE') showAnalyseModal(text);
+    else if (action.type === 'APPEL') {
+      const contacts = (() => { try { return JSON.parse(localStorage.getItem('ponk_contacts') || '[]'); } catch(e) { return []; } })();
+      const contact = contacts.find(c => c.name && text.toLowerCase().includes(c.name.toLowerCase().split(' ')[0]));
+      showCallModal(contact?.phone || '', contact?.name || text);
+    }
+    markDoneVisual(actionId, el);
+    return;
+  }
+
+  // Types qui génèrent du contenu — afficher spinner
   if (el) {
     el.onclick = null;
     el.style.opacity = '0.6';
@@ -998,49 +1004,6 @@ async function markActionDone(actionId) {
   }
 
   let url = ACTION_REGISTRY[actionId] || '';
-
-  // Routing vers les vraies modals selon le type
-  if (action) {
-    const text = action.description || action.titre || '';
-    if (action.type === 'CALENDRIER') {
-      showCalendrierModal(text);
-      markDoneVisual(actionId, el);
-      return;
-    }
-    if (action.type === 'COMMANDE') {
-      showCommandeModal(text);
-      markDoneVisual(actionId, el);
-      return;
-    }
-    if (action.type === 'MAPS') {
-      showMapsModal(text);
-      markDoneVisual(actionId, el);
-      return;
-    }
-    if (action.type === 'RESERVATION') {
-      showReservationModal(text);
-      markDoneVisual(actionId, el);
-      return;
-    }
-    if (action.type === 'APPEL') {
-      const contacts = (() => { try { return JSON.parse(localStorage.getItem('ponk_contacts') || '[]'); } catch(e) { return []; } })();
-      const lower = text.toLowerCase();
-      const contact = contacts.find(c => c.name && lower.includes(c.name.toLowerCase().split(' ')[0].toLowerCase()));
-      showCallModal(contact?.phone || '', contact?.name || text);
-      markDoneVisual(actionId, el);
-      return;
-    }
-    if (action.type === 'RAPPEL') {
-      showRappelModal(text);
-      markDoneVisual(actionId, el);
-      return;
-    }
-    if (action.type === 'ANALYSE') {
-      showAnalyseModal(text);
-      markDoneVisual(actionId, el);
-      return;
-    }
-  }
 
   // ANALYSE → appel API analyse (fallback ancien code)
   if (action && action.type === 'ANALYSE_OLD') {
