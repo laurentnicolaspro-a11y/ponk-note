@@ -306,7 +306,39 @@
     }
     .prochaine-icon { font-size:18px; flex-shrink:0; }
     .prochaine-text { font-size:14px; color:var(--text); line-height:1.4; }
-  </style>
+  
+    /* Styles modals actions IA */
+    .bubble-modal {
+      position:fixed; inset:0; z-index:500;
+      display:flex; align-items:center; justify-content:center;
+      padding:20px;
+      background:rgba(0,0,0,0.3);
+      backdrop-filter:blur(8px);
+      animation:fadeIn 0.2s ease;
+    }
+    .bubble-modal.hidden { display:none; }
+    .bubble-modal-card {
+      background:var(--surface,rgba(255,255,255,0.95)); border-radius:20px;
+      padding:24px; width:100%; max-width:360px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.2);
+    }
+    .bubble-modal-type { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); text-align:center; margin-bottom:8px; }
+    .bubble-modal-btn {
+      flex:1; padding:13px; border-radius:12px; border:none;
+      font-family:inherit; font-size:15px; font-weight:600;
+      cursor:pointer; transition:opacity 0.15s;
+    }
+    .maps-mode-btn {
+      flex:1; padding:7px 4px; border-radius:10px;
+      border:1.5px solid rgba(74,127,212,0.2);
+      background:rgba(255,255,255,0.6);
+      font-family:inherit; font-size:11px; font-weight:500;
+      color:var(--muted,#888); cursor:pointer; transition:all 0.15s;
+    }
+    .maps-mode-btn.active { background:var(--accent,#4a7fd4); border-color:var(--accent,#4a7fd4); color:#fff; font-weight:600; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    @keyframes spin { to{transform:rotate(360deg)} }
+</style>
 </head>
 <body>
 <header>
@@ -414,6 +446,27 @@ function render(data, meta) {
   }
 
   // ── Audio ──
+  // Mémo — toujours visible
+  {
+    const memo = data.memo || {};
+    const rappels = memo.rappels || [];
+    let memoHTML = '<div style="display:flex;flex-direction:column;gap:8px;">';
+    memoHTML += '<div style="display:flex;flex-direction:column;gap:5px;">';
+    rappels.forEach((r, i) => {
+      memoHTML += '<div class="export-row" style="align-items:center;">' +
+        '<input type="checkbox" class="export-cb" checked data-export-label="memo_rappel" data-export-content="' + encodeURIComponent(r) + '">' +
+        '<div class="point-item" style="background:none;padding:0;flex:1;">' + r + '</div>' +
+        '<button class="edit-btn" style="color:var(--danger)" onclick="this.closest(\'.export-row\').remove()">🗑</button>' +
+        '</div>';
+    });
+    memoHTML += '</div>';
+    const notes = memo.notes || '';
+    memoHTML += '<textarea placeholder="Notes libres…" onblur="saveMemoField(this)" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.7);background:rgba(255,255,255,0.5);font-family:inherit;font-size:13px;color:var(--text);outline:none;resize:none;min-height:80px;">' + notes + '</textarea>';
+    memoHTML += '<button class="add-btn" onclick="addMemoRappel(this)">+ Ajouter un rappel</button>';
+    memoHTML += '</div>';
+    c.appendChild(makeCard('📝 Mémo', memoHTML, true));
+  }
+
   if (audioData) {
     audioEl = new Audio(audioData);
     audioEl.ontimeupdate = () => {
@@ -486,6 +539,34 @@ function deleteItem(field, s, key) {
   }
   saveSummary(s2);
   renderSummary(s2);
+}
+
+// ── Helpers Mémo ──
+function saveMemoField(textarea) {
+  const data = JSON.parse(localStorage.getItem('ponk_result') || '{}');
+  if (!data.memo) data.memo = {};
+  data.memo.notes = textarea.value;
+  localStorage.setItem('ponk_result', JSON.stringify(data));
+}
+
+function addMemoRappel(btn) {
+  const input = document.createElement('input');
+  input.type = 'text'; input.className = 'edit-input'; input.placeholder = 'Nouveau rappel…';
+  input.onblur = () => {
+    const val = input.value.trim();
+    if (!val) { input.remove(); return; }
+    const data = JSON.parse(localStorage.getItem('ponk_result') || '{}');
+    if (!data.memo) data.memo = {};
+    if (!data.memo.rappels) data.memo.rappels = [];
+    data.memo.rappels.push(val);
+    localStorage.setItem('ponk_result', JSON.stringify(data));
+    const row = document.createElement('div');
+    row.className = 'export-row'; row.style.alignItems = 'center';
+    row.innerHTML = '<input type="checkbox" class="export-cb" checked data-export-label="memo_rappel" data-export-content="' + encodeURIComponent(val) + '"><div class="point-item" style="background:none;padding:0;flex:1;">' + val + '</div><button class="edit-btn" style="color:var(--danger)" onclick="this.closest('.export-row').remove()">🗑</button>';
+    input.replaceWith(row);
+  };
+  input.onkeydown = e => { if (e.key === 'Enter') input.blur(); };
+  btn.before(input); input.focus();
 }
 
 function saveSummary(s) {
@@ -877,6 +958,17 @@ async function generateActionsIA() {
   }
 }
 
+function markDoneVisual(actionId, el) {
+  localStorage.setItem('ponk_done_' + actionId, '1');
+  if (!el) el = document.getElementById(actionId);
+  if (!el) return;
+  const container = el.closest('[style*="display:flex"]') || el;
+  container.style.opacity = '0.75';
+  if (el) { el.onclick = null; el.style.cursor = 'default'; }
+  const arrow = el ? el.querySelector('.action-ia-arrow') : null;
+  if (arrow) arrow.outerHTML = '<div style="width:28px;height:28px;border-radius:50%;background:rgba(61,184,122,0.15);border:1.5px solid rgba(61,184,122,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="color:#3db87a;font-size:14px;font-weight:700">✓</span></div>';
+}
+
 async function markActionDone(actionId) {
   const action = ACTION_META[actionId];
   const el = document.getElementById(actionId);
@@ -890,6 +982,91 @@ async function markActionDone(actionId) {
   }
 
   let url = ACTION_REGISTRY[actionId] || '';
+
+  // Routing vers les vraies modals selon le type
+  if (action) {
+    const text = action.description || action.titre || '';
+    if (action.type === 'CALENDRIER') {
+      showCalendrierModal(text);
+      markDoneVisual(actionId, el);
+      return;
+    }
+    if (action.type === 'COMMANDE') {
+      showCommandeModal(text);
+      markDoneVisual(actionId, el);
+      return;
+    }
+    if (action.type === 'MAPS') {
+      showMapsModal(text);
+      markDoneVisual(actionId, el);
+      return;
+    }
+    if (action.type === 'RESERVATION') {
+      showReservationModal(text);
+      markDoneVisual(actionId, el);
+      return;
+    }
+    if (action.type === 'APPEL') {
+      const contacts = (() => { try { return JSON.parse(localStorage.getItem('ponk_contacts') || '[]'); } catch(e) { return []; } })();
+      const lower = text.toLowerCase();
+      const contact = contacts.find(c => c.name && lower.includes(c.name.toLowerCase().split(' ')[0].toLowerCase()));
+      showCallModal(contact?.phone || '', contact?.name || text);
+      markDoneVisual(actionId, el);
+      return;
+    }
+    if (action.type === 'RAPPEL') {
+      showRappelModal(text);
+      markDoneVisual(actionId, el);
+      return;
+    }
+    if (action.type === 'ANALYSE') {
+      showAnalyseModal(text);
+      markDoneVisual(actionId, el);
+      return;
+    }
+  }
+
+  // ANALYSE → appel API analyse (fallback ancien code)
+  if (action && action.type === 'ANALYSE_OLD') {
+    const query = action.description || action.titre || '';
+    try {
+      const res = await fetch('/api/analyse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: query, profile: localStorage.getItem('ponk_profile') || '' })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Afficher dans une modal simple
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,0.3);backdrop-filter:blur(8px);';
+        const sections = (data.sections||[]).map(s =>
+          '<div style="margin-bottom:12px;padding:12px;background:rgba(255,255,255,0.5);border-radius:10px;border-left:3px solid #4a7fd4;">' +
+          '<div style="font-size:11px;font-weight:700;color:#4a7fd4;text-transform:uppercase;margin-bottom:6px;">' + s.titre + '</div>' +
+          (s.points||[]).map(p => '<div style="font-size:13px;color:#2a2a3a;margin-bottom:4px;"><strong>' + p.titre + '</strong><br><span style="color:rgba(42,42,58,0.6)">' + p.detail + '</span></div>').join('') +
+          '</div>'
+        ).join('');
+        modal.innerHTML = '<div style="background:rgba(255,255,255,0.95);border-radius:20px;padding:24px;width:100%;max-width:400px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">' +
+          '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:rgba(42,42,58,0.5);margin-bottom:12px;">🧠 Analyse</div>' +
+          (sections || '<div style="color:rgba(42,42,58,0.5);font-style:italic;">Aucun résultat</div>') +
+          '<button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;padding:12px;border-radius:12px;border:none;background:rgba(0,0,0,0.06);font-family:inherit;font-size:14px;cursor:pointer;margin-top:12px;">Fermer</button>' +
+          '</div>';
+        modal.onclick = e => { if (e.target === modal) modal.remove(); };
+        document.body.appendChild(modal);
+      }
+    } catch(e) { console.warn('Analyse failed:', e); }
+    // Marquer comme fait
+    localStorage.setItem('ponk_done_' + actionId, '1');
+    if (el) {
+      el.style.opacity = '0.75'; el.style.cursor = 'default'; el.onclick = null;
+      const arrow = el.querySelector('.action-ia-arrow');
+      if (arrow) arrow.outerHTML = '<div style="width:28px;height:28px;border-radius:50%;background:rgba(61,184,122,0.15);border:1.5px solid rgba(61,184,122,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="color:#3db87a;font-size:14px;font-weight:700">✓</span></div>';
+      const spinner = document.getElementById('spinner_' + actionId);
+      if (spinner) spinner.outerHTML = '<div style="width:28px;height:28px;border-radius:50%;background:rgba(61,184,122,0.15);border:1.5px solid rgba(61,184,122,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="color:#3db87a;font-size:14px;font-weight:700">✓</span></div>';
+    }
+    if (pdfBtn) { pdfBtn.textContent = '↓ Exporter en PDF'; pdfBtn.disabled = false; }
+    return;
+  }
 
   // Pour EMAIL et WHATSAPP → générer le contenu avec l'IA
   if (action && (action.type === 'EMAIL' || action.type === 'WHATSAPP')) {
@@ -965,6 +1142,8 @@ function getActionUrl(a) {
     case 'RAPPEL': return `javascript:navigator.clipboard.writeText(${JSON.stringify(a.texte||a.description)}).then(()=>alert('Copié !'))`;
     case 'RECHERCHE': return `https://www.google.com/search?q=${encodeURIComponent(a.query||a.description)}`;
     case 'COMMANDE': return `https://www.google.com/search?q=${encodeURIComponent(a.query||a.description)}&tbm=shop`;
+    case 'RESERVATION': return `https://www.google.com/search?q=${encodeURIComponent(a.description||a.titre)}`;
+    case 'ANALYSE': return null; // géré par markActionDone
     default: return '#';
   }
 }
@@ -1274,6 +1453,1025 @@ async function sendByEmail() {
     alert('Erreur : '+e.message);
   }
 }
+
+function normalizePhone(phone) {
+  if (!phone) return '';
+  const clean = phone.replace(/[^0-9+]/g, '');
+  if (clean.startsWith('+')) return clean.replace('+', '');
+  if (clean.startsWith('00')) return clean.substring(2);
+  if (clean.startsWith('0')) return '33' + clean.substring(1);
+  return clean;
+}
+
+let calendrierData = {};
+let calendrierAnswers = [];
+
+async function showCalendrierModal(text) {
+  calendrierData = { text };
+  calendrierAnswers = [];
+  const modal = document.getElementById('calendrierModal');
+  document.getElementById('calendrierModalTitle').textContent = text.substring(0, 40) + (text.length > 40 ? '…' : '');
+  document.getElementById('calendrierStep1').style.display = 'block';
+  document.getElementById('calendrierStep2').style.display = 'none';
+  document.getElementById('calendrierStep3').style.display = 'none';
+  document.getElementById('calendrierInfo').style.display = 'none';
+  document.getElementById('calendrierCalBtn').style.display = 'none';
+  document.getElementById('calendrierOrganiseBtn').style.display = 'none';
+  document.getElementById('calendrierLoading').style.display = 'block';
+  document.getElementById('calendrierLoadingText').textContent = 'Analyse en cours…';
+  modal.classList.remove('hidden');
+
+  const now = new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+  try {
+    const res = await fetch('/api/calendrier', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({text, datetime: now, action: 'parse'})
+    });
+    const data = await res.json();
+    calendrierData = {...calendrierData, ...data};
+    document.getElementById('calendrierLoading').style.display = 'none';
+
+    if (data.titre) {
+      document.getElementById('calendrierModalTitle').textContent = data.titre;
+
+      if (data.date) document.getElementById('calendrierDate').textContent = '📅 ' + data.date;
+      if (data.heure) document.getElementById('calendrierHeure').textContent = '🕐 ' + data.heure;
+      if (data.duree) document.getElementById('calendrierDuree').textContent = '⏱ ' + data.duree;
+      if (data.description) document.getElementById('calendrierDesc').textContent = data.description;
+      document.getElementById('calendrierInfo').style.display = 'block';
+
+      const prefCal = localStorage.getItem('ponk_pref_cal') || 'google';
+      const calNames = {'google':'Google Calendar','outlook':'Outlook','apple':'Apple Calendar'};
+      const heureDefault = data.heure ? data.heure.replace(/[^0-9:]/g,'').substring(0,5) : '09:00';
+      const dureeDefault = (() => {
+        if (!data.duree) return '60';
+        const m = data.duree.match(/(\d+)\s*h/);
+        const min = data.duree.match(/(\d+)\s*min/);
+        if (m) return String(parseInt(m[1]) * 60 + (min ? parseInt(min[1]) : 0));
+        if (min) return min[1];
+        return '60';
+      })();
+
+      document.getElementById('calendrierCalBtn').innerHTML = `
+        <div style="background:rgba(74,127,212,0.06);border:1px solid rgba(74,127,212,0.15);border-radius:12px;padding:12px;margin-bottom:8px">
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:10px">Détails de l'événement</div>
+          <div style="margin-bottom:8px">
+            <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px">DATE</div>
+            <input type="date" id="calDateInput" value="${(() => { const m = (data.date||'').match(/[0-9]{4}-[0-9]{2}-[0-9]{2}/); return m ? m[0] : ''; })()}"
+              style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:14px;color:var(--text);outline:none"/>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <div style="flex:1">
+              <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px">HEURE</div>
+              <input type="time" id="calHeureInput" value="${heureDefault}"
+                style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:14px;color:var(--text);outline:none"/>
+            </div>
+            <div style="flex:1">
+              <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px">DURÉE</div>
+              <select id="calDureeInput"
+                style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:14px;color:var(--text);outline:none;cursor:pointer">
+                <option value="30" ${dureeDefault==='30' ? 'selected' : ''}>30 min</option>
+                <option value="60" ${dureeDefault==='60' ? 'selected' : ''}>1h</option>
+                <option value="90" ${dureeDefault==='90' ? 'selected' : ''}>1h30</option>
+                <option value="120" ${dureeDefault==='120' ? 'selected' : ''}>2h</option>
+                <option value="180" ${dureeDefault==='180' ? 'selected' : ''}>3h</option>
+                <option value="240" ${dureeDefault==='240' ? 'selected' : ''}>4h</option>
+                <option value="480" ${dureeDefault==='480' ? 'selected' : ''}>Journée</option>
+              </select>
+            </div>
+          </div>
+          <button onclick="openCalendrierUrl()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:11px 14px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">
+            <span>📅</span>
+            <span>Ajouter à ${calNames[prefCal]}</span>
+          </button>
+        </div>`;
+      document.getElementById('calendrierCalBtn').style.display = 'block';
+      document.getElementById('calendrierOrganiseBtn').style.display = 'block';
+      setTimeout(() => declencherRebond(
+        'Calendrier : ' + (data.titre || text),
+        'date: ' + (data.date || '') + ', lieu: ' + (data.description || ''),
+        (data.titre || text) + (data.date ? ' — ' + data.date : '')
+      ), 400);
+    }
+  } catch(e) {
+    document.getElementById('calendrierLoading').textContent = 'Service indisponible';
+  }
+}
+
+function openCalendrierUrl() {
+  const prefCal = localStorage.getItem('ponk_pref_cal') || 'google';
+  const data = calendrierData;
+
+  const titreRaw = data.titre || data.text || '';
+  const descRaw  = data.description || '';
+
+  const heureInput = document.getElementById('calHeureInput');
+  const dureeInput = document.getElementById('calDureeInput');
+  const dateInput  = document.getElementById('calDateInput');
+  const heure = heureInput ? heureInput.value : '09:00';
+  const duree = dureeInput ? parseInt(dureeInput.value) : 60;
+  let yyyy = '', mm = '', dd = '';
+  if (dateInput && dateInput.value) {
+    [yyyy, mm, dd] = dateInput.value.split('-');
+  } else {
+    const dateStr = data.date || '';
+    const moisFr = {
+      'janvier':'01','fevrier':'02','février':'02','mars':'03','avril':'04',
+      'mai':'05','juin':'06','juillet':'07','aout':'08','août':'08',
+      'septembre':'09','octobre':'10','novembre':'11','decembre':'12','décembre':'12'
+    };
+    const isoMatch = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/);
+    const frMatch  = dateStr.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/);
+    if (isoMatch) { yyyy=isoMatch[1]; mm=isoMatch[2]; dd=isoMatch[3].padStart(2,'0'); }
+    else if (frMatch) {
+      dd = frMatch[1].padStart(2,'0');
+      mm = moisFr[frMatch[2].toLowerCase()] || '01';
+      yyyy = frMatch[3];
+    }
+  }
+  const [hh, min] = heure.split(':');
+  const startMins = parseInt(hh) * 60 + parseInt(min);
+  const endMins   = startMins + duree;
+  const endHH  = String(Math.floor(endMins / 60) % 24).padStart(2, '0');
+  const endMin = String(endMins % 60).padStart(2, '0');
+  const endDD = endMins >= 1440
+    ? String(parseInt(dd) + 1).padStart(2, '0')
+    : dd;
+
+  const startLocal = yyyy && mm && dd
+    ? `${yyyy}${mm}${dd}T${hh}${min}00`
+    : '';
+  const endLocal = yyyy && mm && endDD
+    ? `${yyyy}${mm}${endDD}T${endHH}${endMin}00`
+    : '';
+  const startOutlook = yyyy && mm && dd
+    ? `${yyyy}-${mm}-${dd}T${hh}:${min}:00`
+    : '';
+  const endOutlook = yyyy && mm && endDD
+    ? `${yyyy}-${mm}-${endDD}T${endHH}:${endMin}:00`
+    : '';
+
+  const titre = encodeURIComponent(titreRaw);
+  const desc  = encodeURIComponent(descRaw);
+
+  let url = '';
+
+  if (prefCal === 'google') {
+    url = startLocal
+      ? `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&details=${desc}&dates=${startLocal}/${endLocal}`
+      : `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&details=${desc}`;
+    window.open(url, '_blank');
+
+  } else if (prefCal === 'outlook') {
+    url = startOutlook
+      ? `https://outlook.live.com/calendar/0/deeplink/compose?subject=${titre}&body=${desc}&startdt=${encodeURIComponent(startOutlook)}&enddt=${encodeURIComponent(endOutlook)}&path=/calendar/action/compose`
+      : `https://outlook.live.com/calendar/0/deeplink/compose?subject=${titre}&body=${desc}&path=/calendar/action/compose`;
+    window.open(url, '_blank');
+
+  } else if (prefCal === 'apple') {
+    const icsStart = startLocal || `${new Date().getFullYear()}0101T090000`;
+    const icsEnd   = endLocal   || `${new Date().getFullYear()}0101T100000`;
+    const uid = Date.now() + '@ponknote';
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Ponk Note//FR',
+      'BEGIN:VEVENT',
+      'UID:' + uid,
+      'SUMMARY:' + titreRaw,
+      'DESCRIPTION:' + descRaw.split('\n').join('\\n'),
+      'DTSTART;TZID=Europe/Paris:' + icsStart,
+      'DTEND;TZID=Europe/Paris:' + icsEnd,
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\r\n');
+    const blob = new Blob([ics], { type: 'text/calendar' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = titreRaw.replace(/[^a-z0-9]/gi, '_') + '.ics';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1000);
+  }
+}
+
+function startCalendrierOrganise() {
+  document.getElementById('calendrierStep1').style.display = 'none';
+  document.getElementById('calendrierStep2').style.display = 'block';
+
+  const questions = calendrierData.questions || [];
+  document.getElementById('calendrierQuestions').innerHTML = questions.map(q => `
+    <div style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px">🤖 ${q.question}</div>
+      <textarea data-qid="${q.id}" data-question="${q.question.replace(/"/g,'&quot;')}" placeholder="Votre réponse..." style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.7);background:rgba(255,255,255,0.5);font-family:inherit;font-size:13px;color:var(--text);outline:none;resize:none;min-height:60px;"></textarea>
+    </div>
+  `).join('');
+}
+
+async function submitCalendrierAnswers() {
+  const textareas = document.querySelectorAll('#calendrierQuestions textarea');
+  calendrierAnswers = Array.from(textareas).map(t => ({
+    question: t.dataset.question,
+    answer: t.value.trim() || '—'
+  }));
+
+  document.getElementById('calendrierStep2').style.display = 'none';
+  document.getElementById('calendrierLoading').style.display = 'block';
+  document.getElementById('calendrierLoadingText').textContent = 'Préparation en cours…';
+
+  const now = new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+  try {
+    const res = await fetch('/api/calendrier', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        text: calendrierData.text,
+        datetime: now,
+        action: 'prepare',
+        type: calendrierData.type,
+        date: calendrierData.date,
+        participants: calendrierData.participants || [],
+        answers: calendrierAnswers
+      })
+    });
+    const data = await res.json();
+    document.getElementById('calendrierLoading').style.display = 'none';
+    document.getElementById('calendrierStep3').style.display = 'block';
+
+    const prep = data.preparation;
+    if (prep) {
+      document.getElementById('calendrierPrepContent').innerHTML = `
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:10px">✨ ${prep.titre}</div>
+        ${(prep.sections || []).map(s => `
+          <div style="background:rgba(255,255,255,0.5);border-radius:12px;padding:12px;margin-bottom:8px">
+            <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">${s.emoji} ${s.titre}</div>
+            ${(s.items || []).map(i => `<div style="font-size:12px;color:var(--muted);padding:2px 0">→ ${i}</div>`).join('')}
+          </div>
+        `).join('')}
+      `;
+    }
+
+    const btns = document.getElementById('calendrierActionBtns');
+    let btnsHtml = '';
+
+    if (data.hasEmail && data.email) {
+      const prefMail = localStorage.getItem('ponk_pref_mail') || 'gmail';
+      const sujet = encodeURIComponent(data.email.sujet || '');
+      const corps = encodeURIComponent(data.email.corps || '');
+      const emailUrls = {
+        'gmail': `https://mail.google.com/mail/?view=cm&fs=1&su=${sujet}&body=${corps}`,
+        'outlook': `https://outlook.live.com/mail/0/deeplink/compose?subject=${sujet}&body=${corps}`,
+        'yahoo': `https://compose.mail.yahoo.com/?subject=${sujet}&body=${corps}`,
+        'default': `mailto:?subject=${sujet}&body=${corps}`
+      };
+      btnsHtml += `<a href="${emailUrls[prefMail]}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:var(--accent);color:#fff;text-decoration:none;font-size:14px;font-weight:600">📧 Envoyer aux participants</a>`;
+    }
+
+    if (data.pdf) {
+      btnsHtml += `<button onclick="downloadCalendrierPDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.8);background:rgba(255,255,255,0.6);color:var(--text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;width:100%">📄 Exporter en PDF</button>`;
+      window._calendrierPDF = data.pdf;
+    }
+
+    btns.innerHTML = btnsHtml;
+
+  } catch(e) {
+    document.getElementById('calendrierLoading').textContent = 'Erreur lors de la préparation';
+  }
+}
+
+async function showCommandeModal(text) {
+  const modal = document.getElementById('commandeModal');
+  document.getElementById('commandeModalTitle').textContent = text.substring(0, 40) + (text.length > 40 ? '…' : '');
+  document.getElementById('commandeLoading').style.display = 'block';
+  document.getElementById('commandeBrief').style.display = 'none';
+  modal.classList.remove('hidden');
+
+  try {
+    const res = await fetch('/api/shopping', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({text, action:'commande'})
+    });
+    const data = await res.json();
+
+    if (data.produit) {
+      document.getElementById('commandePrix').textContent = data.fourchette_prix || '';
+      document.getElementById('commandePrixNote').textContent = data.fourchette_note || '';
+      document.getElementById('commandeVerifier').innerHTML = (data.verifier || []).map(v => `<div>→ ${v}</div>`).join('');
+      document.getElementById('commandeAttention').innerHTML = (data.attention || []).map(a => `<div>→ ${a}</div>`).join('');
+      document.getElementById('commandeSites').innerHTML = (data.sites || []).map(s =>
+        `<a href="${s.url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);text-decoration:none;color:var(--text)">
+          <span style="font-size:20px">${s.icon}</span>
+          <div style="flex:1"><div style="font-size:13px;font-weight:600">${s.nom}</div><div style="font-size:11px;color:var(--muted)">${s.desc}</div></div>
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="12" height="12" fill="white"><path d="M8 5v14l11-7z"/></svg></div>
+        </a>`
+      ).join('');
+      document.getElementById('commandeLoading').style.display = 'none';
+      document.getElementById('commandeBrief').style.display = 'block';
+      setTimeout(() => declencherRebond(
+        'Commande : ' + text,
+        'produit: ' + (data.produit || text),
+        'Commande de ' + (data.produit || text)
+      ), 400);
+    }
+  } catch(e) {
+    document.getElementById('commandeLoading').innerHTML = '<div style="font-size:13px;color:var(--muted);padding:10px">Service temporairement indisponible</div>';
+  }
+}
+
+function showWhatsAppModal(phone, message) {
+  document.getElementById('waModalMessage').textContent = message;
+  const linksEl = document.getElementById('waAppLinks');
+  const enc = encodeURIComponent(message);
+  if (phone) {
+    const waPhone = normalizePhone(phone);
+    linksEl.innerHTML = `
+      <a href="https://wa.me/${waPhone}?text=${enc}" target="_blank" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(37,211,102,0.15);color:#128C7E;text-decoration:none;font-size:13px;font-weight:600;border:1px solid rgba(37,211,102,0.3);text-align:center">💬 Ouvrir WhatsApp</a>
+    `;
+  } else {
+    linksEl.innerHTML = `
+      <a href="https://wa.me/?text=${enc}" target="_blank" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(37,211,102,0.15);color:#128C7E;text-decoration:none;font-size:13px;font-weight:600;border:1px solid rgba(37,211,102,0.3);text-align:center">💬 Ouvrir WhatsApp</a>
+    `;
+  }
+  document.getElementById('waModal').classList.remove('hidden');
+  setTimeout(() => declencherRebond(
+    'Message WhatsApp : ' + message,
+    'message envoye par whatsapp',
+    'Message WhatsApp envoyé'
+  ), 400);
+}
+
+function copyWAMessage() {
+  const msg = document.getElementById('waModalMessage').textContent;
+  navigator.clipboard.writeText(msg).then(() => {
+    const btn = document.getElementById('waCopyBtn');
+    btn.textContent = '✓ Copié !';
+    setTimeout(() => btn.textContent = '📋 Copier', 2000);
+  });
+}
+
+function showCallModal(phone, name) {
+  document.getElementById('callModalName').textContent = name || 'Appel';
+  document.getElementById('callModalPhone').textContent = phone || 'Numéro non trouvé';
+  const linksEl = document.getElementById('callAppLinks');
+  if (linksEl && phone) {
+    const enc = encodeURIComponent(phone);
+    linksEl.innerHTML = `
+      <a href="tel:${phone}" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.5);color:var(--text);text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,0.7);text-align:center">📱 Phone Link</a>
+      <a href="skype:${phone}?call" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.5);color:var(--text);text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,0.7);text-align:center">💙 Skype</a>
+      <a href="msteams://call?phone=${enc}" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.5);color:var(--text);text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,0.7);text-align:center">💼 Teams</a>
+    `;
+  }
+  document.getElementById('callModal').classList.remove('hidden');
+  setTimeout(() => declencherRebond(
+    'Appel : ' + (name || phone),
+    'appel telephone vers ' + (name || phone),
+    'Appel vers ' + (name || phone)
+  ), 400);
+}
+
+function copyPhone() {
+  const phone = document.getElementById('callModalPhone').textContent;
+  navigator.clipboard.writeText(phone).then(() => {
+    const btn = document.getElementById('callCopyBtn');
+    btn.textContent = '✓ Copié !';
+    setTimeout(() => btn.textContent = '📋 Copier', 2000);
+  });
+}
+let mapsState = { mode: 'car', departLat: null, departLon: null, arriveeLat: null, arriveeLon: null };
+
+function showMapsModal(text) {
+  document.getElementById('mapsModalTitle').textContent = text ? text.substring(0, 40) : 'Itinéraire';
+  document.getElementById('mapsDepart').value = '';
+  document.getElementById('mapsArrivee').value = text || '';
+  document.getElementById('mapsResult').style.display = 'none';
+  document.getElementById('mapsLoading').style.display = 'none';
+  document.getElementById('mapsMeteo').style.display = 'none';
+  document.getElementById('mapsPOIWrap').style.display = 'none';
+  mapsState = { mode: 'car', departLat: null, departLon: null, arriveeLat: null, arriveeLon: null };
+  document.getElementById('mapsModal').classList.remove('hidden');
+  geolocateDepart();
+}
+
+function setMapsMode(btn) {
+  document.querySelectorAll('.maps-mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  mapsState.mode = btn.dataset.mode;
+}
+
+function geolocateDepart() {
+  if (!navigator.geolocation) return;
+  const btn = document.querySelector('[onclick="geolocateDepart()"]');
+  if (btn) btn.textContent = '⏳';
+  navigator.geolocation.getCurrentPosition(pos => {
+    mapsState.departLat = pos.coords.latitude;
+    mapsState.departLon = pos.coords.longitude;
+    document.getElementById('mapsDepart').value = 'Ma position actuelle';
+    if (btn) btn.textContent = '✅';
+  }, () => {
+    if (btn) btn.textContent = '📍';
+    document.getElementById('mapsDepart').placeholder = 'Entrez votre adresse de départ';
+  });
+}
+
+async function geocodeAddress(address) {
+  const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(address);
+  const r = await fetch(url, { headers: { 'Accept-Language': 'fr' } });
+  const data = await r.json();
+  if (data && data[0]) return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), display: data[0].display_name };
+  return null;
+}
+
+async function lancerItineraire() {
+  const departVal  = document.getElementById('mapsDepart').value.trim();
+  const arriveeVal = document.getElementById('mapsArrivee').value.trim();
+  if (!arriveeVal) { alert('Veuillez entrer une destination'); return; }
+
+  document.getElementById('mapsLoading').style.display = 'block';
+  document.getElementById('mapsResult').style.display = 'none';
+
+  try {
+    if (!mapsState.departLat && departVal && departVal !== 'Ma position actuelle') {
+      const geo = await geocodeAddress(departVal);
+      if (geo) { mapsState.departLat = geo.lat; mapsState.departLon = geo.lon; }
+    }
+    const geoArr = await geocodeAddress(arriveeVal);
+    if (!geoArr) { alert('Destination introuvable, vérifiez l\'adresse'); return; }
+    mapsState.arriveeLat = geoArr.lat;
+    mapsState.arriveeLon = geoArr.lon;
+    const promises = [];
+    if (mapsState.departLat) {
+      promises.push(fetch('/api/itineraire', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'duration', lat: mapsState.departLat, lon: mapsState.departLon,
+          destLat: mapsState.arriveeLat, destLon: mapsState.arriveeLon, mode: mapsState.mode })
+      }).then(r => r.json()).catch(() => null));
+    } else {
+      promises.push(Promise.resolve(null));
+    }
+    promises.push(fetch('/api/itineraire', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'weather', lat: mapsState.arriveeLat, lon: mapsState.arriveeLon })
+    }).then(r => r.json()).catch(() => null));
+    promises.push(fetch('/api/itineraire', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'poi', lat: mapsState.arriveeLat, lon: mapsState.arriveeLon })
+    }).then(r => r.json()).catch(() => null));
+
+    const [duration, weather, poi] = await Promise.all(promises);
+
+    document.getElementById('mapsLoading').style.display = 'none';
+    document.getElementById('mapsResult').style.display = 'block';
+    const modeIcons = { car:'🚗', transit:'🚌', walk:'🚶', bike:'🚲' };
+    const modeLabels = { car:'En voiture', transit:'En transport', walk:'À pied', bike:'À vélo' };
+    document.getElementById('mapsModeIcon').textContent = modeIcons[mapsState.mode] || '🚗';
+
+    if (mapsState.mode === 'transit') {
+      document.getElementById('mapsDuree').textContent = 'Transport en commun';
+      document.getElementById('mapsDistance').textContent = duration ? duration.distance_km + ' km (à vol d\'oiseau)' : '—';
+      document.getElementById('mapsHeureDep').textContent = '—';
+      document.getElementById('mapsTrajet').querySelector('[id="mapsHeureDep"]') && (document.getElementById('mapsTrajet').style.background = 'rgba(255,255,255,0.4)');
+      const distEl = document.getElementById('mapsDistance');
+      distEl.innerHTML = (duration ? duration.distance_km + ' km · ' : '') + '<span style="color:var(--accent);font-weight:600">Durée exacte via Google Maps</span>';
+    } else if (duration && duration.duration_min) {
+      const mins = duration.duration_min;
+      const dureeStr = mins >= 60 ? `${Math.floor(mins/60)}h${String(mins%60).padStart(2,'0')}` : `${mins} min`;
+      document.getElementById('mapsDuree').textContent = dureeStr + ' · ' + modeLabels[mapsState.mode];
+      document.getElementById('mapsDistance').textContent = duration.distance_km + ' km (estimation)';
+      const now = new Date();
+      now.setMinutes(now.getMinutes() + mins + 10);
+      const hh = String(now.getHours()).padStart(2,'0');
+      const mm = String(now.getMinutes()).padStart(2,'0');
+      document.getElementById('mapsHeureDep').textContent = hh + 'h' + mm;
+    } else {
+      document.getElementById('mapsDuree').textContent = modeLabels[mapsState.mode];
+      document.getElementById('mapsDistance').textContent = 'Distance non calculée';
+      document.getElementById('mapsHeureDep').textContent = '--';
+    }
+    if (weather && weather.temp !== undefined) {
+      document.getElementById('mapsMeteoIcon').textContent = weather.icon;
+      document.getElementById('mapsMeteoTemp').textContent = weather.temp + '°C · ' + weather.city;
+      document.getElementById('mapsMeteoDesc').textContent = weather.description.charAt(0).toUpperCase() + weather.description.slice(1);
+      document.getElementById('mapsMeteoWind').textContent = '💨 ' + weather.wind + ' km/h  💧 ' + weather.humidity + '%';
+      document.getElementById('mapsMeteo').style.display = 'block';
+    }
+    if (poi && poi.pois && poi.pois.length > 0) {
+      const city = (weather && weather.city) ? weather.city : '';
+      document.getElementById('mapsPOIList').innerHTML = poi.pois.map(p => {
+        const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(p.name + (city ? ' ' + city : ''))}`;
+        return `<a href="${searchUrl}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);text-decoration:none;-webkit-tap-highlight-color:transparent" onmouseover="this.style.background='rgba(255,255,255,0.95)'" onmouseout="this.style.background='rgba(255,255,255,0.6)'">
+          <span style="font-size:20px">${p.emoji}</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${p.name}</div>
+            <div style="font-size:11px;color:var(--muted)">${p.address || ''}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="font-size:11px;font-weight:600;color:var(--accent)">${p.distance}m</div>
+            <div style="font-size:10px;color:var(--muted)">🔍</div>
+          </div>
+        </a>`;
+      }).join('');
+      document.getElementById('mapsPOIWrap').style.display = 'block';
+    }
+    const dep = mapsState.departLat ? `${mapsState.departLat},${mapsState.departLon}` : encodeURIComponent(departVal || '');
+    const arr = `${mapsState.arriveeLat},${mapsState.arriveeLon}`;
+    const arrEnc = encodeURIComponent(arriveeVal);
+    const prefMaps = localStorage.getItem('ponk_pref_maps') || 'google';
+    const modeGoog = { car:'driving', transit:'transit', walk:'walking', bike:'bicycling' }[mapsState.mode] || 'driving';
+
+    const googleUrl = `https://www.google.com/maps/dir/?api=1&origin=${dep}&destination=${arr}&travelmode=${modeGoog}`;
+    const wazeUrl   = `https://waze.com/ul?ll=${arr}&navigate=yes`;
+    const appleUrl  = `https://maps.apple.com/?saddr=${dep}&daddr=${arr}&dirflg=${{ car:'d', transit:'r', walk:'w', bike:'b' }[mapsState.mode] || 'd'}`;
+
+    const appLinks = {
+      google: `<a href="${googleUrl}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:var(--accent);color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">🗺️ Ouvrir dans Google Maps</a>`,
+      waze:   `<a href="${wazeUrl}"   target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:#33ccff;color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">🚗 Ouvrir dans Waze</a>`,
+      apple:  `<a href="${appleUrl}"  target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:#555;color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">🍎 Ouvrir dans Apple Maps</a>`,
+    };
+    const allApps = ['google','waze','apple'];
+    const ordered = [prefMaps, ...allApps.filter(a => a !== prefMaps)];
+    document.getElementById('mapsAppBtns').innerHTML = ordered.map(a => appLinks[a]).join('');
+    setTimeout(() => declencherRebond(
+      'Itineraire : ' + (arriveeVal || ''),
+      'trajet vers ' + (arriveeVal || '') + ', mode: ' + mapsState.mode,
+      'Itinéraire vers ' + (arriveeVal || '')
+    ), 400);
+
+  } catch(e) {
+    document.getElementById('mapsLoading').style.display = 'none';
+    document.getElementById('mapsResult').innerHTML = '<div style="text-align:center;color:var(--muted);padding:16px">Service temporairement indisponible</div>';
+    document.getElementById('mapsResult').style.display = 'block';
+  }
+}
+
+async function showReservationModal(text) {
+  document.getElementById('reservationModalTitle').textContent = text.substring(0, 40) + (text.length > 40 ? '…' : '');
+  document.getElementById('reservationLoading').style.display = 'block';
+  document.getElementById('reservationResult').style.display = 'none';
+  document.getElementById('reservationModal').classList.remove('hidden');
+
+  try {
+    const res = await fetch('/api/shopping', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, action: 'reservation' })
+    });
+    const data = await res.json();
+
+    document.getElementById('reservationLoading').style.display = 'none';
+    document.getElementById('reservationResult').style.display = 'block';
+    document.getElementById('reservationModalTitle').textContent = data.titre || text.substring(0, 40);
+    document.getElementById('reservationResume').textContent = data.resume || '';
+    const infos = data.infos || {};
+    const tags = [];
+    if (infos.origine)      tags.push('🚩 ' + infos.origine);
+    if (infos.destination)  tags.push('📍 ' + infos.destination);
+    if (infos.date_aller)   tags.push('📅 ' + infos.date_aller);
+    if (infos.date_retour)  tags.push('🔄 ' + infos.date_retour);
+    if (infos.personnes)    tags.push('👥 ' + infos.personnes + ' pers.');
+    if (infos.budget)       tags.push('💰 ' + infos.budget);
+
+    document.getElementById('reservationTags').innerHTML = tags.map(t =>
+      `<span style="font-size:11px;background:rgba(74,127,212,0.1);color:var(--accent);padding:3px 10px;border-radius:100px;font-weight:500">${t}</span>`
+    ).join('');
+    document.getElementById('reservationPlateformes').innerHTML = (data.plateformes || []).map(p => `
+      <a href="${p.url}" target="_blank" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);text-decoration:none;-webkit-tap-highlight-color:transparent"
+        onmouseover="this.style.background='rgba(255,255,255,0.95)'" onmouseout="this.style.background='rgba(255,255,255,0.6)'">
+        <span style="font-size:24px">${p.icon}</span>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:var(--text)">${p.nom}</div>
+          <div style="font-size:11px;color:var(--muted)">${p.desc}</div>
+        </div>
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+      </a>
+    `).join('');
+    setTimeout(() => declencherRebond(
+      'Réservation : ' + (data.titre || text),
+      'type: ' + (data.type || '') + ', destination: ' + (data.infos?.destination || '') + ', date: ' + (data.infos?.date_aller || ''),
+      (data.titre || text)
+    ), 400);
+  } catch(e) {
+    document.getElementById('reservationLoading').innerHTML = '<div style="font-size:13px;color:var(--muted)">Service indisponible</div>';
+  }
+}
+let analyseData = {};
+
+async function showAnalyseModal(text) {
+  analyseData = { text, titre: text.substring(0, 60) };
+  document.getElementById('analyseModalTitle').textContent = text.substring(0, 50) + (text.length > 50 ? '…' : '');
+  document.getElementById('analyseLoading').style.display = 'block';
+  document.getElementById('analyseResult').style.display = 'none';
+  document.getElementById('analyseModal').classList.remove('hidden');
+
+  try {
+    const res = await fetch('/api/analyse', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, profile: localStorage.getItem('ponk_profile') || '' })
+    });
+    const data = await res.json();
+    analyseData = { ...analyseData, ...data };
+
+    document.getElementById('analyseLoading').style.display = 'none';
+    document.getElementById('analyseResult').style.display = 'block';
+    const sections = data.sections || [];
+    document.getElementById('analyseContent').innerHTML = sections.map(s => {
+      const v = s.visuel;
+      let visuelHtml = '';
+      if (v) {
+        if (v.type === 'tableau') {
+          visuelHtml = `<div style="overflow-x:auto;margin-top:10px">
+            <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:4px">${v.titre||''}</div>
+            <table style="width:100%;border-collapse:collapse;font-size:11px">
+              <thead><tr>${(v.colonnes||[]).map(c=>`<th style="background:rgba(74,127,212,0.1);color:var(--accent);padding:6px 8px;text-align:left;font-weight:600;border:1px solid rgba(74,127,212,0.15)">${c}</th>`).join('')}</tr></thead>
+              <tbody>${(v.lignes||[]).map((l,i)=>`<tr style="background:${i%2===0?'rgba(255,255,255,0.6)':'rgba(255,255,255,0.3)'}">${l.map(cell=>`<td style="padding:5px 8px;border:1px solid rgba(0,0,0,0.06);color:var(--text)">${cell}</td>`).join('')}</tr>`).join('')}</tbody>
+            </table></div>`;
+        } else if (v.type === 'barres') {
+          const max = Math.max(...(v.valeurs||[1]));
+          visuelHtml = `<div style="margin-top:10px">
+            <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:6px">${v.titre||''}</div>
+            ${(v.labels||[]).map((l,i)=>`
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+                <div style="font-size:10px;color:var(--muted);width:80px;flex-shrink:0;text-align:right">${l}</div>
+                <div style="flex:1;background:rgba(74,127,212,0.1);border-radius:4px;height:18px;position:relative">
+                  <div style="background:var(--accent);border-radius:4px;height:100%;width:${Math.round((v.valeurs[i]/max)*100)}%"></div>
+                </div>
+                <div style="font-size:10px;font-weight:600;color:var(--accent);width:50px">${v.valeurs[i]} ${v.unite||''}</div>
+              </div>`).join('')}
+          </div>`;
+        } else if (v.type === 'camembert') {
+          const total = (v.valeurs||[]).reduce((a,b)=>a+b,0);
+          const colors = ['#4a7fd4','#3db87a','#e07a30','#8a55d4','#e05555','#30a8d4'];
+          visuelHtml = `<div style="margin-top:10px">
+            <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:6px">${v.titre||''}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">${(v.labels||[]).map((l,i)=>`
+              <div style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,0.5);padding:4px 8px;border-radius:100px">
+                <div style="width:8px;height:8px;border-radius:50%;background:${colors[i%colors.length]};flex-shrink:0"></div>
+                <span style="font-size:11px;color:var(--text)">${l}</span>
+                <span style="font-size:11px;font-weight:600;color:${colors[i%colors.length]}">${Math.round((v.valeurs[i]/total)*100)}%</span>
+              </div>`).join('')}</div>
+          </div>`;
+        } else if (v.type === 'courbe') {
+          const max = Math.max(...(v.valeurs||[1]));
+          const min = Math.min(...(v.valeurs||[0]));
+          const range = max - min || 1;
+          const w = 100, h = 60;
+          const pts = (v.valeurs||[]).map((val,i)=>`${Math.round((i/(v.valeurs.length-1))*w)},${Math.round(h-((val-min)/range)*h)}`).join(' ');
+          visuelHtml = `<div style="margin-top:10px">
+            <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:6px">${v.titre||''}</div>
+            <svg viewBox="0 0 100 65" style="width:100%;height:70px">
+              <polyline points="${pts}" fill="none" stroke="#4a7fd4" stroke-width="2" stroke-linejoin="round"/>
+              ${(v.valeurs||[]).map((val,i)=>`<circle cx="${Math.round((i/(v.valeurs.length-1))*w)}" cy="${Math.round(h-((val-min)/range)*h)}" r="2" fill="#4a7fd4"/>`).join('')}
+            </svg>
+            <div style="display:flex;justify-content:space-between">${(v.labels||[]).map(l=>`<span style="font-size:9px;color:var(--muted)">${l}</span>`).join('')}</div>
+          </div>`;
+        }
+      }
+      return `<div style="background:rgba(255,255,255,0.5);border-radius:12px;padding:12px;margin-bottom:8px;border-left:3px solid var(--accent)">
+        <div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px">${s.titre}</div>
+        ${(s.points||[]).map(p=>`
+          <div style="margin-bottom:6px">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${p.titre}</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5">${p.detail}</div>
+          </div>`).join('')}
+        ${visuelHtml}
+      </div>`;
+    }).join('');
+    const prefMail = localStorage.getItem('ponk_pref_mail') || 'gmail';
+    const sujet = encodeURIComponent('Analyse : ' + analyseData.titre);
+    const corps = encodeURIComponent(sections.map(s =>
+      s.titre + '\n' + (s.points || []).map(p => '• ' + p.titre + ' : ' + p.detail).join('\n')
+    ).join('\n\n'));
+    const emailUrls = {
+      'gmail':   `https://mail.google.com/mail/?view=cm&fs=1&su=${sujet}&body=${corps}`,
+      'outlook': `https://outlook.live.com/mail/0/deeplink/compose?subject=${sujet}&body=${corps}`,
+      'yahoo':   `https://compose.mail.yahoo.com/?subject=${sujet}&body=${corps}`,
+      'default': `mailto:?subject=${sujet}&body=${corps}`
+    };
+
+    document.getElementById('analyseActionBtns').innerHTML = `
+      <a href="${emailUrls[prefMail]}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:var(--accent);color:#fff;text-decoration:none;font-size:14px;font-weight:600">📧 Envoyer par email</a>
+      <button onclick="downloadAnalysePDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.8);background:rgba(255,255,255,0.6);color:var(--text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;width:100%">📄 Exporter en PDF</button>
+    `;
+    setTimeout(() => declencherRebond(
+      'Analyse : ' + (data.titre || text),
+      'analyse sur le sujet: ' + (data.titre || text),
+      'Analyse : ' + (data.titre || text)
+    ), 400);
+
+  } catch(e) {
+    document.getElementById('analyseLoading').innerHTML = '<div style="font-size:13px;color:var(--muted)">Service indisponible</div>';
+  }
+}
+
+function showRappelModal(text) {
+  document.getElementById('rappelText').textContent = text;
+  document.getElementById('rappelCopyBtn').textContent = '📋 Copier';
+  document.getElementById('rappelModal').classList.remove('hidden');
+}
+
+function copyRappel() {
+  const text = document.getElementById('rappelText').textContent;
+  const btn = document.getElementById('rappelCopyBtn');
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ Copié !';
+    setTimeout(() => {
+      btn.textContent = '📋 Copier';
+      document.getElementById('rappelModal').classList.add('hidden');
+    }, 1500);
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0.01;';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = '✓ Copié !';
+    setTimeout(() => {
+      btn.textContent = '📋 Copier';
+      document.getElementById('rappelModal').classList.add('hidden');
+    }, 1500);
+  });
+}
 </script>
+<!-- Calendrier modal -->
+<div class="bubble-modal hidden" id="calendrierModal">
+  <div class="bubble-modal-card" style="max-height:88vh;overflow-y:auto">
+    <div style="font-size:36px;text-align:center;margin-bottom:8px">📅</div>
+    <div class="bubble-modal-type" id="calendrierModalTitle">Événement</div>
+
+    <!-- Step 1: Event info + actions -->
+    <div id="calendrierStep1">
+      <div id="calendrierInfo" style="background:rgba(74,127,212,0.06);border:1px solid rgba(74,127,212,0.15);border-radius:14px;padding:14px;margin:12px 0;display:none">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+          <span style="font-size:11px;background:rgba(74,127,212,0.1);color:var(--accent);padding:3px 10px;border-radius:100px;font-weight:500" id="calendrierDate"></span>
+          <span style="font-size:11px;background:rgba(74,127,212,0.1);color:var(--accent);padding:3px 10px;border-radius:100px;font-weight:500" id="calendrierHeure"></span>
+          <span style="font-size:11px;background:rgba(74,127,212,0.1);color:var(--accent);padding:3px 10px;border-radius:100px;font-weight:500" id="calendrierDuree"></span>
+        </div>
+        <div style="font-size:13px;color:var(--muted)" id="calendrierDesc"></div>
+      </div>
+      <div id="calendrierCalBtn" style="display:none;margin-bottom:8px"></div>
+      <button id="calendrierOrganiseBtn" onclick="startCalendrierOrganise()" style="display:none;width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#4a7fd4,#8a55d4);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">✨ Organiser avec l'IA</button>
+    </div>
+
+    <!-- Loading -->
+    <div id="calendrierLoading" style="text-align:center;padding:20px;display:none">
+      <div style="width:28px;height:28px;border-radius:50%;border:3px solid rgba(74,127,212,0.2);border-top-color:#4a7fd4;animation:spin 0.8s linear infinite;margin:0 auto 10px"></div>
+      <div style="font-size:13px;color:var(--muted)" id="calendrierLoadingText">Analyse en cours…</div>
+    </div>
+
+    <!-- Step 2: Questions -->
+    <div id="calendrierStep2" style="display:none">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:12px">Questions de l'IA</div>
+      <div id="calendrierQuestions"></div>
+      <button onclick="submitCalendrierAnswers()" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px">Préparer →</button>
+    </div>
+
+    <!-- Step 3: Preparation result -->
+    <div id="calendrierStep3" style="display:none">
+      <div id="calendrierPrepContent"></div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px" id="calendrierActionBtns"></div>
+    </div>
+
+    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted);margin-top:10px" onclick="document.getElementById('calendrierModal').classList.add('hidden')">Fermer</button>
+  </div>
+</div>
+
+<!-- Commande modal -->
+<div class="bubble-modal hidden" id="commandeModal">
+  <div class="bubble-modal-card" style="max-height:85vh;overflow-y:auto">
+    <div style="font-size:36px;text-align:center;margin-bottom:8px">🛒</div>
+    <div class="bubble-modal-type" id="commandeModalTitle">Brief produit</div>
+
+    <!-- Loading state -->
+    <div id="commandeLoading" style="text-align:center;padding:20px">
+      <div style="width:32px;height:32px;border-radius:50%;border:3px solid rgba(74,127,212,0.2);border-top-color:#4a7fd4;animation:spin 0.8s linear infinite;margin:0 auto 12px"></div>
+      <div style="font-size:13px;color:var(--muted)">Analyse en cours…</div>
+    </div>
+
+    <!-- Brief content -->
+    <div id="commandeBrief" style="display:none">
+      <div style="background:rgba(74,127,212,0.06);border:1px solid rgba(74,127,212,0.15);border-radius:14px;padding:14px;margin-bottom:14px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--accent);margin-bottom:10px">✨ Analyse IA avant achat</div>
+        <div style="display:flex;align-items:center;gap:8px;background:rgba(61,184,122,0.1);border-radius:8px;padding:8px 10px;margin-bottom:10px">
+          <span style="font-size:16px">💰</span>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#3db87a" id="commandePrix"></div>
+            <div style="font-size:11px;color:var(--muted)" id="commandePrixNote"></div>
+          </div>
+        </div>
+        <div style="margin-bottom:8px">
+          <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px">✅ Ce qu'il faut vérifier</div>
+          <div id="commandeVerifier" style="font-size:12px;color:var(--muted);line-height:1.8"></div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px">⚠️ Points d'attention</div>
+          <div id="commandeAttention" style="font-size:12px;color:var(--muted);line-height:1.8"></div>
+        </div>
+      </div>
+
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:8px">Rechercher sur</div>
+      <div id="commandeSites" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px"></div>
+    </div>
+
+    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted)" onclick="document.getElementById('commandeModal').classList.add('hidden')">Fermer</button>
+  </div>
+</div>
+
+<!-- WhatsApp modal -->
+<div class="bubble-modal hidden" id="waModal">
+  <div class="bubble-modal-card">
+    <div style="font-size:36px;text-align:center;margin-bottom:12px">💬</div>
+    <div class="bubble-modal-type">Message WhatsApp</div>
+    <div style="background:rgba(255,255,255,0.5);border-radius:12px;padding:12px;margin:12px 0;font-size:14px;line-height:1.6;color:var(--text)" id="waModalMessage"></div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px" id="waAppLinks"></div>
+    <div style="display:flex;gap:8px">
+      <button class="bubble-modal-btn btn-confirm" onclick="copyWAMessage()" id="waCopyBtn">📋 Copier</button>
+      <button class="bubble-modal-btn" style="background:rgba(0,0,0,0.06);color:var(--muted)" onclick="document.getElementById('waModal').classList.add('hidden')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Call modal -->
+<div class="bubble-modal hidden" id="callModal">
+  <div class="bubble-modal-card" style="text-align:center">
+    <div style="font-size:42px;margin-bottom:12px">📞</div>
+    <div class="bubble-modal-type" id="callModalName"></div>
+    <div style="font-size:28px;font-weight:300;letter-spacing:2px;color:var(--text);margin:16px 0" id="callModalPhone"></div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px" id="callAppLinks"></div>
+    <div style="display:flex;gap:8px">
+      <button class="bubble-modal-btn btn-confirm" onclick="copyPhone()" id="callCopyBtn">📋 Copier</button>
+      <button class="bubble-modal-btn" style="background:rgba(0,0,0,0.06);color:var(--muted)" onclick="document.getElementById('callModal').classList.add('hidden')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Maps / Itinéraire modal -->
+<div class="bubble-modal hidden" id="mapsModal">
+  <div class="bubble-modal-card" style="max-height:90vh;overflow-y:auto">
+    <div style="font-size:36px;text-align:center;margin-bottom:8px">🗺️</div>
+    <div class="bubble-modal-type" id="mapsModalTitle">Itinéraire</div>
+
+    <!-- Champs départ / arrivée -->
+    <div id="mapsForm" style="margin:12px 0">
+      <div style="margin-bottom:8px">
+        <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.6px">Départ</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="text" id="mapsDepart" placeholder="Ma position actuelle…"
+            style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:13px;color:var(--text);outline:none"/>
+          <button onclick="geolocateDepart()" title="Ma position"
+            style="width:36px;height:36px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:16px;cursor:pointer;flex-shrink:0">📍</button>
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.6px">Destination</div>
+        <input type="text" id="mapsArrivee" placeholder="Adresse de destination…"
+          style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:13px;color:var(--text);outline:none"/>
+      </div>
+      <!-- Mode transport -->
+      <div style="display:flex;gap:6px;margin-bottom:12px" id="mapsMode">
+        <button class="maps-mode-btn active" data-mode="car"     onclick="setMapsMode(this)">🚗 Voiture</button>
+        <button class="maps-mode-btn"         data-mode="transit" onclick="setMapsMode(this)">🚌 Transport</button>
+        <button class="maps-mode-btn"         data-mode="walk"    onclick="setMapsMode(this)">🚶 À pied</button>
+        <button class="maps-mode-btn"         data-mode="bike"    onclick="setMapsMode(this)">🚲 Vélo</button>
+      </div>
+      <button onclick="lancerItineraire()" id="mapsLancerBtn"
+        style="width:100%;padding:12px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">
+        Calculer l'itinéraire
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div id="mapsLoading" style="display:none;text-align:center;padding:16px">
+      <div style="width:28px;height:28px;border-radius:50%;border:3px solid rgba(74,127,212,0.2);border-top-color:#4a7fd4;animation:spin 0.8s linear infinite;margin:0 auto 10px"></div>
+      <div style="font-size:13px;color:var(--muted)">Chargement…</div>
+    </div>
+
+    <!-- Résultats -->
+    <div id="mapsResult" style="display:none">
+      <!-- Trajet -->
+      <div id="mapsTrajet" style="background:rgba(74,127,212,0.06);border:1px solid rgba(74,127,212,0.15);border-radius:14px;padding:14px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-size:28px" id="mapsModeIcon">🚗</div>
+          <div style="flex:1">
+            <div style="font-size:18px;font-weight:700;color:var(--text)" id="mapsDuree">—</div>
+            <div style="font-size:12px;color:var(--muted)" id="mapsDistance">—</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">Partir à</div>
+            <div style="font-size:20px;font-weight:700;color:var(--accent)" id="mapsHeureDep">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Météo destination -->
+      <div id="mapsMeteo" style="background:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.8);border-radius:14px;padding:12px;margin-bottom:10px;display:none">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:32px" id="mapsMeteoIcon">🌤️</div>
+          <div style="flex:1">
+            <div style="font-size:16px;font-weight:700;color:var(--text)" id="mapsMeteoTemp">—</div>
+            <div style="font-size:12px;color:var(--muted)" id="mapsMeteoDesc">—</div>
+          </div>
+          <div style="text-align:right;font-size:11px;color:var(--muted)" id="mapsMeteoWind">—</div>
+        </div>
+      </div>
+
+      <!-- POI -->
+      <div id="mapsPOIWrap" style="display:none">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:8px">À proximité de la destination</div>
+        <div id="mapsPOIList" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+
+      <!-- Bouton ouvrir app -->
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px" id="mapsAppBtns"></div>
+    </div>
+
+    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted);margin-top:10px"
+      onclick="document.getElementById('mapsModal').classList.add('hidden')">Fermer</button>
+  </div>
+</div>
+
+<!-- Réservation modal -->
+<div class="bubble-modal hidden" id="reservationModal">
+  <div class="bubble-modal-card" style="max-height:90vh;overflow-y:auto">
+    <div style="font-size:36px;text-align:center;margin-bottom:8px">🎫</div>
+    <div class="bubble-modal-type" id="reservationModalTitle">Réservation</div>
+
+    <!-- Loading -->
+    <div id="reservationLoading" style="text-align:center;padding:24px">
+      <div style="width:28px;height:28px;border-radius:50%;border:3px solid rgba(74,127,212,0.2);border-top-color:#4a7fd4;animation:spin 0.8s linear infinite;margin:0 auto 10px"></div>
+      <div style="font-size:13px;color:var(--muted)">Analyse en cours…</div>
+    </div>
+
+    <!-- Résultat -->
+    <div id="reservationResult" style="display:none">
+      <!-- Infos extraites -->
+      <div id="reservationInfos" style="background:rgba(74,127,212,0.06);border:1px solid rgba(74,127,212,0.15);border-radius:14px;padding:14px;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px" id="reservationResume"></div>
+        <div id="reservationTags" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+      <!-- Plateformes -->
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:8px">Réserver sur</div>
+      <div id="reservationPlateformes" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+
+    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted);margin-top:10px"
+      onclick="document.getElementById('reservationModal').classList.add('hidden')">Fermer</button>
+  </div>
+</div>
+
+<!-- Analyse modal -->
+<div class="bubble-modal hidden" id="analyseModal">
+  <div class="bubble-modal-card" style="max-height:90vh;overflow-y:auto">
+    <div style="font-size:36px;text-align:center;margin-bottom:8px">🧠</div>
+    <div class="bubble-modal-type" id="analyseModalTitle">Analyse</div>
+
+    <!-- Loading -->
+    <div id="analyseLoading" style="text-align:center;padding:24px">
+      <div style="width:28px;height:28px;border-radius:50%;border:3px solid rgba(74,127,212,0.2);border-top-color:#4a7fd4;animation:spin 0.8s linear infinite;margin:0 auto 10px"></div>
+      <div style="font-size:13px;color:var(--muted)">Analyse en cours…</div>
+    </div>
+
+    <!-- Résultat -->
+    <div id="analyseResult" style="display:none">
+      <div id="analyseContent" style="margin-bottom:14px"></div>
+      <div style="display:flex;flex-direction:column;gap:8px" id="analyseActionBtns"></div>
+    </div>
+
+    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted);margin-top:10px"
+      onclick="document.getElementById('analyseModal').classList.add('hidden')">Fermer</button>
+  </div>
+</div>
+
+<!-- Rappel modal -->
+<div class="bubble-modal hidden" id="rappelModal">
+  <div class="bubble-modal-card">
+    <div style="font-size:36px;text-align:center;margin-bottom:8px">🔔</div>
+    <div class="bubble-modal-type">Rappel</div>
+    <div style="background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);border-radius:12px;padding:14px;margin:12px 0;font-size:14px;line-height:1.6;color:var(--text);text-align:center" id="rappelText"></div>
+    <button onclick="copyRappel()" id="rappelCopyBtn"
+      style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:8px">
+      📋 Copier
+    </button>
+    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted)"
+      onclick="document.getElementById('rappelModal').classList.add('hidden')">Fermer</button>
+  </div>
+</div>
+
+<!-- Bubble modal -->
+<div class="bubble-modal hidden" id="bubbleModal">
+  <div class="bubble-modal-card">
+    <div class="bubble-modal-icon" id="bubbleModalIcon"></div>
+    <div class="bubble-modal-type" id="bubbleModalType"></div>
+    <textarea class="bubble-modal-textarea" id="bubbleModalText" placeholder="Décris l'action..."></textarea>
+    <div class="bubble-modal-btns">
+      <button class="bubble-modal-btn btn-reject" onclick="rejectBubble()">✗ Ignorer</button>
+      <button class="bubble-modal-btn btn-now" onclick="doNow()">→ Faire</button>
+      <button class="bubble-modal-btn btn-confirm" onclick="confirmBubble()">✓ Garder</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
