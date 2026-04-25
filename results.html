@@ -562,7 +562,7 @@ function addMemoRappel(btn) {
     localStorage.setItem('ponk_result', JSON.stringify(data));
     const row = document.createElement('div');
     row.className = 'export-row'; row.style.alignItems = 'center';
-    row.innerHTML = '<input type="checkbox" class="export-cb" checked data-export-label="memo_rappel" data-export-content="' + encodeURIComponent(val) + '"><div class="point-item" style="background:none;padding:0;flex:1;">' + val + '</div><button class="edit-btn" style="color:var(--danger)" onclick="this.closest('.export-row').remove()">🗑</button>';
+    row.innerHTML = `<input type="checkbox" class="export-cb" checked data-export-label="memo_rappel" data-export-content="${encodeURIComponent(val)}"><div class="point-item" style="background:none;padding:0;flex:1;">${val}</div><button class="edit-btn" style="color:var(--danger)" onclick="this.parentElement.remove()">🗑</button>`;
     input.replaceWith(row);
   };
   input.onkeydown = e => { if (e.key === 'Enter') input.blur(); };
