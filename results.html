@@ -1049,7 +1049,7 @@ async function markActionDone(actionId) {
         modal.innerHTML = '<div style="background:rgba(255,255,255,0.95);border-radius:20px;padding:24px;width:100%;max-width:400px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">' +
           '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:rgba(42,42,58,0.5);margin-bottom:12px;">🧠 Analyse</div>' +
           (sections || '<div style="color:rgba(42,42,58,0.5);font-style:italic;">Aucun résultat</div>') +
-          '<button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;padding:12px;border-radius:12px;border:none;background:rgba(0,0,0,0.06);font-family:inherit;font-size:14px;cursor:pointer;margin-top:12px;">Fermer</button>' +
+          '<button onclick="this.parentElement.parentElement.remove()" style="width:100%;padding:12px;border-radius:12px;border:none;background:rgba(0,0,0,0.06);font-family:inherit;font-size:14px;cursor:pointer;margin-top:12px;">Fermer</button>' +
           '</div>';
         modal.onclick = e => { if (e.target === modal) modal.remove(); };
         document.body.appendChild(modal);
