@@ -801,23 +801,41 @@ async function runDeepAnalysis(id, query) {
   loading.classList.add('visible');
   if (arrow) arrow.style.display = 'none';
   try {
-    const res = await fetch('/api/analyze', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ transcript_only: true, transcript: 'Fais une analyse approfondie sur : ' + query })
+    const profile = localStorage.getItem('ponk_profile') || '';
+    const res = await fetch('/api/analyse', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: query, profile })
     });
     const data = await res.json();
-    const actions = data.actions_ia || [];
-    const analysisText = actions.map(a => '<strong>' + a.titre + '</strong><br>' + a.description).join('<br><br>') || query;
-    if (analysisText) {
-      result.innerHTML = '<p>' + analysisText + '</p>';
+    if (data.sections) {
+      analyseData = data;
+      let html = '';
+      if (data.resume) html += '<p style="font-size:13px;color:var(--muted);font-style:italic;margin-bottom:12px;">' + data.resume + '</p>';
+      data.sections.forEach(s => {
+        html += '<div style="margin-bottom:14px;">';
+        html += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--accent);margin-bottom:6px;">' + s.titre + '</div>';
+        (s.points || []).forEach(p => {
+          html += '<div style="margin-bottom:6px;padding:8px 10px;background:rgba(255,255,255,0.4);border-radius:8px;border-left:2px solid var(--accent);">';
+          html += '<div style="font-size:13px;font-weight:600;color:var(--text);">' + p.titre + '</div>';
+          html += '<div style="font-size:12px;color:var(--muted);margin-top:2px;">' + p.detail + '</div>';
+          html += '</div>';
+        });
+        html += '</div>';
+      });
+      // Bouton télécharger PDF
+      html += '<button onclick="downloadAnalysePDF()" style="width:100%;padding:8px;border-radius:10px;border:none;background:rgba(74,127,212,0.12);color:var(--accent);font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;margin-top:8px;">↓ Télécharger PDF complet</button>';
+      result.innerHTML = html;
+      result.classList.add('visible');
+    } else {
+      result.innerHTML = '<p style="color:var(--muted);font-style:italic;">Aucun résultat.</p>';
       result.classList.add('visible');
     }
   } catch(e) {
-    result.innerHTML = 'Erreur lors de l\'analyse.';
+    result.innerHTML = '<p style="color:var(--muted);">Erreur lors de l\'analyse.</p>';
     result.classList.add('visible');
   }
   loading.classList.remove('visible');
-  if (arrow) arrow.style.display = 'flex';
+  if (arrow) arrow.style.display = 'none';
 }
 
 // Supprimer une action IA
@@ -1573,11 +1591,6 @@ async function showCalendrierModal(text) {
         </div>`;
       document.getElementById('calendrierCalBtn').style.display = 'block';
       document.getElementById('calendrierOrganiseBtn').style.display = 'block';
-      setTimeout(() => declencherRebond(
-        'Calendrier : ' + (data.titre || text),
-        'date: ' + (data.date || '') + ', lieu: ' + (data.description || ''),
-        (data.titre || text) + (data.date ? ' — ' + data.date : '')
-      ), 400);
     }
   } catch(e) {
     document.getElementById('calendrierLoading').textContent = 'Service indisponible';
@@ -1793,11 +1806,6 @@ async function showCommandeModal(text) {
       ).join('');
       document.getElementById('commandeLoading').style.display = 'none';
       document.getElementById('commandeBrief').style.display = 'block';
-      setTimeout(() => declencherRebond(
-        'Commande : ' + text,
-        'produit: ' + (data.produit || text),
-        'Commande de ' + (data.produit || text)
-      ), 400);
     }
   } catch(e) {
     document.getElementById('commandeLoading').innerHTML = '<div style="font-size:13px;color:var(--muted);padding:10px">Service temporairement indisponible</div>';
@@ -1819,11 +1827,6 @@ function showWhatsAppModal(phone, message) {
     `;
   }
   document.getElementById('waModal').classList.remove('hidden');
-  setTimeout(() => declencherRebond(
-    'Message WhatsApp : ' + message,
-    'message envoye par whatsapp',
-    'Message WhatsApp envoyé'
-  ), 400);
 }
 
 function copyWAMessage() {
@@ -1848,11 +1851,6 @@ function showCallModal(phone, name) {
     `;
   }
   document.getElementById('callModal').classList.remove('hidden');
-  setTimeout(() => declencherRebond(
-    'Appel : ' + (name || phone),
-    'appel telephone vers ' + (name || phone),
-    'Appel vers ' + (name || phone)
-  ), 400);
 }
 
 function copyPhone() {
@@ -2016,11 +2014,6 @@ async function lancerItineraire() {
     const allApps = ['google','waze','apple'];
     const ordered = [prefMaps, ...allApps.filter(a => a !== prefMaps)];
     document.getElementById('mapsAppBtns').innerHTML = ordered.map(a => appLinks[a]).join('');
-    setTimeout(() => declencherRebond(
-      'Itineraire : ' + (arriveeVal || ''),
-      'trajet vers ' + (arriveeVal || '') + ', mode: ' + mapsState.mode,
-      'Itinéraire vers ' + (arriveeVal || '')
-    ), 400);
 
   } catch(e) {
     document.getElementById('mapsLoading').style.display = 'none';
@@ -2071,11 +2064,6 @@ async function showReservationModal(text) {
         </div>
       </a>
     `).join('');
-    setTimeout(() => declencherRebond(
-      'Réservation : ' + (data.titre || text),
-      'type: ' + (data.type || '') + ', destination: ' + (data.infos?.destination || '') + ', date: ' + (data.infos?.date_aller || ''),
-      (data.titre || text)
-    ), 400);
   } catch(e) {
     document.getElementById('reservationLoading').innerHTML = '<div style="font-size:13px;color:var(--muted)">Service indisponible</div>';
   }
@@ -2178,11 +2166,6 @@ async function showAnalyseModal(text) {
       <a href="${emailUrls[prefMail]}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:var(--accent);color:#fff;text-decoration:none;font-size:14px;font-weight:600">📧 Envoyer par email</a>
       <button onclick="downloadAnalysePDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.8);background:rgba(255,255,255,0.6);color:var(--text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;width:100%">📄 Exporter en PDF</button>
     `;
-    setTimeout(() => declencherRebond(
-      'Analyse : ' + (data.titre || text),
-      'analyse sur le sujet: ' + (data.titre || text),
-      'Analyse : ' + (data.titre || text)
-    ), 400);
 
   } catch(e) {
     document.getElementById('analyseLoading').innerHTML = '<div style="font-size:13px;color:var(--muted)">Service indisponible</div>';
