@@ -33,7 +33,7 @@ module.exports = async function handler(req, res) {
     // ── Mode rewrite : améliore la synthèse avant export PDF ──
     const { rewrite = false, summary: summaryToRewrite = null, transcript: transcriptForRewrite = '' } = body;
     if (rewrite && summaryToRewrite) {
-      const rewritePrompt = 'Améliore ce compte-rendu. Formulations claires, corrige fautes, complète si transcription le permet. Ne supprime rien.\n\nSynthèse:\n' + JSON.stringify(summaryToRewrite) + '\n\nTranscription:\n"""\n' + transcriptForRewrite + '\n"""\n\nRéponds UNIQUEMENT JSON:\n{"resume":"...","contexte":"...","points_discutes":["..."],"decisions":["..."],"actions":[{"qui":"","quoi":"","quand":""}],"prochaine_etape":"..."}';
+      const rewritePrompt = 'Tu améliores UNIQUEMENT les éléments fournis. RÈGLES STRICTES:\n- Ne supprime aucun élément existant\n- N\'ajoute JAMAIS de nouveaux éléments\n- Ne modifie que le style et la formulation\n- Corrige les fautes d\'orthographe\n- Rends les formulations plus claires et professionnelles\n\nÉléments à améliorer:\n' + JSON.stringify(summaryToRewrite) + '\n\nContexte (transcription originale):\n"""\n' + transcriptForRewrite + '\n"""\n\nRéponds UNIQUEMENT avec le même JSON en entrée, avec exactement les mêmes clés et le même nombre d\'éléments dans chaque tableau, juste les formulations améliorées.';
       const result = await tryGenerate(rewritePrompt);
       const raw = result.response.text().replace(/```json|```/g, '').trim();
       try { return res.status(200).json(JSON.parse(raw)); }
