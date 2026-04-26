@@ -703,12 +703,12 @@ function buildSummaryHTML(s) {
     html += `<div class="summary-section">
       <div class="summary-section-title">📅 Prochaine étape</div>
       ${cb('prochaine',
-        `<div class="prochaine-wrap" style="cursor:pointer" onclick="editItem(this,'prochaine_etape',${JSON.stringify(s).replace(/"/g,'&quot;')},null,null)">
+        `<div class="prochaine-wrap" style="cursor:pointer" onclick="editItem(this,'prochaine_etape',${JSON.stringify(s).replace(/"/g,'&quot;')},null,null)" data-text="${s.prochaine_etape.replace(/"/g,'&quot;')}">
           <span class="prochaine-icon">📅</span>
           <span class="prochaine-text">${s.prochaine_etape}</span>
         </div>`,
         true, `deleteItem('prochaine_etape',${JSON.stringify(s).replace(/"/g,'&quot;')},null)`
-      )}
+      ).replace('data-export-content=""', 'data-export-content="' + encodeURIComponent(s.prochaine_etape) + '"')}
     </div>`;
   }
 
@@ -1201,6 +1201,7 @@ async function exportPDF() {
   // Gemini relit avant export
   const pdfBtn = document.querySelector('.btn-pdf');
   if (pdfBtn) { pdfBtn.textContent = '⏳ Gemini relit…'; pdfBtn.disabled = true; }
+  console.log('[PDF] Envoi à Gemini pour relecture...');
 
   try {
     // Construire uniquement les éléments cochés pour Gemini
