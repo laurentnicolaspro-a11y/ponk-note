@@ -417,15 +417,26 @@ function render(data, meta) {
   }
 
   // ── Actions IA ──
-  // Uniquement les bulles créées manuellement par l'utilisateur
+  // Bulles manuelles + prochaine étape comme carte CALENDRIER
   const allActions = (() => {
     try {
       const saved = JSON.parse(localStorage.getItem('ponk_action_bubbles') || '[]');
-      return saved.map(b => ({
+      const bubbles = saved.map(b => ({
         type: b.type, icone: b.icon || '💬',
         titre: b.label || b.type, description: b.text,
         _fromBubble: true, _done: b.confirmed === 'done'
       }));
+      // Ajouter la prochaine étape comme carte CALENDRIER si présente
+      if (data.summary?.prochaine_etape) {
+        bubbles.unshift({
+          type: 'CALENDRIER', icone: '📅',
+          titre: 'Prochaine étape',
+          description: data.summary.prochaine_etape,
+          evenement: data.summary.prochaine_etape,
+          _prochaineEtape: true
+        });
+      }
+      return bubbles;
     } catch(e) { return []; }
   })();
 
@@ -438,6 +449,17 @@ function render(data, meta) {
   localStorage.removeItem('ponk_action_bubbles');
 
 
+
+  // Mémo — toujours visible, toujours vierge
+  {
+    let memoHTML = '<div style="display:flex;flex-direction:column;gap:8px;">';
+    memoHTML += '<div class="export-row" style="align-items:flex-start;">' +
+      '<input type="checkbox" class="export-cb" id="ecb_memo_notes" checked data-export-label="memo_notes" data-export-content="" style="margin-top:10px;">' +
+      '<textarea id="memoNotesArea" placeholder="Vos notes…" onblur="saveMemoField(this)" style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.7);background:rgba(255,255,255,0.5);font-family:inherit;font-size:13px;color:var(--text);outline:none;resize:none;min-height:100px;"></textarea>' +
+      '</div>';
+    memoHTML += '</div>';
+    c.appendChild(makeCard('📝 Mémo', memoHTML, true));
+  }
 
   if (audioData) {
     audioEl = new Audio(audioData);
@@ -652,7 +674,7 @@ function buildSummaryHTML(s) {
   html += `<div class="summary-section">
     <div class="summary-section-title">💬 Points discutés</div>
     <div class="points-list" id="list-points">
-      ${(s.points_discutes||[]).map((p,i) => cb('point:'+p,
+      ${(s.points_discutes||[]).map((p,i) => cb('point:'+i,
         `<div class="point-item" style="background:none;padding:0;cursor:pointer" onclick="editItem(this,'points_discutes',${JSON.stringify(s).replace(/"/g,'&quot;')},${i},null)">${p}</div>`,
         true, `deleteItem('points_discutes',${JSON.stringify(s).replace(/"/g,'&quot;')},${i})`
       )).join('')}
@@ -664,7 +686,7 @@ function buildSummaryHTML(s) {
   html += `<div class="summary-section">
     <div class="summary-section-title">✅ Décisions</div>
     <div class="decisions-list" id="list-decisions">
-      ${(s.decisions||[]).map((d,i) => cb('decision:'+d,
+      ${(s.decisions||[]).map((d,i) => cb('decision:'+i,
         `<div class="decision-item" style="margin:0;cursor:pointer" onclick="editItem(this,'decisions',${JSON.stringify(s).replace(/"/g,'&quot;')},${i},null)"><div class="decision-dot"></div><span>${d}</span></div>`,
         true, `deleteItem('decisions',${JSON.stringify(s).replace(/"/g,'&quot;')},${i})`
       )).join('')}
@@ -674,14 +696,16 @@ function buildSummaryHTML(s) {
 
 
 
+
+
   // Prochaine étape
-  if (s.prochaine_etape !== undefined) {
+  if (s.prochaine_etape) {
     html += `<div class="summary-section">
       <div class="summary-section-title">📅 Prochaine étape</div>
       ${cb('prochaine',
         `<div class="prochaine-wrap" style="cursor:pointer" onclick="editItem(this,'prochaine_etape',${JSON.stringify(s).replace(/"/g,'&quot;')},null,null)">
           <span class="prochaine-icon">📅</span>
-          <span class="prochaine-text">${s.prochaine_etape || '<span style=\'color:var(--muted);font-style:italic\'>Cliquer pour ajouter</span>'}</span>
+          <span class="prochaine-text">${s.prochaine_etape}</span>
         </div>`,
         true, `deleteItem('prochaine_etape',${JSON.stringify(s).replace(/"/g,'&quot;')},null)`
       )}
@@ -1179,12 +1203,22 @@ async function exportPDF() {
   if (pdfBtn) { pdfBtn.textContent = '⏳ Gemini relit…'; pdfBtn.disabled = true; }
 
   try {
+    // Construire uniquement les éléments cochés pour Gemini
+    const summaryToSend = {};
+    if (checked['contexte']) summaryToSend.contexte = s.contexte;
+    if (checked['resume']) summaryToSend.resume = s.resume;
+    const checkedPoints = (s.points_discutes||[]).filter((p,i) => checked['point:'+i] !== undefined);
+    if (checkedPoints.length) summaryToSend.points_discutes = checkedPoints;
+    const checkedDecisions = (s.decisions||[]).filter((d,i) => checked['decision:'+i] !== undefined);
+    if (checkedDecisions.length) summaryToSend.decisions = checkedDecisions;
+    if (checked['prochaine'] && s.prochaine_etape) summaryToSend.prochaine_etape = s.prochaine_etape;
+
     const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         rewrite: true,
-        summary: s,
+        summary: summaryToSend,
         transcript: data.transcript || ''
       })
     });
@@ -1192,12 +1226,23 @@ async function exportPDF() {
     if (res.ok) {
       const result = await res.json();
       if (result && s) {
-        if (result.resume) s.resume = result.resume;
-        if (result.contexte) s.contexte = result.contexte;
-        if (result.points_discutes?.length) s.points_discutes = result.points_discutes;
-        if (result.decisions?.length) s.decisions = result.decisions;
-        if (result.actions?.length) s.actions = result.actions;
-        if (result.prochaine_etape !== undefined) s.prochaine_etape = result.prochaine_etape;
+        // Appliquer uniquement les champs cochés, sans inventer
+        if (result.contexte && checked['contexte']) s.contexte = result.contexte;
+        if (result.resume && checked['resume']) s.resume = result.resume;
+        if (result.points_discutes?.length && checkedPoints.length) {
+          // Remplacer seulement les points cochés, garder les non cochés
+          let pi = 0;
+          s.points_discutes = (s.points_discutes||[]).map((p,i) =>
+            checked['point:'+i] !== undefined ? (result.points_discutes[pi++] || p) : p
+          );
+        }
+        if (result.decisions?.length && checkedDecisions.length) {
+          let di = 0;
+          s.decisions = (s.decisions||[]).map((d,i) =>
+            checked['decision:'+i] !== undefined ? (result.decisions[di++] || d) : d
+          );
+        }
+        if (result.prochaine_etape && checked['prochaine']) s.prochaine_etape = result.prochaine_etape;
         saveSummary(s);
         renderSummary(s);
       }
@@ -1253,7 +1298,7 @@ async function exportPDF() {
   }
 
   // ── POINTS DISCUTÉS ──
-  const points = s ? (s.points_discutes||[]).filter(p => checked['point:'+p]) : [];
+  const points = s ? (s.points_discutes||[]).filter((p,i) => checked['point:'+i] !== undefined) : [];
   if (points.length) {
     checkPage(22);
     pdfSectionHeader(doc, 'Points discutés', null, y, M, maxW, C);
@@ -1269,7 +1314,7 @@ async function exportPDF() {
   }
 
   // ── DÉCISIONS ──
-  const decisions = s ? (s.decisions||[]).filter(d => checked['decision:'+d]) : [];
+  const decisions = s ? (s.decisions||[]).filter((d,i) => checked['decision:'+i] !== undefined) : [];
   if (decisions.length) {
     checkPage(22);
     pdfSectionHeader(doc, 'Décisions', null, y, M, maxW, C);
@@ -1282,7 +1327,8 @@ async function exportPDF() {
       doc.roundedRect(M, y, maxW, dH, 2.5, 2.5, 'FD');
       doc.setFillColor(61, 184, 122); doc.roundedRect(M, y, 3.5, dH, 1.5, 1.5, 'F');
       doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(25, 100, 60);
-      doc.text(dL, M + 7, y + 6);
+      const dLclean = dL.map(l => l.replace(/^✓ /, '+ '));
+      doc.text(dLclean, M + 7, y + 6);
       y += dH + 4;
     }
     y += 4;
@@ -1359,6 +1405,7 @@ async function exportPDF() {
   }
 
   // ── ACTIONS IA ──
+  // Décoder les contenus actions IA
   const actionsIA = Object.entries(checked).filter(([k]) => k.startsWith('action_ia:') && !k.startsWith('action_ia_done:'));
   const actionsIADone = Object.entries(checked).filter(([k]) => k.startsWith('action_ia_done:'));
   const allActionsIA = [...actionsIA, ...actionsIADone];
