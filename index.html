@@ -643,16 +643,36 @@
       font-size:10px; font-weight:700; color:#3db87a;
       text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;
     }
-    .rebond-suggestion {
-      display:flex; align-items:center; gap:12px;
-      padding:12px 14px; border-radius:12px;
-      background:rgba(0,220,255,0.04); border:1px solid rgba(0,220,255,0.12);
+    /* Suggestions générées par rebond.js */
+    #rebondBtns > * {
+      display:flex !important; align-items:center; gap:12px;
+      padding:13px 16px !important; border-radius:12px !important;
+      background:rgba(0,220,255,0.04) !important;
+      border:1px solid rgba(0,220,255,0.15) !important;
       margin-bottom:6px; cursor:pointer;
-      transition:background 0.15s;
+      transition:background 0.15s, border-color 0.15s !important;
+      color:#fff !important; text-decoration:none !important;
+      font-family:'Inter',sans-serif !important;
     }
-    .rebond-suggestion:hover { background:rgba(0,220,255,0.09); }
-    .rebond-suggestion-title { font-size:13px; font-weight:600; color:#fff; }
-    .rebond-suggestion-desc { font-size:11px; color:rgba(0,220,255,0.5); margin-top:2px; }
+    #rebondBtns > *:hover {
+      background:rgba(0,220,255,0.09) !important;
+      border-color:rgba(0,220,255,0.3) !important;
+    }
+    #rebondBtns > * span:first-child {
+      filter:drop-shadow(0 0 4px rgba(0,220,255,0.5));
+      flex-shrink:0;
+    }
+    #rebondBtns > * strong, #rebondBtns > * b {
+      color:#fff !important; font-size:13px;
+    }
+    #rebondBtns > * small, #rebondBtns > * p {
+      color:rgba(0,220,255,0.5) !important; font-size:11px;
+    }
+    /* Flèche à droite */
+    #rebondBtns > *::after {
+      content:'›'; margin-left:auto;
+      color:rgba(0,220,255,0.4); font-size:18px;
+    }
 
     /* Maps mode buttons */
     .maps-mode-btn {
@@ -2840,158 +2860,134 @@
     resize();
     window.addEventListener('resize', resize);
 
-    // Points du réseau neural (position relative 0-1)
-    const nodes = [
-      // Tête / crâne
-      {x:0.50,y:0.08}, {x:0.42,y:0.10}, {x:0.58,y:0.10},
-      {x:0.36,y:0.16}, {x:0.64,y:0.16}, {x:0.31,y:0.24},
-      {x:0.69,y:0.24}, {x:0.28,y:0.34}, {x:0.72,y:0.34},
-      // Visage
-      {x:0.38,y:0.20}, {x:0.62,y:0.20}, {x:0.50,y:0.18},
-      {x:0.44,y:0.28}, {x:0.56,y:0.28}, {x:0.50,y:0.32},
-      // Cou / épaules
-      {x:0.45,y:0.44}, {x:0.55,y:0.44}, {x:0.50,y:0.50},
-      {x:0.35,y:0.52}, {x:0.65,y:0.52}, {x:0.28,y:0.60},
-      {x:0.72,y:0.60}, {x:0.22,y:0.70}, {x:0.78,y:0.70},
-      // Torse
-      {x:0.40,y:0.62}, {x:0.60,y:0.62}, {x:0.50,y:0.68},
-      {x:0.38,y:0.76}, {x:0.62,y:0.76}, {x:0.50,y:0.82},
-      // Bas
-      {x:0.43,y:0.90}, {x:0.57,y:0.90}, {x:0.50,y:0.96},
-    ];
+    // Charger l'image de la silhouette
+    const img = new Image();
+    img.src = '/Image 1.png';
 
-    // Connexions neurales
-    const edges = [
-      [0,1],[0,2],[1,3],[2,4],[3,5],[4,6],[5,7],[6,8],
-      [1,9],[2,10],[0,11],[9,12],[10,13],[11,14],[12,14],[13,14],
-      [14,15],[14,16],[15,17],[16,17],[17,18],[17,19],
-      [18,20],[19,21],[20,22],[21,23],
-      [18,24],[19,25],[24,26],[25,26],[26,27],[26,28],[27,29],[28,29],
-      [29,30],[29,31],[30,32],[31,32],[32,33],
-      [7,18],[8,19],[5,20],[6,21],
-    ];
-
-    // Particules qui voyagent le long des connexions
+    // Particules voyageuses
     const particles = [];
-    for (let i = 0; i < 18; i++) {
-      const edge = edges[Math.floor(Math.random() * edges.length)];
+    for (let i = 0; i < 28; i++) {
       particles.push({
-        edge, t: Math.random(), speed: 0.003 + Math.random() * 0.004,
-        size: 1.5 + Math.random() * 2,
-        opacity: 0.6 + Math.random() * 0.4
+        x: Math.random(),
+        y: Math.random(),
+        vx: (Math.random() - 0.5) * 0.0008,
+        vy: (Math.random() - 0.5) * 0.0008,
+        size: 1 + Math.random() * 2.5,
+        opacity: 0.4 + Math.random() * 0.6,
+        pulse: Math.random() * Math.PI * 2,
+        pulseSpeed: 0.02 + Math.random() * 0.03
       });
     }
 
-    // Pulsations sur les noeuds
-    const pulses = nodes.map(() => ({ phase: Math.random() * Math.PI * 2, speed: 0.02 + Math.random() * 0.02 }));
-
-    // Cercles concentriques (aura)
-    const auraCircles = [
-      { r: 0.18, speed: 0.008, phase: 0 },
-      { r: 0.26, speed: 0.006, phase: 1 },
-      { r: 0.34, speed: 0.004, phase: 2 },
-      { r: 0.42, speed: 0.003, phase: 0.5 },
+    // Cercles d'aura concentriques
+    const auras = [
+      { r: 0.22, speed: 0.006, phase: 0 },
+      { r: 0.30, speed: 0.004, phase: 1.5 },
+      { r: 0.38, speed: 0.003, phase: 3 },
     ];
+
+    // Lignes neurales flottantes
+    const lines = [];
+    for (let i = 0; i < 8; i++) {
+      lines.push({
+        x1: Math.random() * 0.6, y1: Math.random(),
+        x2: Math.random() * 0.6, y2: Math.random(),
+        speed: 0.0003 + Math.random() * 0.0004,
+        phase: Math.random() * Math.PI * 2,
+        opacity: 0.08 + Math.random() * 0.12
+      });
+    }
 
     let frame = 0;
     function animate() {
       const w = canvas.width, h = canvas.height;
-      const cx = w * 0.5, cy = h * 0.5;
-      const scale = Math.min(w, h);
       ctx.clearRect(0, 0, w, h);
-
       frame++;
 
-      // Aura / cercles concentriques
-      auraCircles.forEach(c => {
-        c.phase += c.speed;
-        const pulse = 1 + Math.sin(c.phase) * 0.03;
-        const r = c.r * scale * pulse;
-        const alpha = (0.04 + Math.sin(c.phase) * 0.02);
+      // Image de la silhouette — couvre toute la zone gauche
+      if (img.complete && img.naturalWidth > 0) {
+        const imgRatio = img.naturalWidth / img.naturalHeight;
+        const canvasRatio = w / h;
+        let dw, dh, dx, dy;
+        if (imgRatio > canvasRatio) {
+          dh = h * 1.05;
+          dw = dh * imgRatio;
+          dx = (w - dw) * 0.3;
+          dy = (h - dh) * 0.5;
+        } else {
+          dw = w * 0.95;
+          dh = dw / imgRatio;
+          dx = w * 0.02;
+          dy = (h - dh) * 0.5;
+        }
+        ctx.globalAlpha = 0.92;
+        ctx.drawImage(img, dx, dy, dw, dh);
+        ctx.globalAlpha = 1;
+      }
+
+      // Cercles d'aura pulsants centrés sur la tête (~40% gauche, 35% haut)
+      const cx = w * 0.38, cy = h * 0.35;
+      auras.forEach(a => {
+        a.phase += a.speed;
+        const pulse = 1 + Math.sin(a.phase) * 0.025;
+        const r = a.r * Math.min(w, h) * pulse;
+        const alpha = 0.03 + Math.sin(a.phase) * 0.015;
         ctx.beginPath();
-        ctx.arc(cx, cy * 0.9, r, 0, Math.PI * 2);
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.strokeStyle = `rgba(0,220,255,${alpha})`;
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        // Lueur
-        ctx.beginPath();
-        ctx.arc(cx, cy * 0.9, r, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(0,180,255,${alpha * 0.5})`;
-        ctx.lineWidth = 4;
-        ctx.stroke();
-      });
-
-      // Dégradé de fond radial centré sur la silhouette
-      const grd = ctx.createRadialGradient(cx, cy * 0.6, 0, cx, cy * 0.6, scale * 0.5);
-      grd.addColorStop(0, 'rgba(0,60,120,0.18)');
-      grd.addColorStop(0.4, 'rgba(60,0,120,0.10)');
-      grd.addColorStop(1, 'transparent');
-      ctx.fillStyle = grd;
-      ctx.fillRect(0, 0, w, h);
-
-      // Connexions neurales
-      edges.forEach(([a, b]) => {
-        const ax = nodes[a].x * w, ay = nodes[a].y * h;
-        const bx = nodes[b].x * w, by = nodes[b].y * h;
-        const g = ctx.createLinearGradient(ax, ay, bx, by);
-        g.addColorStop(0, 'rgba(0,200,255,0.25)');
-        g.addColorStop(0.5, 'rgba(120,80,255,0.20)');
-        g.addColorStop(1, 'rgba(0,200,255,0.25)');
-        ctx.beginPath();
-        ctx.moveTo(ax, ay);
-        ctx.lineTo(bx, by);
-        ctx.strokeStyle = g;
-        ctx.lineWidth = 0.8;
+        ctx.lineWidth = 1.5;
         ctx.shadowColor = '#00dcff';
-        ctx.shadowBlur = 3;
+        ctx.shadowBlur = 6;
         ctx.stroke();
         ctx.shadowBlur = 0;
       });
 
-      // Noeuds
-      nodes.forEach((n, i) => {
-        pulses[i].phase += pulses[i].speed;
-        const pulse = 0.7 + Math.sin(pulses[i].phase) * 0.3;
-        const x = n.x * w, y = n.y * h;
-        const r = 3.5 * pulse;
+      // Lignes neurales flottantes
+      lines.forEach(l => {
+        l.phase += l.speed * Math.PI * 2;
+        const alpha = l.opacity * (0.5 + 0.5 * Math.sin(l.phase));
+        ctx.beginPath();
+        ctx.moveTo(l.x1 * w, l.y1 * h);
+        ctx.lineTo(l.x2 * w, l.y2 * h);
+        ctx.strokeStyle = `rgba(0,180,255,${alpha})`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+        // Dérive lente
+        l.x1 += l.vx || 0.0001; l.y1 += l.vy || 0.0001;
+        l.x2 -= l.vx || 0.0001; l.y2 -= l.vy || 0.0001;
+        if (l.x1 < 0 || l.x1 > 0.7) l.vx = -(l.vx || 0.0001);
+        if (l.y1 < 0 || l.y1 > 1)   l.vy = -(l.vy || 0.0001);
+      });
+
+      // Particules lumineuses
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        p.pulse += p.pulseSpeed;
+        if (p.x < 0 || p.x > 0.65) p.vx = -p.vx;
+        if (p.y < 0 || p.y > 1)    p.vy = -p.vy;
+        const alpha = p.opacity * (0.5 + 0.5 * Math.sin(p.pulse));
+        const size = p.size * (0.8 + 0.2 * Math.sin(p.pulse));
         // Halo
-        const g = ctx.createRadialGradient(x, y, 0, x, y, r * 3);
-        g.addColorStop(0, `rgba(0,220,255,${0.3 * pulse})`);
+        const g = ctx.createRadialGradient(p.x*w, p.y*h, 0, p.x*w, p.y*h, size*4);
+        g.addColorStop(0, `rgba(255,255,255,${alpha * 0.3})`);
         g.addColorStop(1, 'transparent');
-        ctx.beginPath(); ctx.arc(x, y, r * 3, 0, Math.PI * 2);
+        ctx.beginPath(); ctx.arc(p.x*w, p.y*h, size*4, 0, Math.PI*2);
         ctx.fillStyle = g; ctx.fill();
         // Point
-        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0,220,255,${0.8 * pulse})`;
-        ctx.shadowColor = '#00dcff';
-        ctx.shadowBlur = 8;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-      });
-
-      // Particules voyageuses
-      particles.forEach(p => {
-        p.t += p.speed;
-        if (p.t > 1) {
-          p.t = 0;
-          p.edge = edges[Math.floor(Math.random() * edges.length)];
-        }
-        const [a, b] = p.edge;
-        const x = nodes[a].x * w + (nodes[b].x - nodes[a].x) * w * p.t;
-        const y = nodes[a].y * h + (nodes[b].y - nodes[a].y) * h * p.t;
-        ctx.beginPath(); ctx.arc(x, y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,255,255,${p.opacity})`;
+        ctx.beginPath(); ctx.arc(p.x*w, p.y*h, size, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
         ctx.shadowColor = '#fff';
-        ctx.shadowBlur = 10;
+        ctx.shadowBlur = 8;
         ctx.fill();
         ctx.shadowBlur = 0;
       });
 
       requestAnimationFrame(animate);
     }
-    animate();
-  }
 
+    img.onload = animate;
+    if (img.complete) animate();
+  }
   // Lancer neuroCanvas quand showApp est appelé
   const _origShowApp = showApp;
   showApp = function(name) {
