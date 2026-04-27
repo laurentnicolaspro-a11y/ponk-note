@@ -2907,21 +2907,13 @@
 
       // Image de la silhouette — couvre toute la zone gauche
       if (img.complete && img.naturalWidth > 0) {
+        // Couvrir toute la hauteur du canvas, centrée horizontalement
         const imgRatio = img.naturalWidth / img.naturalHeight;
-        const canvasRatio = w / h;
-        let dw, dh, dx, dy;
-        if (imgRatio > canvasRatio) {
-          dh = h * 1.05;
-          dw = dh * imgRatio;
-          dx = (w - dw) * 0.3;
-          dy = (h - dh) * 0.5;
-        } else {
-          dw = w * 0.95;
-          dh = dw / imgRatio;
-          dx = w * 0.02;
-          dy = (h - dh) * 0.5;
-        }
-        ctx.globalAlpha = 0.92;
+        const dh = h * 1.0;
+        const dw = dh * imgRatio;
+        const dx = (w - dw) * 0.1; // légèrement à gauche
+        const dy = 0;
+        ctx.globalAlpha = 0.95;
         ctx.drawImage(img, dx, dy, dw, dh);
         ctx.globalAlpha = 1;
       }
