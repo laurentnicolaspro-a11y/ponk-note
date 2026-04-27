@@ -1241,6 +1241,7 @@ async function exportPDF() {
 
     if (res.ok) {
       const result = await res.json();
+      console.log('[PDF rewrite] Résultat Gemini:', JSON.stringify(result).substring(0, 500));
       if (result && s) {
         // Appliquer uniquement les champs cochés, sans inventer
         if (result.contexte && checked['contexte']) s.contexte = result.contexte;
