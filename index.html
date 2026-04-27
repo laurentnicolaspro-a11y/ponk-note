@@ -2584,6 +2584,14 @@
     ];
     const connections = [[0,4],[1,4],[1,10],[2,6],[3,5],[0,9],[8,1],[10,0],[11,1],[2,11],[5,3],[7,2]];
 
+    function setGlow(ctx, color, blur) {
+      ctx.shadowColor = color;
+      ctx.shadowBlur = blur;
+    }
+    function clearGlow(ctx) {
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+    }
     function cube(ctx, cx, cy, r, rot, color) {
       const ry = rot, rx = 0.45;
       const crx = Math.cos(rx), srx = Math.sin(rx);
@@ -2597,26 +2605,81 @@
         return { px: cx + x2*sc, py: cy + y2*sc };
       });
       const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
-      ctx.strokeStyle = color; ctx.lineWidth = 1;
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+      setGlow(ctx, '#00dcff', 10);
       edges.forEach(([a,b]) => {
         ctx.beginPath(); ctx.moveTo(pts[a].px, pts[a].py); ctx.lineTo(pts[b].px, pts[b].py); ctx.stroke();
       });
+      clearGlow(ctx);
     }
     function hex(ctx, x, y, r, rot, color, fill) {
       ctx.beginPath();
       for (let i=0;i<6;i++) { const a=rot+(Math.PI/3)*i; i===0?ctx.moveTo(x+r*Math.cos(a),y+r*Math.sin(a)):ctx.lineTo(x+r*Math.cos(a),y+r*Math.sin(a)); }
-      ctx.closePath(); ctx.fillStyle=fill; ctx.fill(); ctx.strokeStyle=color; ctx.lineWidth=1; ctx.stroke();
+      ctx.closePath(); ctx.fillStyle=fill; ctx.fill();
+      ctx.strokeStyle=color; ctx.lineWidth=1.5;
+      setGlow(ctx, '#00dcff', 10);
+      ctx.stroke();
+      clearGlow(ctx);
     }
     function tri(ctx, x, y, r, rot, color, fill) {
       ctx.beginPath();
       for (let i=0;i<3;i++) { const a=rot+(Math.PI*2/3)*i-Math.PI/2; i===0?ctx.moveTo(x+r*Math.cos(a),y+r*Math.sin(a)):ctx.lineTo(x+r*Math.cos(a),y+r*Math.sin(a)); }
-      ctx.closePath(); ctx.fillStyle=fill; ctx.fill(); ctx.strokeStyle=color; ctx.lineWidth=1; ctx.stroke();
+      ctx.closePath(); ctx.fillStyle=fill; ctx.fill();
+      ctx.strokeStyle=color; ctx.lineWidth=1.5;
+      setGlow(ctx, '#00dcff', 10);
+      ctx.stroke();
+      clearGlow(ctx);
     }
     function circle(ctx, x, y, r, color) {
       const g=ctx.createRadialGradient(x,y,0,x,y,r*2);
       g.addColorStop(0,color); g.addColorStop(1,'transparent');
       ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
-      ctx.strokeStyle=color; ctx.lineWidth=1; ctx.stroke();
+      ctx.strokeStyle=color; ctx.lineWidth=1.5;
+      setGlow(ctx, '#00dcff', 14);
+      ctx.stroke();
+      clearGlow(ctx);
+    }
+
+    // Orbe blanc qui se balade entre les formes
+    const orb = { t: 0, speed: 0.0008, r: 7 };
+    // Chemin : indices des formes visitées dans l'ordre
+    const orbPath = [0, 4, 1, 7, 10, 2, 6, 11, 3, 5, 9, 8, 0];
+
+    function getOrbPos(w, h) {
+      const total = orbPath.length - 1;
+      const progress = (orb.t % 1) * total;
+      const idx = Math.floor(progress);
+      const frac = progress - idx;
+      // Easing smooth
+      const ease = frac < 0.5 ? 2*frac*frac : -1+(4-2*frac)*frac;
+      const a = shapes[orbPath[Math.min(idx, total)]];
+      const b = shapes[orbPath[Math.min(idx+1, total)]];
+      return {
+        x: (a.x + (b.x - a.x) * ease) * w,
+        y: (a.y + (b.y - a.y) * ease) * h
+      };
+    }
+
+    function drawOrb(ctx, x, y, r) {
+      // Halo extérieur
+      const g2 = ctx.createRadialGradient(x, y, 0, x, y, r * 5);
+      g2.addColorStop(0, 'rgba(255,255,255,0.15)');
+      g2.addColorStop(1, 'transparent');
+      ctx.beginPath(); ctx.arc(x, y, r*5, 0, Math.PI*2);
+      ctx.fillStyle = g2; ctx.fill();
+      // Corps blanc lumineux
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, 'rgba(255,255,255,1)');
+      g.addColorStop(0.4, 'rgba(200,240,255,0.9)');
+      g.addColorStop(1, 'rgba(0,220,255,0)');
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
+      ctx.fillStyle = g; ctx.fill();
+      // Lueur néon
+      ctx.shadowColor = '#fff';
+      ctx.shadowBlur = 18;
+      ctx.beginPath(); ctx.arc(x, y, r*0.5, 0, Math.PI*2);
+      ctx.fillStyle = '#fff'; ctx.fill();
+      ctx.shadowBlur = 0; ctx.shadowColor = 'transparent';
     }
 
     let raf;
@@ -2624,10 +2687,12 @@
       const w=canvas.width, h=canvas.height;
       ctx.clearRect(0,0,w,h);
       shapes.forEach(s => s.rot += s.speed);
+      orb.t += orb.speed;
+
       connections.forEach(([a,b]) => {
         const sa=shapes[a], sb=shapes[b];
         const g=ctx.createLinearGradient(sa.x*w,sa.y*h,sb.x*w,sb.y*h);
-        g.addColorStop(0,'rgba(0,200,255,0.15)'); g.addColorStop(1,'rgba(160,80,255,0.15)');
+        g.addColorStop(0,'rgba(0,200,255,0.15)'); g.addColorStop(1,'rgba(0,180,255,0.15)');
         ctx.beginPath(); ctx.moveTo(sa.x*w,sa.y*h); ctx.lineTo(sb.x*w,sb.y*h);
         ctx.strokeStyle=g; ctx.lineWidth=0.5; ctx.stroke();
       });
@@ -2638,6 +2703,11 @@
         else if (s.type==='tri')    tri(ctx,x,y,s.size,s.rot,s.color,s.fill||'transparent');
         else if (s.type==='circle') circle(ctx,x,y,s.size,s.color);
       });
+
+      // Dessiner l'orbe en dernier (au dessus)
+      const pos = getOrbPos(w, h);
+      drawOrb(ctx, pos.x, pos.y, orb.r);
+
       raf = requestAnimationFrame(animate);
     }
     animate();
