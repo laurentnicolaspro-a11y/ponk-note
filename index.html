@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Ponk Note</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
 
@@ -102,18 +102,18 @@
     .profile-input-wrap { width:100%; display:flex; flex-direction:column; gap:10px; }
     .profile-input {
       width:100%; padding:13px 16px; border-radius:10px;
-      border:1px solid rgba(100,60,220,0.4);
-      background: rgba(255,255,255,0.04); backdrop-filter:blur(10px);
+      border:1px solid rgba(0,220,255,0.35);
+      background: rgba(255,255,255,0.08);
       font-family:'Inter', sans-serif; font-size:15px; color:#fff;
       outline:none; text-align:center;
       transition:border-color 0.2s, box-shadow 0.2s, background 0.2s;
     }
     .profile-input:focus {
-      border-color:rgba(0,220,255,0.7);
-      background: rgba(0,220,255,0.06);
-      box-shadow: 0 0 0 2px rgba(0,220,255,0.12), 0 0 16px rgba(0,220,255,0.1);
+      border-color:rgba(0,220,255,0.8);
+      background: rgba(0,220,255,0.1);
+      box-shadow: 0 0 0 2px rgba(0,220,255,0.15), 0 0 20px rgba(0,220,255,0.12);
     }
-    .profile-input::placeholder { color:rgba(180,160,255,0.4); }
+    .profile-input::placeholder { color:rgba(180,160,255,0.5); }
     .profile-prefs {
       width:100%; display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;
     }
@@ -121,20 +121,22 @@
     .pref-col-label {
       font-family:'Rajdhani', sans-serif;
       font-size:10px; font-weight:600; letter-spacing:1.5px;
-      text-transform:uppercase; color:rgba(180,160,255,0.6);
+      text-transform:uppercase; color:rgba(180,160,255,0.7);
     }
-    .pref-options-col { display:flex; flex-direction:column; gap:5px; width:100%; }
+    .pref-options { display:flex; flex-direction:column; gap:5px; width:100%; }
     .pref-btn {
-      padding:6px 10px; border-radius:8px;
-      background:rgba(255,255,255,0.04); border:1px solid rgba(100,60,220,0.3);
+      padding:7px 10px; border-radius:8px;
+      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(0,220,255,0.25);
       font-family:'Inter', sans-serif; font-size:11px; font-weight:500;
-      color:rgba(200,180,255,0.6); cursor:pointer; -webkit-tap-highlight-color:transparent;
+      color:rgba(200,190,255,0.75); cursor:pointer;
+      -webkit-tap-highlight-color:transparent;
       transition:all 0.15s; text-align:center;
     }
-    .pref-btn:hover { border-color:rgba(0,220,255,0.4); color:rgba(200,240,255,0.9); }
+    .pref-btn:hover { border-color:rgba(0,220,255,0.5); color:#fff; background:rgba(0,220,255,0.08); }
     .pref-btn.active {
-      background:rgba(0,220,255,0.12); border-color:rgba(0,220,255,0.6);
-      color:#00dcff; box-shadow:0 0 10px rgba(0,220,255,0.15);
+      background:rgba(0,220,255,0.15); border-color:rgba(0,220,255,0.7);
+      color:#00dcff; box-shadow:0 0 12px rgba(0,220,255,0.2);
     }
     .profile-submit {
       width:100%; padding:14px; border-radius:10px; border:none;
@@ -147,10 +149,10 @@
     }
     .profile-submit::before {
       content:''; position:absolute; inset:0;
-      background:linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
+      background:linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
       transform:translateX(-100%); animation:shimmer 3s ease-in-out infinite;
     }
-    @keyframes shimmer { 0%{transform:translateX(-100%)} 50%,100%{transform:translateX(100%)} }
+    @keyframes shimmer { 0%{transform:translateX(-100%)} 60%,100%{transform:translateX(100%)} }
     .profile-submit:active { transform:scale(0.98); }
 
     /* ── App ── */
@@ -597,7 +599,7 @@
       <div class="profile-prefs">
         <div class="pref-col">
           <div class="pref-col-label">📬 Mail</div>
-          <div class="pref-options-col" id="prefMail">
+          <div class="pref-options" id="prefMail">
             <div class="pref-btn active" data-value="gmail">Gmail</div>
             <div class="pref-btn" data-value="outlook">Outlook</div>
             <div class="pref-btn" data-value="yahoo">Yahoo</div>
@@ -606,7 +608,7 @@
         </div>
         <div class="pref-col">
           <div class="pref-col-label">📅 Agenda</div>
-          <div class="pref-options-col" id="prefCal">
+          <div class="pref-options" id="prefCal">
             <div class="pref-btn active" data-value="google">Google</div>
             <div class="pref-btn" data-value="outlook">Outlook</div>
             <div class="pref-btn" data-value="apple">Apple</div>
@@ -614,7 +616,7 @@
         </div>
         <div class="pref-col">
           <div class="pref-col-label">🗺️ Maps</div>
-          <div class="pref-options-col" id="prefMaps">
+          <div class="pref-options" id="prefMaps">
             <div class="pref-btn active" data-value="google">Google Maps</div>
             <div class="pref-btn" data-value="waze">Waze</div>
             <div class="pref-btn" data-value="apple">Apple Maps</div>
@@ -2543,181 +2545,95 @@
 
   initProfile();
 
-  // ── Formes géométriques animées ──
+  // ── Formes géométriques animées (profile screen) ──
   function initGeoCanvas() {
     const canvas = document.getElementById('geoCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-
-    function resize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    resize();
-    window.addEventListener('resize', resize);
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
 
     const shapes = [
-      // hexagones
-      { type:'hex', x:0.18, y:0.18, size:38, rot:0, rotSpeed:0.003, color:'rgba(0,200,255,0.5)', fill:'rgba(0,200,255,0.04)' },
-      { type:'hex', x:0.78, y:0.12, size:24, rot:1.2, rotSpeed:-0.004, color:'rgba(160,80,255,0.5)', fill:'rgba(160,80,255,0.04)' },
-      { type:'hex', x:0.85, y:0.72, size:32, rot:0.5, rotSpeed:0.002, color:'rgba(0,200,255,0.35)', fill:'rgba(0,200,255,0.03)' },
-      { type:'hex', x:0.12, y:0.78, size:20, rot:0.8, rotSpeed:-0.005, color:'rgba(200,100,255,0.4)', fill:'rgba(200,100,255,0.03)' },
-      // cubes filaires (carrés en perspective)
-      { type:'cube', x:0.65, y:0.10, size:28, rot:0.3, rotSpeed:0.004, color:'rgba(0,220,255,0.5)' },
-      { type:'cube', x:0.30, y:0.88, size:22, rot:1.0, rotSpeed:-0.003, color:'rgba(140,60,255,0.5)' },
-      { type:'cube', x:0.92, y:0.42, size:18, rot:0.6, rotSpeed:0.006, color:'rgba(0,180,255,0.4)' },
-      // triangles
-      { type:'tri', x:0.45, y:0.08, size:20, rot:0, rotSpeed:0.005, color:'rgba(180,100,255,0.5)', fill:'rgba(180,100,255,0.04)' },
-      { type:'tri', x:0.08, y:0.45, size:16, rot:2.0, rotSpeed:-0.004, color:'rgba(0,220,255,0.4)', fill:'rgba(0,220,255,0.03)' },
-      // sphères (cercles avec lueur)
-      { type:'circle', x:0.55, y:0.15, size:14, rot:0, rotSpeed:0.002, color:'rgba(200,120,255,0.6)' },
-      { type:'circle', x:0.25, y:0.12, size:10, rot:0, rotSpeed:0.003, color:'rgba(0,220,255,0.5)' },
-      { type:'circle', x:0.88, y:0.28, size:8, rot:0, rotSpeed:0.004, color:'rgba(160,80,255,0.5)' },
+      { type:'hex',    x:0.18, y:0.18, size:38, rot:0,   speed:0.003,  color:'rgba(0,200,255,0.55)',   fill:'rgba(0,200,255,0.04)' },
+      { type:'hex',    x:0.78, y:0.12, size:24, rot:1.2,  speed:-0.004, color:'rgba(160,80,255,0.55)',  fill:'rgba(160,80,255,0.04)' },
+      { type:'hex',    x:0.85, y:0.72, size:32, rot:0.5,  speed:0.002,  color:'rgba(0,200,255,0.4)',    fill:'rgba(0,200,255,0.03)' },
+      { type:'hex',    x:0.10, y:0.75, size:20, rot:0.8,  speed:-0.005, color:'rgba(200,100,255,0.45)', fill:'rgba(200,100,255,0.03)' },
+      { type:'cube',   x:0.65, y:0.10, size:28, rot:0.3,  speed:0.004,  color:'rgba(0,220,255,0.55)' },
+      { type:'cube',   x:0.30, y:0.88, size:22, rot:1.0,  speed:-0.003, color:'rgba(140,60,255,0.55)' },
+      { type:'cube',   x:0.93, y:0.42, size:18, rot:0.6,  speed:0.006,  color:'rgba(0,180,255,0.45)' },
+      { type:'tri',    x:0.45, y:0.07, size:20, rot:0,    speed:0.005,  color:'rgba(180,100,255,0.55)', fill:'rgba(180,100,255,0.04)' },
+      { type:'tri',    x:0.07, y:0.45, size:16, rot:2.0,  speed:-0.004, color:'rgba(0,220,255,0.45)',   fill:'rgba(0,220,255,0.03)' },
+      { type:'circle', x:0.55, y:0.14, size:12, rot:0,    speed:0.002,  color:'rgba(200,120,255,0.7)' },
+      { type:'circle', x:0.25, y:0.11, size:9,  rot:0,    speed:0.003,  color:'rgba(0,220,255,0.6)' },
+      { type:'circle', x:0.88, y:0.28, size:7,  rot:0,    speed:0.004,  color:'rgba(160,80,255,0.6)' },
     ];
+    const connections = [[0,4],[1,4],[1,9],[2,6],[3,5],[0,8],[7,1],[9,7],[10,0],[11,1],[2,11],[5,3]];
 
-    // Lignes de connexion entre formes proches
-    const connections = [
-      [0,4],[1,4],[1,5],[2,6],[3,5],[0,8],[7,1],[9,7],[10,0],[11,1]
-    ];
-
-    function drawHex(ctx, x, y, r, rot, color, fill) {
+    function hex(ctx, x, y, r, rot, color, fill) {
       ctx.beginPath();
-      for (let i = 0; i < 6; i++) {
-        const a = rot + (Math.PI / 3) * i;
-        const px = x + r * Math.cos(a);
-        const py = y + r * Math.sin(a);
-        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-      }
-      ctx.closePath();
-      ctx.fillStyle = fill;
-      ctx.fill();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1;
-      ctx.stroke();
+      for (let i=0;i<6;i++) { const a=rot+(Math.PI/3)*i; i===0?ctx.moveTo(x+r*Math.cos(a),y+r*Math.sin(a)):ctx.lineTo(x+r*Math.cos(a),y+r*Math.sin(a)); }
+      ctx.closePath(); ctx.fillStyle=fill; ctx.fill(); ctx.strokeStyle=color; ctx.lineWidth=1; ctx.stroke();
+    }
+    function cube(ctx, x, y, r, rot, color) {
+      const c=Math.cos(rot),s=Math.sin(rot);
+      const p=[[-1,-1],[1,-1],[1,1],[-1,1],[-0.4,-1.5],[1.6,-1.5],[1.6,0.5],[-0.4,0.5]].map(([px,py])=>({x:x+(px*c-py*s)*r,y:y+(px*s+py*c)*r}));
+      ctx.strokeStyle=color; ctx.lineWidth=1;
+      ctx.beginPath(); [0,1,2,3,0].forEach(i=>i===0?ctx.moveTo(p[i].x,p[i].y):ctx.lineTo(p[i].x,p[i].y)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(p[0].x,p[0].y); ctx.lineTo(p[4].x,p[4].y); ctx.lineTo(p[5].x,p[5].y); ctx.lineTo(p[1].x,p[1].y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(p[1].x,p[1].y); ctx.lineTo(p[5].x,p[5].y); ctx.lineTo(p[6].x,p[6].y); ctx.lineTo(p[2].x,p[2].y); ctx.stroke();
+    }
+    function tri(ctx, x, y, r, rot, color, fill) {
+      ctx.beginPath();
+      for (let i=0;i<3;i++) { const a=rot+(Math.PI*2/3)*i-Math.PI/2; i===0?ctx.moveTo(x+r*Math.cos(a),y+r*Math.sin(a)):ctx.lineTo(x+r*Math.cos(a),y+r*Math.sin(a)); }
+      ctx.closePath(); ctx.fillStyle=fill; ctx.fill(); ctx.strokeStyle=color; ctx.lineWidth=1; ctx.stroke();
+    }
+    function circle(ctx, x, y, r, color) {
+      const g=ctx.createRadialGradient(x,y,0,x,y,r*2.5);
+      g.addColorStop(0,color); g.addColorStop(1,'transparent');
+      ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
+      ctx.strokeStyle=color; ctx.lineWidth=1; ctx.stroke();
     }
 
-    function drawCube(ctx, x, y, r, rot, color) {
-      const cos = Math.cos(rot), sin = Math.sin(rot);
-      const pts = [
-        [-1,-1],[ 1,-1],[ 1, 1],[-1, 1],
-        [-0.4,-1.5],[1.6,-1.5],[1.6, 0.5],[-0.4, 0.5]
-      ].map(([px,py]) => ({
-        x: x + (px * cos - py * sin) * r,
-        y: y + (px * sin + py * cos) * r
-      }));
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1;
-      // face avant
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      [1,2,3,0].forEach(i => ctx.lineTo(pts[i].x, pts[i].y));
-      ctx.stroke();
-      // face dessus
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      ctx.lineTo(pts[4].x, pts[4].y);
-      ctx.lineTo(pts[5].x, pts[5].y);
-      ctx.lineTo(pts[1].x, pts[1].y);
-      ctx.stroke();
-      // côté droit
-      ctx.beginPath();
-      ctx.moveTo(pts[1].x, pts[1].y);
-      ctx.lineTo(pts[5].x, pts[5].y);
-      ctx.lineTo(pts[6].x, pts[6].y);
-      ctx.lineTo(pts[2].x, pts[2].y);
-      ctx.stroke();
-    }
-
-    function drawTri(ctx, x, y, r, rot, color, fill) {
-      ctx.beginPath();
-      for (let i = 0; i < 3; i++) {
-        const a = rot + (Math.PI * 2 / 3) * i - Math.PI/2;
-        const px = x + r * Math.cos(a);
-        const py = y + r * Math.sin(a);
-        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-      }
-      ctx.closePath();
-      ctx.fillStyle = fill;
-      ctx.fill();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
-
-    function drawCircle(ctx, x, y, r, color) {
-      const grad = ctx.createRadialGradient(x, y, 0, x, y, r * 2.5);
-      grad.addColorStop(0, color);
-      grad.addColorStop(1, 'transparent');
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fillStyle = grad;
-      ctx.fill();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
-
-    let animFrame;
+    let raf;
     function animate() {
-      const w = canvas.width, h = canvas.height;
-      ctx.clearRect(0, 0, w, h);
-
-      // Mettre à jour rotations
-      shapes.forEach(s => { s.rot += s.rotSpeed; });
-
-      // Dessiner connexions
-      connections.forEach(([a, b]) => {
-        const sa = shapes[a], sb = shapes[b];
-        const ax = sa.x * w, ay = sa.y * h;
-        const bx = sb.x * w, by = sb.y * h;
-        const grad = ctx.createLinearGradient(ax, ay, bx, by);
-        grad.addColorStop(0, sa.color || 'rgba(0,200,255,0.2)');
-        grad.addColorStop(1, sb.color || 'rgba(160,80,255,0.2)');
-        ctx.beginPath();
-        ctx.moveTo(ax, ay);
-        ctx.lineTo(bx, by);
-        ctx.strokeStyle = grad;
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
+      const w=canvas.width, h=canvas.height;
+      ctx.clearRect(0,0,w,h);
+      shapes.forEach(s => s.rot += s.speed);
+      connections.forEach(([a,b]) => {
+        const sa=shapes[a],sb=shapes[b];
+        const g=ctx.createLinearGradient(sa.x*w,sa.y*h,sb.x*w,sb.y*h);
+        g.addColorStop(0, (sa.color||'rgba(0,200,255,0.3)').replace(/[\d.]+\)$/,'0.25)'));
+        g.addColorStop(1, (sb.color||'rgba(160,80,255,0.3)').replace(/[\d.]+\)$/,'0.25)'));
+        ctx.beginPath(); ctx.moveTo(sa.x*w,sa.y*h); ctx.lineTo(sb.x*w,sb.y*h);
+        ctx.strokeStyle=g; ctx.lineWidth=0.5; ctx.stroke();
       });
-
-      // Dessiner formes
       shapes.forEach(s => {
-        const x = s.x * w, y = s.y * h;
-        if (s.type === 'hex')    drawHex(ctx, x, y, s.size, s.rot, s.color, s.fill);
-        else if (s.type === 'cube')   drawCube(ctx, x, y, s.size, s.rot, s.color);
-        else if (s.type === 'tri')    drawTri(ctx, x, y, s.size, s.rot, s.color, s.fill);
-        else if (s.type === 'circle') drawCircle(ctx, x, y, s.size, s.color);
+        const x=s.x*w, y=s.y*h;
+        if (s.type==='hex')    hex(ctx,x,y,s.size,s.rot,s.color,s.fill||'transparent');
+        else if(s.type==='cube')   cube(ctx,x,y,s.size,s.rot,s.color);
+        else if(s.type==='tri')    tri(ctx,x,y,s.size,s.rot,s.color,s.fill||'transparent');
+        else if(s.type==='circle') circle(ctx,x,y,s.size,s.color);
       });
-
-      animFrame = requestAnimationFrame(animate);
+      raf = requestAnimationFrame(animate);
     }
     animate();
-
-    // Stopper quand profile masqué
-    const obs = new MutationObserver(() => {
-      const screen = document.getElementById('profileScreen');
-      if (screen && !screen.classList.contains('visible')) {
-        cancelAnimationFrame(animFrame);
-      }
-    });
-    const screen = document.getElementById('profileScreen');
-    if (screen) obs.observe(screen, { attributes: true, attributeFilter: ['class'] });
+    // Stopper l'animation quand profil masqué
+    new MutationObserver(() => {
+      if (!document.getElementById('profileScreen')?.classList.contains('visible')) cancelAnimationFrame(raf);
+    }).observe(document.getElementById('profileScreen'), {attributes:true, attributeFilter:['class']});
   }
 
-  // Lancer quand le profil est visible
-  const _origInitProfile = initProfile;
+  // Patch initProfile pour lancer le canvas
+  const _origInit = initProfile;
   initProfile = async function() {
-    await _origInitProfile();
-    const screen = document.getElementById('profileScreen');
-    if (screen && screen.classList.contains('visible')) initGeoCanvas();
+    await _origInit();
+    if (document.getElementById('profileScreen')?.classList.contains('visible')) initGeoCanvas();
   };
-  // Aussi si déjà visible au chargement
-  window.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
-      const screen = document.getElementById('profileScreen');
-      if (screen && screen.classList.contains('visible')) initGeoCanvas();
-    }, 100);
+      if (document.getElementById('profileScreen')?.classList.contains('visible')) initGeoCanvas();
+    }, 150);
   });
 </script>
 <script src="/public/pdf.js"></script>
