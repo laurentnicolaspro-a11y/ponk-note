@@ -412,7 +412,9 @@ function render(data, meta) {
       c.appendChild(makeCard('📝 Synthèse', `<div class="sec"><p>${html}</p></div>`, true));
     } else {
       // Nouveau format structuré
-      c.appendChild(makeCard('📝 Synthèse', buildSummaryHTML(s), true));
+      const summaryCard = makeCard('📝 Synthèse', buildSummaryHTML(s), true);
+      summaryCard.id = 'summaryCard';
+      c.appendChild(summaryCard);
     }
   }
 
@@ -630,7 +632,7 @@ function addItem(field, s, placeholder) {
 }
 
 function renderSummary(s) {
-  const card = document.querySelector('.card');
+  const card = document.getElementById('summaryCard') || document.querySelector('.card');
   if (!card) return;
   const bd = card.querySelector('.card-bd');
   if (!bd) return;
@@ -1202,6 +1204,9 @@ async function exportPDF() {
   const pdfBtn = document.querySelector('.btn-pdf');
   if (pdfBtn) { pdfBtn.textContent = '⏳ Gemini relit…'; pdfBtn.disabled = true; }
   console.log('[PDF] Envoi à Gemini pour relecture...');
+  console.log('[PDF] checked keys:', Object.keys(checked));
+  console.log('[PDF] prochaine:', checked['prochaine']);
+  console.log('[PDF] s.prochaine_etape:', s?.prochaine_etape);
 
   try {
     // Construire uniquement les éléments cochés pour Gemini
@@ -1213,6 +1218,16 @@ async function exportPDF() {
     const checkedDecisions = (s.decisions||[]).filter((d,i) => checked['decision:'+i] !== undefined);
     if (checkedDecisions.length) summaryToSend.decisions = checkedDecisions;
     if (checked['prochaine'] && s.prochaine_etape) summaryToSend.prochaine_etape = s.prochaine_etape;
+
+    // Actions IA cochées — nettoyer les descriptions
+    const actionsIACochees = Object.entries(checked)
+      .filter(([k]) => k.startsWith('action_ia:') || k.startsWith('action_ia_done:'))
+      .map(([, v]) => decodeURIComponent(v));
+    if (actionsIACochees.length) summaryToSend.actions_ia = actionsIACochees;
+
+    // Mémo coché
+    const memoNotesCochees = checked['memo_notes'] ? decodeURIComponent(checked['memo_notes']) : '';
+    if (memoNotesCochees) summaryToSend.memo = memoNotesCochees;
 
     const res = await fetch('/api/analyze', {
       method: 'POST',
@@ -1244,13 +1259,34 @@ async function exportPDF() {
           );
         }
         if (result.prochaine_etape && checked['prochaine']) s.prochaine_etape = result.prochaine_etape;
+
+        // Appliquer corrections actions IA
+        if (result.actions_ia?.length) {
+          const cards = document.querySelectorAll('.action-ia-info .action-ia-desc');
+          const checkboxes = document.querySelectorAll('.export-cb[data-export-label^="action_ia"]');
+          result.actions_ia.forEach((corrected, i) => {
+            if (cards[i]) cards[i].textContent = corrected.replace(/^[^—]+— /, '');
+            if (checkboxes[i]) checkboxes[i].dataset.exportContent = encodeURIComponent(corrected);
+          });
+        }
+
+        // Appliquer correction mémo
+        if (result.memo) {
+          const memoArea = document.getElementById('memoNotesArea');
+          const memoCb = document.getElementById('ecb_memo_notes');
+          if (memoArea) memoArea.value = result.memo;
+          if (memoCb) memoCb.dataset.exportContent = encodeURIComponent(result.memo);
+        }
+
         saveSummary(s);
         renderSummary(s);
       }
     }
-  } catch(e) { console.warn('Gemini relit:', e); }
-
-  if (pdfBtn) { pdfBtn.textContent = '↓ Exporter en PDF'; pdfBtn.disabled = false; }
+  } catch(e) { 
+    console.warn('Gemini relit échoué, export sans relecture:', e);
+  } finally {
+    if (pdfBtn) { pdfBtn.textContent = '↓ Exporter en PDF'; pdfBtn.disabled = false; }
+  }
 
   data = JSON.parse(localStorage.getItem('ponk_result')||'{}');
   s = (typeof data.summary === 'object') ? data.summary : null;
