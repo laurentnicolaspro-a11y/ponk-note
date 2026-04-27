@@ -355,7 +355,7 @@
   <div id="meta" class="meta"></div>
   <div id="cards"></div>
   <div class="action-btns">
-    <button class="btn-action btn-email" id="emailBtn" onclick="sendByEmail()">✉ Envoyer par email</button>
+
     <button class="btn-action btn-pdf" onclick="exportPDF()">↓ Exporter en PDF</button>
   </div>
 </div>
@@ -604,11 +604,16 @@ function editItem(el, field, s, key, subkey) {
     el.style.borderRadius = '';
     el.style.padding = '';
     el.style.cursor = '';
-    if (!val) return;
-    if (subkey !== undefined) s[field][key][subkey] = val;
+    if (subkey !== undefined) s[field]?.[key] && (s[field][key][subkey] = val);
     else if (key !== null && Array.isArray(s[field])) s[field][key] = val;
     else s[field] = val;
     saveSummary(s);
+    // Si prochaine_etape modifiée, mettre à jour la case
+    if (field === 'prochaine_etape') {
+      const cb = document.getElementById('ecb_prochaine');
+      if (cb) { cb.checked = !!val; cb.dataset.exportContent = encodeURIComponent(val); }
+      renderSummary(s);
+    }
   };
   el.onblur = confirm;
   el.onkeydown = e => {
@@ -700,17 +705,22 @@ function buildSummaryHTML(s) {
 
 
 
-  // Prochaine étape
-  if (s.prochaine_etape) {
+  // Prochaine étape — toujours visible, modifiable, vide si non détecté
+  {
+    const pe = s.prochaine_etape || '';
+    const sJson = JSON.stringify(s).replace(/"/g,'&quot;');
     html += `<div class="summary-section">
       <div class="summary-section-title">📅 Prochaine étape</div>
-      ${cb('prochaine',
-        `<div class="prochaine-wrap" style="cursor:pointer" onclick="editItem(this,'prochaine_etape',${JSON.stringify(s).replace(/"/g,'&quot;')},null,null)" data-text="${s.prochaine_etape.replace(/"/g,'&quot;')}">
-          <span class="prochaine-icon">📅</span>
-          <span class="prochaine-text">${s.prochaine_etape}</span>
-        </div>`,
-        true, `deleteItem('prochaine_etape',${JSON.stringify(s).replace(/"/g,'&quot;')},null)`
-      ).replace('data-export-content=""', 'data-export-content="' + encodeURIComponent(s.prochaine_etape) + '"')}
+      <div class="export-row" style="align-items:center;">
+        <input type="checkbox" class="export-cb" id="ecb_prochaine" ${pe ? 'checked' : ''} data-export-label="prochaine" data-export-content="${encodeURIComponent(pe)}">
+        <div style="flex:1">
+          <div class="prochaine-wrap" style="cursor:pointer;min-height:36px;" onclick="editItem(this,'prochaine_etape',${sJson},null,null)">
+            <span class="prochaine-icon">📅</span>
+            <span class="prochaine-text">${pe || '<span style="color:var(--muted);font-style:italic;font-size:13px;">Cliquer pour ajouter…</span>'}</span>
+          </div>
+        </div>
+        ${pe ? `<button class="edit-btn" style="color:var(--danger)" onclick="deleteItem('prochaine_etape',${sJson},null)" title="Supprimer">🗑</button>` : ''}
+      </div>
     </div>`;
   }
 
@@ -1500,57 +1510,7 @@ async function exportPDF() {
   doc.save((meta.title||'ponk-note').replace(/[^a-z0-9\s]/gi,'').trim().replace(/\s+/g,'_') + '-' + new Date().toISOString().slice(0,10) + '.pdf');
 }
 
-async function sendByEmail() {
-  const email = localStorage.getItem('ponk_email');
-  const name  = localStorage.getItem('ponk_profile');
-  if (!email) { alert('Aucune adresse email dans ton profil.'); return; }
-  const btn = document.getElementById('emailBtn');
-  btn.disabled = true; btn.textContent = '⏳ Génération…';
-  try {
-    const {jsPDF} = window.jspdf;
-    const doc = new jsPDF({unit:'mm', format:'a4'});
-    const margin = 20, maxW = 170; let y = 24;
-    function ln(text, size, bold, color) {
-      doc.setFontSize(size||11); doc.setFont('helvetica', bold?'bold':'normal');
-      doc.setTextColor(color||'#2a2a3a');
-      const lines = doc.splitTextToSize(String(text||''), maxW);
-      if (y + lines.length*(size||11)*0.45 > 272) { doc.addPage(); y = 20; }
-      doc.text(lines, margin, y); y += lines.length*(size||11)*0.45+3;
-    }
-    const data = JSON.parse(localStorage.getItem('ponk_result')||'{}');
-    const meta = JSON.parse(localStorage.getItem('ponk_meta')||'{}');
-    ln('Ponk Note', 22, true);
-    if (meta.datetime||meta.duration) ln((meta.datetime||'')+(meta.duration?' · '+meta.duration:''), 9, false, '#86868b');
-    if (meta.title) ln(meta.title, 14, true);
-    y+=2; doc.setDrawColor(200,200,200); doc.line(margin,y,margin+maxW,y); y+=6;
-    if (data.summary) {
-      const s = data.summary;
-      if (typeof s === 'string') {
-        ln('SYNTHÈSE', 8, true, '#86868b'); ln(s, 11); y+=2;
-      } else {
-        ln('SYNTHÈSE', 8, true, '#86868b');
-        if (s.contexte) ln(s.contexte, 10, false, '#86868b');
-        if (s.points_discutes?.length) { ln('Points discutés :', 9, true); s.points_discutes.forEach(p => ln('— '+p, 10)); }
-        if (s.decisions?.length) { ln('Décisions :', 9, true); s.decisions.forEach(d => ln('✓ '+d, 10)); }
-        if (s.actions?.length) { ln('Actions :', 9, true); s.actions.forEach(a => ln((a.qui||'À définir')+' → '+a.quoi+(a.quand?' ('+a.quand+')':''), 10)); }
-        if (s.prochaine_etape) ln('Prochaine étape : '+s.prochaine_etape, 10, true);
-        y+=2;
-      }
-    }
-    const pdfBase64 = doc.output('datauristring');
-    btn.textContent = '⏳ Envoi…';
-    const res = await fetch('/api/sendmail', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({email, name, pdfBase64, title: meta.title||'Analyse', datetime: meta.datetime||''})
-    });
-    if (!res.ok) throw new Error('Erreur '+res.status);
-    btn.textContent = '✅ Email envoyé !';
-    setTimeout(() => { btn.disabled=false; btn.textContent='✉ Envoyer par email'; }, 3000);
-  } catch(e) {
-    btn.disabled = false; btn.textContent = '✉ Envoyer par email';
-    alert('Erreur : '+e.message);
-  }
-}
+
 
 
 </script>
