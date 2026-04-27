@@ -2862,7 +2862,8 @@
 
     // Charger l'image de la silhouette
     const img = new Image();
-    img.src = '/silhouette.png';
+    img.crossOrigin = 'anonymous';
+    img.src = '/public/silhouette.png?' + Date.now(); // cache-bust
 
     // Particules voyageuses
     const particles = [];
