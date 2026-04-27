@@ -598,6 +598,7 @@
 <!-- Profile screen -->
 <div class="profile-screen" id="profileScreen">
   <canvas id="geoCanvas"></canvas>
+  <div id="portalOrb" style="position:absolute;border-radius:50%;background:radial-gradient(circle,#fff 0%,#00dcff 30%,rgba(0,180,255,0.6) 60%,transparent 100%);box-shadow:0 0 40px 20px rgba(0,220,255,0.6),0 0 80px 40px rgba(0,180,255,0.3);transform:translate(-50%,-50%) scale(0);pointer-events:none;z-index:10;width:20px;height:20px;left:50%;top:50%;transition:none"></div>
   <div class="profile-content">
     <div class="profile-logo">
       <div class="profile-app-name"><span class="ponk">Ponk</span><span class="note">Note</span></div>
@@ -638,7 +639,7 @@
         </div>
       </div>
 
-      <button class="profile-submit" onclick="submitProfile()">Commencer</button>
+      <button class="profile-submit" id="submitBtn" onclick="launchPortal()">Commencer</button>
     </div>
   </div>
 </div>
@@ -2474,6 +2475,39 @@
     return COLORS[Math.abs(hash)%COLORS.length];
   }
 
+  async function launchPortal() {
+    const btn = document.getElementById('submitBtn');
+    const screen = document.getElementById('profileScreen');
+    const orb = document.getElementById('portalOrb');
+
+    // Positionner l'orbe au centre du bouton
+    const btnRect = btn.getBoundingClientRect();
+    const scrRect = screen.getBoundingClientRect();
+    const cx = btnRect.left - scrRect.left + btnRect.width / 2;
+    const cy = btnRect.top  - scrRect.top  + btnRect.height / 2;
+    orb.style.left = cx + 'px';
+    orb.style.top  = cy + 'px';
+
+    // Masquer le bouton
+    btn.style.opacity = '0';
+    btn.style.pointerEvents = 'none';
+
+    // Lancer la croissance
+    let scale = 0;
+    const maxScale = 80;
+    const step = () => {
+      scale += scale < 5 ? 0.3 : scale < 20 ? 1.2 : 3;
+      orb.style.transform = `translate(-50%,-50%) scale(${scale})`;
+      if (scale < maxScale) {
+        requestAnimationFrame(step);
+      } else {
+        // Soumettre le profil et rediriger
+        submitProfile();
+      }
+    };
+    requestAnimationFrame(step);
+  }
+
   async function initProfile() {
     initAssistantUI();
     const profile = localStorage.getItem('ponk_profile');
@@ -2542,8 +2576,16 @@
   document.getElementById('profileVille').addEventListener('keydown', e => { if(e.key==='Enter') submitProfile(); });
 
   function showApp(name) {
-    document.getElementById('profileScreen').classList.remove('visible');
-    document.getElementById('mainApp').classList.remove('hidden');
+    // Délai pour laisser le portal finir
+    setTimeout(() => {
+      document.getElementById('profileScreen').classList.remove('visible');
+      document.getElementById('mainApp').classList.remove('hidden');
+      // Reset orb
+      const orb = document.getElementById('portalOrb');
+      if (orb) { orb.style.transform = 'translate(-50%,-50%) scale(0)'; }
+      const btn = document.getElementById('submitBtn');
+      if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
+    }, 400);
     const av = document.getElementById('headerAvatar');
     av.textContent = name[0].toUpperCase();
     av.style.background = getColor(name);
@@ -2642,7 +2684,6 @@
 
     // Orbe blanc qui se balade entre les formes
     const orb = { t: 0, speed: 0.0008, r: 7 };
-    // Chemin : indices des formes visitées dans l'ordre
     const orbPath = [0, 4, 1, 7, 10, 2, 6, 11, 3, 5, 9, 8, 0];
 
     function getOrbPos(w, h) {
@@ -2650,7 +2691,6 @@
       const progress = (orb.t % 1) * total;
       const idx = Math.floor(progress);
       const frac = progress - idx;
-      // Easing smooth
       const ease = frac < 0.5 ? 2*frac*frac : -1+(4-2*frac)*frac;
       const a = shapes[orbPath[Math.min(idx, total)]];
       const b = shapes[orbPath[Math.min(idx+1, total)]];
