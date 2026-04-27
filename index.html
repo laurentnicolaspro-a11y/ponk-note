@@ -1096,8 +1096,6 @@
       if (res.ok) {
         const r = await res.json();
         localStorage.setItem('ponk_drive_file', JSON.stringify(r));
-        // ── Stocker le fileName pour analyze() ──
-        if (r.fileName) localStorage.setItem('ponk_last_filename', r.fileName);
         setStatus('active', 'Audio sauvegardé ☁️ — ' + fmt(seconds));
       }
     } catch(e) { console.warn('Upload:', e.message); }
@@ -1136,20 +1134,15 @@
     const savedBubbles = actionBubbles.filter(b => b.confirmed === true || b.confirmed === 'done' || b.confirmed === 'kept');
 
     try {
-      // Récupérer le fileName déjà uploadé par uploadAudio() — pas de double upload
-      let fileName = localStorage.getItem('ponk_last_filename');
-      if (!fileName) {
-        // Fallback : upload si pas encore fait
-        const uploadFd = new FormData();
-        uploadFd.append('audio', blob, 'rec.webm');
-        uploadFd.append('title', title);
-        uploadFd.append('profile', profile);
-        const uploadRes = await fetch('/api/upload', {method:'POST', body:uploadFd});
-        if (!uploadRes.ok) throw new Error('Upload audio échoué ' + uploadRes.status);
-        const uploadData = await uploadRes.json();
-        fileName = uploadData.fileName;
-      }
-      localStorage.removeItem('ponk_last_filename');
+      // Étape 1 : upload audio sur Supabase, récupérer le fileName
+      const uploadFd = new FormData();
+      uploadFd.append('audio', blob, 'rec.webm');
+      uploadFd.append('title', title);
+      uploadFd.append('profile', profile);
+      const uploadRes = await fetch('/api/upload', {method:'POST', body:uploadFd});
+      if (!uploadRes.ok) throw new Error('Upload audio échoué ' + uploadRes.status);
+      const uploadData = await uploadRes.json();
+      const fileName = uploadData.fileName;
 
       // Étape 2 : envoyer fileName + métadonnées à analyze (pas le fichier brut)
       const analyzeRes = await fetch('/api/analyze', {
@@ -1242,7 +1235,7 @@
 
       speechRecognition.onresult = e => {
         const t = e.results[0][0].transcript.trim();
-        detectActionKeywords(t);
+        detectActionIA(t);
         if (isQuestion(t)) askGemini(t);
         // Forcer l'arrêt pour déclencher onend proprement
         try { speechRecognition.stop(); } catch(err) {}
@@ -1399,23 +1392,23 @@
 
   const MAX_BUBBLES = 5;
 
-  function detectActionKeywords(text) {
-    const lower = text.toLowerCase();
-    if (text.split(' ').length < 3) return;
-    const activeBubbles = actionBubbles.filter(b => b.confirmed === null);
-    if (activeBubbles.length >= MAX_BUBBLES) return;
-    for (const [type, config] of Object.entries(ACTION_KEYWORDS)) {
-      if (config.disabled) continue;
-      if (config.words.some(w => lower.includes(w))) {
-        const recent = actionBubbles.find(b => b.type === type && b.confirmed === null && Date.now() - b.time < 30000);
-        if (!recent) {
-          addActionBubble(type, config.icon, config.label, cleanTranscript(text));
-          return; // ← return uniquement si on a bien créé une bulle
-        }
-        // Si recent existe (doublon récent), on continue la boucle
-        // pour chercher d'autres types potentiels dans le même texte
-      }
-    }
+  async function detectActionIA(text) {
+    if (text.split(' ').length < 4) return;
+    if (actionBubbles.filter(b => b.confirmed === null).length >= MAX_BUBBLES) return;
+    try {
+      const res = await fetch('/api/assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: text, mode: 'detect' })
+      });
+      const data = await res.json();
+      if (!data.action) return;
+      const config = ACTION_KEYWORDS[data.action];
+      if (!config || config.disabled) return;
+      const recent = actionBubbles.find(b => b.type === data.action && b.confirmed === null && Date.now() - b.time < 30000);
+      if (recent) return;
+      addActionBubble(data.action, config.icon, config.label, data.texte || cleanTranscript(text));
+    } catch(e) {}
   }
 
   function updateSlots() {
