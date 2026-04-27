@@ -2913,13 +2913,13 @@
 
       // Image de la silhouette — couvre toute la zone gauche
       if (img.complete && img.naturalWidth > 0) {
-        // Image 16:9 — on la fait couvrir toute la hauteur, cadrée à gauche
         const imgRatio = img.naturalWidth / img.naturalHeight;
-        const dh = h;
-        const dw = dh * imgRatio;
-        // Décaler légèrement à gauche pour centrer la silhouette
-        const dx = -dw * 0.08;
-        const dy = 0;
+        // Zoom : on prend la largeur du canvas comme référence
+        const dw = w * 1.35;
+        const dh = dw / imgRatio;
+        // Centrer verticalement, décaler vers le bas pour que le torse touche le bas
+        const dx = -w * 0.05;
+        const dy = h - dh * 0.98;
         ctx.drawImage(img, dx, dy, dw, dh);
       }
 
