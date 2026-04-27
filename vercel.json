@@ -2,12 +2,13 @@
   "version": 2,
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/public/(.*)", "dest": "/public/$1" },
+    { "src": "/public/silhouette.png", "dest": "/public/silhouette.png" },
+    { "src": "/public/pdf.js", "dest": "/public/pdf.js" },
+    { "src": "/public/rebond.js", "dest": "/public/rebond.js" },
     { "src": "/results.html", "dest": "/results.html" },
     { "src": "/library.html", "dest": "/library.html" },
     { "src": "/settings.html", "dest": "/settings.html" },
     { "src": "/test.html", "dest": "/test.html" },
-    { "src": "/(.*\\.(png|jpg|jpeg|gif|svg|ico|webp|js|css|pdf|webm|mp3|woff|woff2|ttf))", "dest": "/$1" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
