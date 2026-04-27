@@ -2546,38 +2546,48 @@
     const canvas = document.getElementById('geoCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    resize();
+    window.addEventListener('resize', resize);
 
     const shapes = [
-      { type:'hex',    x:0.18, y:0.18, size:38, rot:0,   speed:0.003,  color:'rgba(0,200,255,0.55)',   fill:'rgba(0,200,255,0.04)' },
-      { type:'hex',    x:0.78, y:0.12, size:24, rot:1.2,  speed:-0.004, color:'rgba(160,80,255,0.55)',  fill:'rgba(160,80,255,0.04)' },
-      { type:'hex',    x:0.85, y:0.72, size:32, rot:0.5,  speed:0.002,  color:'rgba(0,200,255,0.4)',    fill:'rgba(0,200,255,0.03)' },
-      { type:'hex',    x:0.10, y:0.75, size:20, rot:0.8,  speed:-0.005, color:'rgba(200,100,255,0.45)', fill:'rgba(200,100,255,0.03)' },
-      { type:'cube',   x:0.65, y:0.10, size:28, rot:0.3,  speed:0.004,  color:'rgba(0,220,255,0.55)' },
-      { type:'cube',   x:0.30, y:0.88, size:22, rot:1.0,  speed:-0.003, color:'rgba(140,60,255,0.55)' },
-      { type:'cube',   x:0.93, y:0.42, size:18, rot:0.6,  speed:0.006,  color:'rgba(0,180,255,0.45)' },
-      { type:'tri',    x:0.45, y:0.07, size:20, rot:0,    speed:0.005,  color:'rgba(180,100,255,0.55)', fill:'rgba(180,100,255,0.04)' },
-      { type:'tri',    x:0.07, y:0.45, size:16, rot:2.0,  speed:-0.004, color:'rgba(0,220,255,0.45)',   fill:'rgba(0,220,255,0.03)' },
-      { type:'circle', x:0.55, y:0.14, size:12, rot:0,    speed:0.002,  color:'rgba(200,120,255,0.7)' },
-      { type:'circle', x:0.25, y:0.11, size:9,  rot:0,    speed:0.003,  color:'rgba(0,220,255,0.6)' },
-      { type:'circle', x:0.88, y:0.28, size:7,  rot:0,    speed:0.004,  color:'rgba(160,80,255,0.6)' },
+      { type:'hex',    x:0.10, y:0.13, size:38, rot:0,   speed:0.003,  color:'rgba(0,200,255,0.55)',   fill:'rgba(0,200,255,0.03)' },
+      { type:'hex',    x:0.82, y:0.09, size:24, rot:1.2,  speed:-0.004, color:'rgba(160,80,255,0.55)',  fill:'rgba(160,80,255,0.03)' },
+      { type:'hex',    x:0.88, y:0.72, size:32, rot:0.5,  speed:0.002,  color:'rgba(0,200,255,0.4)',    fill:'rgba(0,200,255,0.02)' },
+      { type:'hex',    x:0.08, y:0.74, size:20, rot:0.8,  speed:-0.005, color:'rgba(200,100,255,0.45)', fill:'rgba(200,100,255,0.02)' },
+      { type:'cube',   x:0.74, y:0.07, size:28, rot:0.3,  speed:0.004,  color:'rgba(0,220,255,0.55)' },
+      { type:'cube',   x:0.18, y:0.90, size:22, rot:1.0,  speed:-0.003, color:'rgba(140,60,255,0.55)' },
+      { type:'cube',   x:0.95, y:0.38, size:18, rot:0.6,  speed:0.006,  color:'rgba(0,180,255,0.45)' },
+      { type:'cube',   x:0.82, y:0.83, size:20, rot:0.9,  speed:-0.004, color:'rgba(100,60,220,0.45)' },
+      { type:'tri',    x:0.50, y:0.04, size:18, rot:0,    speed:0.005,  color:'rgba(180,100,255,0.55)', fill:'rgba(180,100,255,0.03)' },
+      { type:'tri',    x:0.04, y:0.40, size:16, rot:2.0,  speed:-0.004, color:'rgba(0,220,255,0.45)',   fill:'rgba(0,220,255,0.02)' },
+      { type:'circle', x:0.20, y:0.14, size:10, rot:0,    speed:0.002,  color:'rgba(0,220,255,0.65)' },
+      { type:'circle', x:0.86, y:0.26, size:8,  rot:0,    speed:0.004,  color:'rgba(160,80,255,0.65)' },
     ];
-    const connections = [[0,4],[1,4],[1,9],[2,6],[3,5],[0,8],[7,1],[9,7],[10,0],[11,1],[2,11],[5,3]];
+    const connections = [[0,4],[1,4],[1,10],[2,6],[3,5],[0,9],[8,1],[10,0],[11,1],[2,11],[5,3],[7,2]];
 
+    function cube(ctx, cx, cy, r, rot, color) {
+      const ry = rot, rx = 0.45;
+      const crx = Math.cos(rx), srx = Math.sin(rx);
+      const cry = Math.cos(ry), sry = Math.sin(ry);
+      const verts = [[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]];
+      const pts = verts.map(([x,y,z]) => {
+        const x2 = x*cry + z*sry;
+        const z2 = -x*sry + z*cry;
+        const y2 = y*crx - z2*srx;
+        const sc = r / (2.2 + z2*0.3);
+        return { px: cx + x2*sc, py: cy + y2*sc };
+      });
+      const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+      ctx.strokeStyle = color; ctx.lineWidth = 1;
+      edges.forEach(([a,b]) => {
+        ctx.beginPath(); ctx.moveTo(pts[a].px, pts[a].py); ctx.lineTo(pts[b].px, pts[b].py); ctx.stroke();
+      });
+    }
     function hex(ctx, x, y, r, rot, color, fill) {
       ctx.beginPath();
       for (let i=0;i<6;i++) { const a=rot+(Math.PI/3)*i; i===0?ctx.moveTo(x+r*Math.cos(a),y+r*Math.sin(a)):ctx.lineTo(x+r*Math.cos(a),y+r*Math.sin(a)); }
       ctx.closePath(); ctx.fillStyle=fill; ctx.fill(); ctx.strokeStyle=color; ctx.lineWidth=1; ctx.stroke();
-    }
-    function cube(ctx, x, y, r, rot, color) {
-      const c=Math.cos(rot),s=Math.sin(rot);
-      const p=[[-1,-1],[1,-1],[1,1],[-1,1],[-0.4,-1.5],[1.6,-1.5],[1.6,0.5],[-0.4,0.5]].map(([px,py])=>({x:x+(px*c-py*s)*r,y:y+(px*s+py*c)*r}));
-      ctx.strokeStyle=color; ctx.lineWidth=1;
-      ctx.beginPath(); [0,1,2,3,0].forEach(i=>i===0?ctx.moveTo(p[i].x,p[i].y):ctx.lineTo(p[i].x,p[i].y)); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(p[0].x,p[0].y); ctx.lineTo(p[4].x,p[4].y); ctx.lineTo(p[5].x,p[5].y); ctx.lineTo(p[1].x,p[1].y); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(p[1].x,p[1].y); ctx.lineTo(p[5].x,p[5].y); ctx.lineTo(p[6].x,p[6].y); ctx.lineTo(p[2].x,p[2].y); ctx.stroke();
     }
     function tri(ctx, x, y, r, rot, color, fill) {
       ctx.beginPath();
@@ -2585,7 +2595,7 @@
       ctx.closePath(); ctx.fillStyle=fill; ctx.fill(); ctx.strokeStyle=color; ctx.lineWidth=1; ctx.stroke();
     }
     function circle(ctx, x, y, r, color) {
-      const g=ctx.createRadialGradient(x,y,0,x,y,r*2.5);
+      const g=ctx.createRadialGradient(x,y,0,x,y,r*2);
       g.addColorStop(0,color); g.addColorStop(1,'transparent');
       ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
       ctx.strokeStyle=color; ctx.lineWidth=1; ctx.stroke();
@@ -2597,30 +2607,27 @@
       ctx.clearRect(0,0,w,h);
       shapes.forEach(s => s.rot += s.speed);
       connections.forEach(([a,b]) => {
-        const sa=shapes[a],sb=shapes[b];
+        const sa=shapes[a], sb=shapes[b];
         const g=ctx.createLinearGradient(sa.x*w,sa.y*h,sb.x*w,sb.y*h);
-        g.addColorStop(0, (sa.color||'rgba(0,200,255,0.3)').replace(/[\d.]+\)$/,'0.25)'));
-        g.addColorStop(1, (sb.color||'rgba(160,80,255,0.3)').replace(/[\d.]+\)$/,'0.25)'));
+        g.addColorStop(0,'rgba(0,200,255,0.15)'); g.addColorStop(1,'rgba(160,80,255,0.15)');
         ctx.beginPath(); ctx.moveTo(sa.x*w,sa.y*h); ctx.lineTo(sb.x*w,sb.y*h);
         ctx.strokeStyle=g; ctx.lineWidth=0.5; ctx.stroke();
       });
       shapes.forEach(s => {
         const x=s.x*w, y=s.y*h;
-        if (s.type==='hex')    hex(ctx,x,y,s.size,s.rot,s.color,s.fill||'transparent');
-        else if(s.type==='cube')   cube(ctx,x,y,s.size,s.rot,s.color);
-        else if(s.type==='tri')    tri(ctx,x,y,s.size,s.rot,s.color,s.fill||'transparent');
-        else if(s.type==='circle') circle(ctx,x,y,s.size,s.color);
+        if      (s.type==='hex')    hex(ctx,x,y,s.size,s.rot,s.color,s.fill||'transparent');
+        else if (s.type==='cube')   cube(ctx,x,y,s.size,s.rot,s.color);
+        else if (s.type==='tri')    tri(ctx,x,y,s.size,s.rot,s.color,s.fill||'transparent');
+        else if (s.type==='circle') circle(ctx,x,y,s.size,s.color);
       });
       raf = requestAnimationFrame(animate);
     }
     animate();
-    // Stopper l'animation quand profil masqué
     new MutationObserver(() => {
       if (!document.getElementById('profileScreen')?.classList.contains('visible')) cancelAnimationFrame(raf);
     }).observe(document.getElementById('profileScreen'), {attributes:true, attributeFilter:['class']});
   }
 
-  // Patch initProfile pour lancer le canvas
   const _origInit = initProfile;
   initProfile = async function() {
     await _origInit();
