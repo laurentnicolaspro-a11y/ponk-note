@@ -648,10 +648,7 @@
   <header>
     <span class="logo-text">Ponk <span>Note</span></span>
     <div class="header-right">
-      <div class="assistant-pill" onclick="toggleAssistant()" id="assistantPill">
-        <span class="pill-label" id="pillLabel">A</span>
-        <div class="toggle-switch" id="assistantToggle"></div>
-      </div>
+
       <div class="assistant-pill" id="manualMenuBtn" onclick="openManualMenu()" style="padding:5px 12px;opacity:0.35;pointer-events:none;">
         <span class="pill-label">+</span>
       </div>
@@ -1244,7 +1241,7 @@
     document.getElementById('dot').className = 'dot'+(type?' '+type:'');
     document.getElementById('status').textContent = text;
   }
-  let assistantActive = false;
+  let assistantActive = true;
   let speechRecognition = null;
   let assistantStream = null;
   let assistantHistory = [];
@@ -1252,31 +1249,8 @@
 
   function isAndroid() { return /Android/i.test(navigator.userAgent); }
 
-  function toggleAssistant() {
-    if (isAndroid()) {
-      alert('Assistant IA : disponible sur PC et iPhone uniquement.');
-      return;
-    }
-    assistantActive = !assistantActive;
-    document.getElementById('assistantToggle').classList.toggle('on', assistantActive);
-    document.getElementById('assistantZone').classList.toggle('visible', assistantActive);
-    document.getElementById('powerWrap').classList.toggle('assistant-on', assistantActive);
-    document.getElementById('bg').style.background = assistantActive
-      ? 'linear-gradient(145deg, #d0d8f8 0%, #d8c8f0 40%, #c8d8f0 100%)'
-      : 'linear-gradient(145deg, #dce8f8 0%, #e8d8f0 40%, #f5e6d8 100%)';
-    document.getElementById('spikyPath').setAttribute('stroke', assistantActive ? 'rgba(100,80,200,0.45)' : 'rgba(74,127,212,0.35)');
-    if (assistantActive && recording) startSpeechRecognition();
-    else if (!assistantActive) stopSpeechRecognition();
-  }
 
-  function initAssistantUI() {
-    if (isAndroid()) {
-      const pill = document.getElementById('assistantPill');
-      const label = document.getElementById('pillLabel');
-      if (pill) pill.style.opacity = '0.4';
-      if (label) label.title = 'PC & iPhone uniquement';
-    }
-  }
+
 
   async function startSpeechRecognition() {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return;
@@ -2509,7 +2483,6 @@
   }
 
   async function initProfile() {
-    initAssistantUI();
     const profile = localStorage.getItem('ponk_profile');
     const email   = localStorage.getItem('ponk_email');
     if (profile && email) {
@@ -2576,6 +2549,8 @@
   document.getElementById('profileVille').addEventListener('keydown', e => { if(e.key==='Enter') submitProfile(); });
 
   function showApp(name) {
+    document.getElementById('assistantZone').classList.add('visible');
+    document.getElementById('powerWrap').classList.add('assistant-on');
     // Délai pour laisser le portal finir
     setTimeout(() => {
       document.getElementById('profileScreen').classList.remove('visible');
