@@ -1,7 +1,4 @@
 // ── Rebond ──
-// Le rebond se déclenche UNIQUEMENT sur un vrai clic utilisateur
-// Jamais automatiquement à l'ouverture d'une modal
-
 let rebondContexte = {};
 let rebondEnCours = false;
 let rebondDepuisRebond = false;
@@ -36,21 +33,33 @@ async function declencherRebond(actionFaite, contexte, texteResume) {
     document.getElementById('rebondModal').classList.remove('hidden');
     document.getElementById('rebondSuggestions').style.display = 'block';
     document.getElementById('rebondBtns').innerHTML = rebonds.map((r, i) => `
-      <button data-idx="${i}"
-        style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:12px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.6);font-family:inherit;cursor:pointer;text-align:left;width:100%;-webkit-tap-highlight-color:transparent">
-        <span style="font-size:24px">${r.icon}</span>
+      <button data-idx="${i}" style="
+        display:flex; align-items:center; gap:14px;
+        padding:14px 16px; border-radius:14px; width:100%;
+        background:rgba(0,220,255,0.05);
+        border:1px solid rgba(0,220,255,0.15);
+        font-family:inherit; cursor:pointer; text-align:left;
+        -webkit-tap-highlight-color:transparent;
+        transition:background 0.15s, border-color 0.15s;">
+        <span style="font-size:22px;filter:drop-shadow(0 0 5px rgba(0,220,255,0.5));flex-shrink:0">${r.icon}</span>
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:600;color:var(--text)">${r.label}</div>
-          <div style="font-size:11px;color:var(--muted)">${r.raison}</div>
+          <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px">${r.label}</div>
+          <div style="font-size:11px;color:rgba(0,220,255,0.5)">${r.raison}</div>
         </div>
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#4a7fd4" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="rgba(0,220,255,0.5)" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
       </button>
     `).join('');
 
     window._rebondsList = rebonds;
     document.querySelectorAll('#rebondBtns button').forEach(btn => {
-      btn.addEventListener('mouseover', () => btn.style.background = 'rgba(255,255,255,0.95)');
-      btn.addEventListener('mouseout',  () => btn.style.background = 'rgba(255,255,255,0.6)');
+      btn.addEventListener('mouseover', () => {
+        btn.style.background = 'rgba(0,220,255,0.1)';
+        btn.style.borderColor = 'rgba(0,220,255,0.35)';
+      });
+      btn.addEventListener('mouseout', () => {
+        btn.style.background = 'rgba(0,220,255,0.05)';
+        btn.style.borderColor = 'rgba(0,220,255,0.15)';
+      });
       btn.addEventListener('click', () => {
         const r = window._rebondsList[parseInt(btn.dataset.idx)];
         lancerRebond(r.type, r.texte);
