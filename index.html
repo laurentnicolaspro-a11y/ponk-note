@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Ponk Note</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
 
@@ -47,72 +47,111 @@
       opacity:0.4; pointer-events:none;
     }
 
-    /* ── Profile screen ── */
+    /* ── Profile screen dark tech ── */
     .profile-screen {
       position:fixed; inset:0; z-index:9999;
       display:none; flex-direction:column;
       align-items:center; justify-content:center;
-      gap:28px; padding:40px 32px;
-      background: linear-gradient(145deg, #dce8f8 0%, #e8d8f0 40%, #f5e6d8 100%);
+      gap:20px; padding:32px 28px;
+      background: radial-gradient(ellipse at 30% 20%, #1a1040 0%, #0d0820 40%, #070514 100%);
+      overflow:hidden;
     }
-    .profile-screen.visible {
-      display:flex;
-      animation:fadeUp 0.4s ease;
+    .profile-screen.visible { display:flex; animation:fadeUp 0.5s ease; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+    #geoCanvas { position:absolute; inset:0; z-index:0; pointer-events:none; }
+
+    .profile-screen::before {
+      content:''; position:absolute; inset:0; z-index:0;
+      background-image:
+        linear-gradient(rgba(100,60,220,0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100,60,220,0.07) 1px, transparent 1px);
+      background-size:40px 40px;
+      mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
     }
-
-    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-
+    .profile-screen::after {
+      content:''; position:absolute;
+      width:500px; height:500px;
+      top:50%; left:50%; transform:translate(-50%,-60%);
+      background: radial-gradient(circle, rgba(120,60,255,0.12) 0%, transparent 70%);
+      z-index:0; pointer-events:none;
+    }
+    .profile-content {
+      position:relative; z-index:2;
+      display:flex; flex-direction:column;
+      align-items:center; gap:20px;
+      width:100%; max-width:480px;
+    }
     .profile-logo { display:flex; flex-direction:column; align-items:center; gap:10px; }
     .profile-icon {
-      width:68px; height:68px; border-radius:20px;
-      background:var(--glass); border:1.5px solid var(--glass-border);
-      backdrop-filter:blur(20px);
+      width:60px; height:60px; border-radius:16px;
+      background: linear-gradient(135deg, rgba(120,60,255,0.3), rgba(0,200,255,0.2));
+      border:1px solid rgba(0,220,255,0.4);
       display:flex; align-items:center; justify-content:center;
-      box-shadow:0 8px 32px rgba(74,127,212,0.2);
+      box-shadow: 0 0 20px rgba(0,200,255,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
     }
-    .profile-icon svg { width:32px; height:32px; fill:var(--accent); }
-    .profile-app-name { font-size:26px; font-weight:600; letter-spacing:-0.5px; color:var(--text); }
+    .profile-icon svg { width:28px; height:28px; fill:#00dcff; }
+    .profile-app-name {
+      font-family:'Rajdhani', sans-serif;
+      font-size:28px; font-weight:700; letter-spacing:2px; color:#fff;
+      text-shadow: 0 0 20px rgba(0,200,255,0.5);
+    }
     .profile-welcome { text-align:center; }
-    .profile-welcome p:first-child { font-size:20px; font-weight:600; margin-bottom:6px; }
-    .profile-welcome p:last-child { font-size:14px; color:var(--muted); }
+    .profile-welcome p:first-child { font-size:18px; font-weight:600; margin-bottom:4px; color:#fff; }
+    .profile-welcome p:last-child { font-size:13px; color:rgba(180,160,255,0.7); }
     .profile-input-wrap { width:100%; display:flex; flex-direction:column; gap:10px; }
-
     .profile-input {
-      width:100%; padding:14px 16px; border-radius:14px;
-      border:1.5px solid var(--glass-border);
-      background:var(--glass); backdrop-filter:blur(20px);
-      font-family:inherit; font-size:16px; color:var(--text);
+      width:100%; padding:13px 16px; border-radius:10px;
+      border:1px solid rgba(100,60,220,0.4);
+      background: rgba(255,255,255,0.04); backdrop-filter:blur(10px);
+      font-family:'Inter', sans-serif; font-size:15px; color:#fff;
       outline:none; text-align:center;
-      transition:border-color 0.2s, box-shadow 0.2s;
+      transition:border-color 0.2s, box-shadow 0.2s, background 0.2s;
     }
-    .profile-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(74,127,212,0.15); }
-    .profile-input::placeholder { color:var(--muted); }
-
-    .profile-prefs { display:flex; flex-direction:column; gap:10px; width:100%; }
-    .pref-row { display:flex; align-items:center; gap:10px; }
-    .pref-label { font-size:13px; color:var(--muted); width:60px; flex-shrink:0; }
-    .pref-options { display:flex; gap:6px; flex-wrap:wrap; flex:1; }
+    .profile-input:focus {
+      border-color:rgba(0,220,255,0.7);
+      background: rgba(0,220,255,0.06);
+      box-shadow: 0 0 0 2px rgba(0,220,255,0.12), 0 0 16px rgba(0,220,255,0.1);
+    }
+    .profile-input::placeholder { color:rgba(180,160,255,0.4); }
+    .profile-prefs {
+      width:100%; display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;
+    }
+    .pref-col { display:flex; flex-direction:column; align-items:center; gap:8px; }
+    .pref-col-label {
+      font-family:'Rajdhani', sans-serif;
+      font-size:10px; font-weight:600; letter-spacing:1.5px;
+      text-transform:uppercase; color:rgba(180,160,255,0.6);
+    }
+    .pref-options-col { display:flex; flex-direction:column; gap:5px; width:100%; }
     .pref-btn {
-      padding:6px 12px; border-radius:100px;
-      background:var(--glass); border:1.5px solid var(--glass-border);
-      font-size:12px; font-weight:500; color:var(--muted);
-      cursor:pointer; -webkit-tap-highlight-color:transparent;
-      transition:all 0.15s;
+      padding:6px 10px; border-radius:8px;
+      background:rgba(255,255,255,0.04); border:1px solid rgba(100,60,220,0.3);
+      font-family:'Inter', sans-serif; font-size:11px; font-weight:500;
+      color:rgba(200,180,255,0.6); cursor:pointer; -webkit-tap-highlight-color:transparent;
+      transition:all 0.15s; text-align:center;
     }
+    .pref-btn:hover { border-color:rgba(0,220,255,0.4); color:rgba(200,240,255,0.9); }
     .pref-btn.active {
-      background:var(--accent); border-color:var(--accent);
-      color:#fff;
+      background:rgba(0,220,255,0.12); border-color:rgba(0,220,255,0.6);
+      color:#00dcff; box-shadow:0 0 10px rgba(0,220,255,0.15);
     }
-
     .profile-submit {
-      width:100%; padding:15px; border-radius:14px; border:none;
-      background:var(--accent); color:#fff;
-      font-family:inherit; font-size:16px; font-weight:600;
-      cursor:pointer; letter-spacing:-0.2px;
-      box-shadow:0 6px 24px rgba(74,127,212,0.35);
-      transition:opacity 0.15s, transform 0.1s;
+      width:100%; padding:14px; border-radius:10px; border:none;
+      background: linear-gradient(90deg, rgba(100,40,220,0.9), rgba(0,160,255,0.9));
+      color:#fff; font-family:'Rajdhani', sans-serif;
+      font-size:17px; font-weight:700; letter-spacing:2px;
+      cursor:pointer; text-transform:uppercase; position:relative; overflow:hidden;
+      box-shadow: 0 0 24px rgba(0,180,255,0.3), 0 0 0 1px rgba(0,220,255,0.3);
+      transition:box-shadow 0.2s, transform 0.1s;
     }
-    .profile-submit:active { opacity:0.85; transform:scale(0.98); }
+    .profile-submit::before {
+      content:''; position:absolute; inset:0;
+      background:linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
+      transform:translateX(-100%); animation:shimmer 3s ease-in-out infinite;
+    }
+    @keyframes shimmer { 0%{transform:translateX(-100%)} 50%,100%{transform:translateX(100%)} }
+    .profile-submit:active { transform:scale(0.98); }
 
     /* ── App ── */
     .app {
@@ -538,50 +577,53 @@
 
 <!-- Profile screen -->
 <div class="profile-screen" id="profileScreen">
-  <div class="profile-logo">
-    <div class="profile-icon">
-      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+  <canvas id="geoCanvas"></canvas>
+  <div class="profile-content">
+    <div class="profile-logo">
+      <div class="profile-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+      </div>
+      <div class="profile-app-name">Ponk Note</div>
     </div>
-    <div class="profile-app-name">Ponk Note</div>
-  </div>
-  <div class="profile-welcome">
-    <p>Bienvenue !</p>
-    <p>Comment tu t'appelles ?</p>
-  </div>
-  <div class="profile-input-wrap">
-    <input type="text" id="profileName" class="profile-input" placeholder="Ton prénom" maxlength="20" autocomplete="off" autocapitalize="words" />
-    <input type="email" id="profileEmail" class="profile-input" placeholder="Ton adresse email" autocomplete="email" />
-    <input type="text" id="profileVille" class="profile-input" placeholder="Ta ville (ex: Cambrai)" autocomplete="address-level2" />
-
-    <div class="profile-prefs">
-      <div class="pref-row">
-        <span class="pref-label">📬 Mail</span>
-        <div class="pref-options" id="prefMail">
-          <div class="pref-btn active" data-value="gmail">Gmail</div>
-          <div class="pref-btn" data-value="outlook">Outlook</div>
-          <div class="pref-btn" data-value="yahoo">Yahoo</div>
-          <div class="pref-btn" data-value="default">Autre</div>
-        </div>
-      </div>
-      <div class="pref-row">
-        <span class="pref-label">📅 Agenda</span>
-        <div class="pref-options" id="prefCal">
-          <div class="pref-btn active" data-value="google">Google</div>
-          <div class="pref-btn" data-value="outlook">Outlook</div>
-          <div class="pref-btn" data-value="apple">Apple</div>
-        </div>
-      </div>
-      <div class="pref-row">
-        <span class="pref-label">🗺️ Maps</span>
-        <div class="pref-options" id="prefMaps">
-          <div class="pref-btn active" data-value="google">Google Maps</div>
-          <div class="pref-btn" data-value="waze">Waze</div>
-          <div class="pref-btn" data-value="apple">Apple Maps</div>
-        </div>
-      </div>
+    <div class="profile-welcome">
+      <p>Bienvenue !</p>
+      <p>Comment tu t'appelles ?</p>
     </div>
+    <div class="profile-input-wrap">
+      <input type="text" id="profileName" class="profile-input" placeholder="Ton prénom" maxlength="20" autocomplete="off" autocapitalize="words" />
+      <input type="email" id="profileEmail" class="profile-input" placeholder="Ton adresse email" autocomplete="email" />
+      <input type="text" id="profileVille" class="profile-input" placeholder="Ta ville (ex: Cambrai)" autocomplete="address-level2" />
 
-    <button class="profile-submit" onclick="submitProfile()">Commencer</button>
+      <div class="profile-prefs">
+        <div class="pref-col">
+          <div class="pref-col-label">📬 Mail</div>
+          <div class="pref-options-col" id="prefMail">
+            <div class="pref-btn active" data-value="gmail">Gmail</div>
+            <div class="pref-btn" data-value="outlook">Outlook</div>
+            <div class="pref-btn" data-value="yahoo">Yahoo</div>
+            <div class="pref-btn" data-value="default">Autre</div>
+          </div>
+        </div>
+        <div class="pref-col">
+          <div class="pref-col-label">📅 Agenda</div>
+          <div class="pref-options-col" id="prefCal">
+            <div class="pref-btn active" data-value="google">Google</div>
+            <div class="pref-btn" data-value="outlook">Outlook</div>
+            <div class="pref-btn" data-value="apple">Apple</div>
+          </div>
+        </div>
+        <div class="pref-col">
+          <div class="pref-col-label">🗺️ Maps</div>
+          <div class="pref-options-col" id="prefMaps">
+            <div class="pref-btn active" data-value="google">Google Maps</div>
+            <div class="pref-btn" data-value="waze">Waze</div>
+            <div class="pref-btn" data-value="apple">Apple Maps</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="profile-submit" onclick="submitProfile()">Commencer</button>
+    </div>
   </div>
 </div>
 
@@ -1235,7 +1277,7 @@
 
       speechRecognition.onresult = e => {
         const t = e.results[0][0].transcript.trim();
-        detectActionIA(t);
+        detectActionKeywords(t);
         if (isQuestion(t)) askGemini(t);
         // Forcer l'arrêt pour déclencher onend proprement
         try { speechRecognition.stop(); } catch(err) {}
@@ -1392,23 +1434,23 @@
 
   const MAX_BUBBLES = 5;
 
-  async function detectActionIA(text) {
-    if (text.split(' ').length < 4) return;
-    if (actionBubbles.filter(b => b.confirmed === null).length >= MAX_BUBBLES) return;
-    try {
-      const res = await fetch('/api/assistant', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: text, mode: 'detect' })
-      });
-      const data = await res.json();
-      if (!data.action) return;
-      const config = ACTION_KEYWORDS[data.action];
-      if (!config || config.disabled) return;
-      const recent = actionBubbles.find(b => b.type === data.action && b.confirmed === null && Date.now() - b.time < 30000);
-      if (recent) return;
-      addActionBubble(data.action, config.icon, config.label, data.texte || cleanTranscript(text));
-    } catch(e) {}
+  function detectActionKeywords(text) {
+    const lower = text.toLowerCase();
+    if (text.split(' ').length < 3) return;
+    const activeBubbles = actionBubbles.filter(b => b.confirmed === null);
+    if (activeBubbles.length >= MAX_BUBBLES) return;
+    for (const [type, config] of Object.entries(ACTION_KEYWORDS)) {
+      if (config.disabled) continue;
+      if (config.words.some(w => lower.includes(w))) {
+        const recent = actionBubbles.find(b => b.type === type && b.confirmed === null && Date.now() - b.time < 30000);
+        if (!recent) {
+          addActionBubble(type, config.icon, config.label, cleanTranscript(text));
+          return; // ← return uniquement si on a bien créé une bulle
+        }
+        // Si recent existe (doublon récent), on continue la boucle
+        // pour chercher d'autres types potentiels dans le même texte
+      }
+    }
   }
 
   function updateSlots() {
@@ -2500,6 +2542,183 @@
   }
 
   initProfile();
+
+  // ── Formes géométriques animées ──
+  function initGeoCanvas() {
+    const canvas = document.getElementById('geoCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const shapes = [
+      // hexagones
+      { type:'hex', x:0.18, y:0.18, size:38, rot:0, rotSpeed:0.003, color:'rgba(0,200,255,0.5)', fill:'rgba(0,200,255,0.04)' },
+      { type:'hex', x:0.78, y:0.12, size:24, rot:1.2, rotSpeed:-0.004, color:'rgba(160,80,255,0.5)', fill:'rgba(160,80,255,0.04)' },
+      { type:'hex', x:0.85, y:0.72, size:32, rot:0.5, rotSpeed:0.002, color:'rgba(0,200,255,0.35)', fill:'rgba(0,200,255,0.03)' },
+      { type:'hex', x:0.12, y:0.78, size:20, rot:0.8, rotSpeed:-0.005, color:'rgba(200,100,255,0.4)', fill:'rgba(200,100,255,0.03)' },
+      // cubes filaires (carrés en perspective)
+      { type:'cube', x:0.65, y:0.10, size:28, rot:0.3, rotSpeed:0.004, color:'rgba(0,220,255,0.5)' },
+      { type:'cube', x:0.30, y:0.88, size:22, rot:1.0, rotSpeed:-0.003, color:'rgba(140,60,255,0.5)' },
+      { type:'cube', x:0.92, y:0.42, size:18, rot:0.6, rotSpeed:0.006, color:'rgba(0,180,255,0.4)' },
+      // triangles
+      { type:'tri', x:0.45, y:0.08, size:20, rot:0, rotSpeed:0.005, color:'rgba(180,100,255,0.5)', fill:'rgba(180,100,255,0.04)' },
+      { type:'tri', x:0.08, y:0.45, size:16, rot:2.0, rotSpeed:-0.004, color:'rgba(0,220,255,0.4)', fill:'rgba(0,220,255,0.03)' },
+      // sphères (cercles avec lueur)
+      { type:'circle', x:0.55, y:0.15, size:14, rot:0, rotSpeed:0.002, color:'rgba(200,120,255,0.6)' },
+      { type:'circle', x:0.25, y:0.12, size:10, rot:0, rotSpeed:0.003, color:'rgba(0,220,255,0.5)' },
+      { type:'circle', x:0.88, y:0.28, size:8, rot:0, rotSpeed:0.004, color:'rgba(160,80,255,0.5)' },
+    ];
+
+    // Lignes de connexion entre formes proches
+    const connections = [
+      [0,4],[1,4],[1,5],[2,6],[3,5],[0,8],[7,1],[9,7],[10,0],[11,1]
+    ];
+
+    function drawHex(ctx, x, y, r, rot, color, fill) {
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = rot + (Math.PI / 3) * i;
+        const px = x + r * Math.cos(a);
+        const py = y + r * Math.sin(a);
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    function drawCube(ctx, x, y, r, rot, color) {
+      const cos = Math.cos(rot), sin = Math.sin(rot);
+      const pts = [
+        [-1,-1],[ 1,-1],[ 1, 1],[-1, 1],
+        [-0.4,-1.5],[1.6,-1.5],[1.6, 0.5],[-0.4, 0.5]
+      ].map(([px,py]) => ({
+        x: x + (px * cos - py * sin) * r,
+        y: y + (px * sin + py * cos) * r
+      }));
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      // face avant
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      [1,2,3,0].forEach(i => ctx.lineTo(pts[i].x, pts[i].y));
+      ctx.stroke();
+      // face dessus
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      ctx.lineTo(pts[4].x, pts[4].y);
+      ctx.lineTo(pts[5].x, pts[5].y);
+      ctx.lineTo(pts[1].x, pts[1].y);
+      ctx.stroke();
+      // côté droit
+      ctx.beginPath();
+      ctx.moveTo(pts[1].x, pts[1].y);
+      ctx.lineTo(pts[5].x, pts[5].y);
+      ctx.lineTo(pts[6].x, pts[6].y);
+      ctx.lineTo(pts[2].x, pts[2].y);
+      ctx.stroke();
+    }
+
+    function drawTri(ctx, x, y, r, rot, color, fill) {
+      ctx.beginPath();
+      for (let i = 0; i < 3; i++) {
+        const a = rot + (Math.PI * 2 / 3) * i - Math.PI/2;
+        const px = x + r * Math.cos(a);
+        const py = y + r * Math.sin(a);
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    function drawCircle(ctx, x, y, r, color) {
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, r * 2.5);
+      grad.addColorStop(0, color);
+      grad.addColorStop(1, 'transparent');
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    let animFrame;
+    function animate() {
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      // Mettre à jour rotations
+      shapes.forEach(s => { s.rot += s.rotSpeed; });
+
+      // Dessiner connexions
+      connections.forEach(([a, b]) => {
+        const sa = shapes[a], sb = shapes[b];
+        const ax = sa.x * w, ay = sa.y * h;
+        const bx = sb.x * w, by = sb.y * h;
+        const grad = ctx.createLinearGradient(ax, ay, bx, by);
+        grad.addColorStop(0, sa.color || 'rgba(0,200,255,0.2)');
+        grad.addColorStop(1, sb.color || 'rgba(160,80,255,0.2)');
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(bx, by);
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      });
+
+      // Dessiner formes
+      shapes.forEach(s => {
+        const x = s.x * w, y = s.y * h;
+        if (s.type === 'hex')    drawHex(ctx, x, y, s.size, s.rot, s.color, s.fill);
+        else if (s.type === 'cube')   drawCube(ctx, x, y, s.size, s.rot, s.color);
+        else if (s.type === 'tri')    drawTri(ctx, x, y, s.size, s.rot, s.color, s.fill);
+        else if (s.type === 'circle') drawCircle(ctx, x, y, s.size, s.color);
+      });
+
+      animFrame = requestAnimationFrame(animate);
+    }
+    animate();
+
+    // Stopper quand profile masqué
+    const obs = new MutationObserver(() => {
+      const screen = document.getElementById('profileScreen');
+      if (screen && !screen.classList.contains('visible')) {
+        cancelAnimationFrame(animFrame);
+      }
+    });
+    const screen = document.getElementById('profileScreen');
+    if (screen) obs.observe(screen, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  // Lancer quand le profil est visible
+  const _origInitProfile = initProfile;
+  initProfile = async function() {
+    await _origInitProfile();
+    const screen = document.getElementById('profileScreen');
+    if (screen && screen.classList.contains('visible')) initGeoCanvas();
+  };
+  // Aussi si déjà visible au chargement
+  window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      const screen = document.getElementById('profileScreen');
+      if (screen && screen.classList.contains('visible')) initGeoCanvas();
+    }, 100);
+  });
 </script>
 <script src="/public/pdf.js"></script>
 <script src="/public/rebond.js"></script>
