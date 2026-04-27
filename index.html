@@ -2914,11 +2914,11 @@
       // Image de la silhouette — couvre toute la zone gauche
       if (img.complete && img.naturalWidth > 0) {
         const imgRatio = img.naturalWidth / img.naturalHeight;
-        // Hauteur = 130%, descendu pour que le torse touche le bas
-        const dh = h * 1.30;
+        // Hauteur = 135%, descendu pour que le torse touche la barre
+        const dh = h * 1.35;
         const dw = dh * imgRatio;
         const dx = -w * 0.02;
-        const dy = h - dh * 0.92;
+        const dy = h - dh * 0.88;
         ctx.drawImage(img, dx, dy, dw, dh);
       }
 
