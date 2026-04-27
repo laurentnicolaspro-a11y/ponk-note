@@ -228,12 +228,7 @@
     .bottom-ia {
       display:flex; align-items:center; gap:10px;
     }
-    .bubbles-slots-wrap {
-      display:flex; flex-direction:column; align-items:center; gap:4px;
-    }
-    .bubbles-slots {
-      display:flex; gap:5px; align-items:center;
-    }
+    .bubbles-slots { display:flex; gap:5px; align-items:center; }
     .title-input {
       background:rgba(0,220,255,0.06); border:1px solid rgba(0,220,255,0.25);
       border-radius:10px; padding:9px 14px;
@@ -258,7 +253,6 @@
     .bottom-center {
       display:flex; flex-direction:column; align-items:center; gap:4px;
     }
-    .action-ia-label { font-size:8px; color:rgba(0,220,255,0.5); text-transform:uppercase; letter-spacing:1.5px; font-family:'Audiowide',sans-serif; }
     .bubbles-slots { display:flex; gap:4px; }
     .bubble-slot {
       width:9px; height:9px; border-radius:50%;
@@ -271,19 +265,20 @@
       border-color:#00dcff;
       box-shadow:0 0 10px rgba(0,220,255,1), 0 0 20px rgba(0,220,255,0.5);
     }
-    .action-bubbles-wrap { display:flex; gap:6px; }
     .action-bubble {
       width:38px; height:38px; border-radius:50%;
       background:rgba(0,10,40,0.8); border:1.5px solid rgba(0,220,255,0.5);
       display:flex; align-items:center; justify-content:center;
-      cursor:pointer;
+      cursor:pointer; overflow:hidden;
       box-shadow:0 0 12px rgba(0,220,255,0.3), inset 0 1px 0 rgba(0,220,255,0.1);
       animation:bubbleIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
       transition:transform 0.1s, box-shadow 0.2s;
+      flex-shrink:0;
     }
-    .action-bubble svg { width:16px; height:16px; }
+    .action-bubble svg { width:18px; height:18px; flex-shrink:0; }
     .action-bubble:active { transform:scale(0.9); }
     .action-bubble:hover { box-shadow:0 0 20px rgba(0,220,255,0.5); }
+    .action-bubbles-wrap { display:flex; gap:6px; align-items:center; }
     @keyframes bubbleIn { from{opacity:0;transform:scale(0)} to{opacity:1;transform:scale(1)} }
 
     .bottom-right { display:flex; align-items:center; }
@@ -679,15 +674,12 @@
     <div style="flex:1"></div>
     <div class="bottom-ia">
       <div class="action-bubbles-wrap" id="actionBubblesWrap"></div>
-      <div class="bubbles-slots-wrap">
-        <div class="bubbles-slots" id="bubblesSlots">
-          <div class="bubble-slot" id="slot_0"></div>
-          <div class="bubble-slot" id="slot_1"></div>
-          <div class="bubble-slot" id="slot_2"></div>
-          <div class="bubble-slot" id="slot_3"></div>
-          <div class="bubble-slot" id="slot_4"></div>
-        </div>
-        <span class="action-ia-label">Action IA</span>
+      <div class="bubbles-slots" id="bubblesSlots">
+        <div class="bubble-slot" id="slot_0"></div>
+        <div class="bubble-slot" id="slot_1"></div>
+        <div class="bubble-slot" id="slot_2"></div>
+        <div class="bubble-slot" id="slot_3"></div>
+        <div class="bubble-slot" id="slot_4"></div>
       </div>
     </div>
     <button class="btn-analyze" id="btnAnalyze" onclick="analyze()">Analyser</button>
@@ -1417,7 +1409,7 @@
       if (config.words.some(w => lower.includes(w))) {
         const recent = actionBubbles.find(b => b.type === type && b.confirmed === null && Date.now() - b.time < 30000);
         if (!recent) {
-          addActionBubble(type, config.icon, config.label, cleanTranscript(text));
+          addActionBubble(type, ACTION_SVG[type] || '', config.label, cleanTranscript(text));
           return; // ← return uniquement si on a bien créé une bulle
         }
         // Si recent existe (doublon récent), on continue la boucle
