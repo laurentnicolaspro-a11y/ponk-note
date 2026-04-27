@@ -2862,7 +2862,7 @@
 
     // Charger l'image de la silhouette
     const img = new Image();
-    img.src = '/Image%201.png';
+    img.src = '/silhouette.png';
 
     // Particules voyageuses
     const particles = [];
@@ -2986,7 +2986,10 @@
     }
 
     img.onload = () => { console.log('[neuro] image chargée'); animate(); };
-    img.onerror = (e) => { console.error('[neuro] image non trouvée:', img.src, e); animate(); };
+    img.onerror = () => {
+      console.warn('[neuro] silhouette.png non trouvée, animations sans image');
+      animate();
+    };
     if (img.complete && img.naturalWidth > 0) animate();
   }
   // Lancer neuroCanvas quand showApp est appelé
