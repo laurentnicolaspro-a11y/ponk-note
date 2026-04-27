@@ -2911,14 +2911,19 @@
       frame++;
 
       // Image de la silhouette — couvre toute la zone gauche
+      // Fond dark pour supprimer le damier du PNG transparent
+      ctx.fillStyle = 'rgba(5,4,18,1)';
+      ctx.fillRect(0, 0, w, h);
+
       if (img.complete && img.naturalWidth > 0) {
-        // Couvrir toute la hauteur du canvas, centrée horizontalement
+        // Image : hauteur = canvas, recadrée à gauche
         const imgRatio = img.naturalWidth / img.naturalHeight;
-        const dh = h * 1.0;
+        const dh = h;
         const dw = dh * imgRatio;
-        const dx = (w - dw) * 0.1; // légèrement à gauche
+        // Centrer sur la zone gauche (la silhouette est dans le tiers gauche de l'image)
+        const dx = -dw * 0.05;
         const dy = 0;
-        ctx.globalAlpha = 0.95;
+        ctx.globalAlpha = 0.97;
         ctx.drawImage(img, dx, dy, dw, dh);
         ctx.globalAlpha = 1;
       }
