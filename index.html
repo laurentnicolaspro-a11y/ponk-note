@@ -436,6 +436,48 @@
     .profile-submit:active { transform:scale(0.98); }
 
 
+    /* Menu action manuelle */
+    .manual-action-menu {
+      position:fixed; inset:0; z-index:400;
+      display:flex; align-items:flex-end; justify-content:center;
+      padding:0 20px 20px;
+      background:rgba(0,0,5,0.6); backdrop-filter:blur(10px);
+      animation:fadeIn 0.2s ease;
+    }
+    .manual-action-menu.hidden { display:none; }
+    .manual-action-grid {
+      background:linear-gradient(145deg, rgba(5,4,25,0.98), rgba(3,2,18,0.98));
+      border:1px solid rgba(0,220,255,0.2); border-radius:20px;
+      padding:20px; width:100%; max-width:560px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.7), 0 0 30px rgba(0,220,255,0.08);
+      animation:slideUp 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes slideUp { from{transform:translateY(40px);opacity:0} to{transform:translateY(0);opacity:1} }
+    .manual-action-title {
+      font-family:'Audiowide',sans-serif; font-size:11px; font-weight:400;
+      text-transform:uppercase; letter-spacing:1.5px;
+      color:rgba(0,220,255,0.6); margin-bottom:16px; text-align:center;
+    }
+    .manual-action-items {
+      display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px;
+    }
+    .manual-action-item {
+      display:flex; flex-direction:column; align-items:center; gap:8px;
+      padding:14px 8px; border-radius:14px;
+      background:rgba(0,220,255,0.04); border:1px solid rgba(0,220,255,0.12);
+      cursor:pointer; transition:background 0.15s, border-color 0.15s;
+    }
+    .manual-action-item:active { background:rgba(0,220,255,0.1); border-color:rgba(0,220,255,0.3); }
+    .manual-action-item:hover { background:rgba(0,220,255,0.07); border-color:rgba(0,220,255,0.2); }
+    .manual-action-item span:first-child {
+      display:flex; align-items:center; justify-content:center;
+      filter:drop-shadow(0 0 5px rgba(0,220,255,0.5));
+    }
+    .manual-action-item span:last-child {
+      font-size:10px; font-weight:500; color:rgba(0,220,255,0.6);
+      text-align:center; letter-spacing:0.3px;
+    }
+
     /* ══════════════════════════════════════
        MODALS — THÈME DARK CYAN UNIFIÉ
     ══════════════════════════════════════ */
