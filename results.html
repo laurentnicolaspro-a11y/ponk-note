@@ -1289,6 +1289,16 @@ async function exportPDF() {
     if (pdfBtn) { pdfBtn.textContent = '↓ Exporter en PDF'; pdfBtn.disabled = false; }
   }
 
+  // Reconstruire checked après relecture pour avoir les valeurs corrigées
+  document.querySelectorAll('.export-cb:checked').forEach(cb => {
+    checked[cb.dataset.exportLabel] = decodeURIComponent(cb.dataset.exportContent || '');
+  });
+  // Lire le mémo directement depuis le textarea
+  const memoAreaFinal = document.getElementById('memoNotesArea');
+  if (memoAreaFinal && memoAreaFinal.value) {
+    checked['memo_notes'] = memoAreaFinal.value;
+  }
+
   data = JSON.parse(localStorage.getItem('ponk_result')||'{}');
   s = (typeof data.summary === 'object') ? data.summary : null;
 
