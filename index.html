@@ -73,15 +73,34 @@
       color:#fff; text-shadow:0 0 16px rgba(0,220,255,0.5), 0 0 30px rgba(0,220,255,0.2);
     }
     .main-header-right { display:flex; align-items:center; gap:10px; }
-    .main-add-btn {
-      width:32px; height:32px; border-radius:50%;
-      background:rgba(0,220,255,0.08); border:1px solid rgba(0,220,255,0.3);
-      color:#00dcff; font-size:18px; font-weight:300;
+    .header-avatar {
+      width:36px; height:36px; border-radius:50%;
       display:flex; align-items:center; justify-content:center;
-      cursor:pointer; transition:all 0.2s; opacity:0.4; pointer-events:none;
+      font-family:'Audiowide',sans-serif;
+      font-size:13px; font-weight:400; color:#fff;
+      cursor:pointer; flex-shrink:0;
+      border:1.5px solid rgba(0,220,255,0.4);
+      box-shadow:0 0 14px rgba(0,220,255,0.25);
+      transition:transform 0.1s, box-shadow 0.2s;
     }
-    .main-add-btn.active { opacity:1; pointer-events:auto; box-shadow:0 0 12px rgba(0,220,255,0.3); }
+    .header-avatar:active { transform:scale(0.93); }
+    .header-avatar:hover { box-shadow:0 0 20px rgba(0,220,255,0.5); }
+    .main-add-btn {
+      width:36px; height:36px; border-radius:50%;
+      background:rgba(0,220,255,0.08); border:1.5px solid rgba(0,220,255,0.4);
+      color:#00dcff; font-size:20px; font-weight:300;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; transition:all 0.2s;
+      box-shadow:0 0 10px rgba(0,220,255,0.15);
+      opacity:0.4; pointer-events:none;
+    }
+    .main-add-btn.active {
+      opacity:1; pointer-events:auto;
+      box-shadow:0 0 16px rgba(0,220,255,0.4);
+      border-color:rgba(0,220,255,0.7);
+    }
     .main-add-btn:active { transform:scale(0.92); }
+    .bottom-center-row { display:flex; align-items:center; gap:8px; }
 
     /* Stage principal */
     .main-stage {
@@ -464,7 +483,6 @@
       <span class="logo-ponk">Ponk</span><span class="logo-note"> Note</span>
     </div>
     <div class="main-header-right">
-      <div class="main-add-btn" id="manualMenuBtn" onclick="openManualMenu()">+</div>
       <div class="header-avatar" id="headerAvatar" onclick="goToLibrary()"></div>
     </div>
   </div>
@@ -527,15 +545,17 @@
     </div>
 
     <div class="bottom-center">
-      <!-- Actions IA bubbles -->
-      <div class="bubbles-slots" id="bubblesSlots">
-        <div class="bubble-slot" id="slot_0"></div>
-        <div class="bubble-slot" id="slot_1"></div>
-        <div class="bubble-slot" id="slot_2"></div>
-        <div class="bubble-slot" id="slot_3"></div>
-        <div class="bubble-slot" id="slot_4"></div>
+      <div class="bottom-center-row">
+        <div class="main-add-btn" id="manualMenuBtn" onclick="openManualMenu()">+</div>
+        <div class="action-bubbles-wrap" id="actionBubblesWrap"></div>
+        <div class="bubbles-slots" id="bubblesSlots">
+          <div class="bubble-slot" id="slot_0"></div>
+          <div class="bubble-slot" id="slot_1"></div>
+          <div class="bubble-slot" id="slot_2"></div>
+          <div class="bubble-slot" id="slot_3"></div>
+          <div class="bubble-slot" id="slot_4"></div>
+        </div>
       </div>
-      <div class="action-bubbles-wrap" id="actionBubblesWrap"></div>
       <span class="action-ia-label">Action IA</span>
     </div>
 
@@ -917,7 +937,7 @@
       if (assistantActive) startSpeechRecognition();
       document.getElementById('recordBtn').classList.add('is-recording');
       document.getElementById('powerWrap').classList.add('is-recording');
-      document.getElementById('manualMenuBtn').classList.add('active');
+      document.getElementById('manualMenuBtn').classList.add('active'); // active pendant rec
       document.getElementById('btnLabel').textContent = 'Appuyer pour arrêter';
       document.getElementById('timer').classList.add('recording');
       document.getElementById('spikyPath').setAttribute('stroke', 'rgba(224,85,85,0.45)');
@@ -2362,6 +2382,7 @@
   document.getElementById('profileVille').addEventListener('keydown', e => { if(e.key==='Enter') submitProfile(); });
 
   function showApp(name) {
+    document.getElementById('manualMenuBtn').classList.add('active');
     // Délai pour laisser le portal finir
     setTimeout(() => {
       document.getElementById('profileScreen').classList.remove('visible');
