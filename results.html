@@ -590,12 +590,15 @@ function updateProchaineEtape(textarea) {
       // Créer une nouvelle carte CALENDRIER
       const wrap = document.getElementById('actionsIAWrap');
       if (wrap) {
-        const action = { type:'CALENDRIER', icone:'📅', titre:'Prochaine étape', description: val, _prochaineEtape: true };
+        const action = { type:'CALENDRIER', icone:'📅', titre:'Prochaine étape', description: val, evenement: val, _prochaineEtape: true };
         const html = buildActionCard(action);
         const div = document.createElement('div');
         div.innerHTML = html;
         if (div.firstChild) {
           div.firstChild.dataset.prochaineEtape = val;
+          // Enregistrer dans ACTION_META pour que markActionDone fonctionne
+          const cardEl = div.firstChild.querySelector('.action-ia-card[id]') || div.firstChild.querySelector('[id^="action_"]');
+          if (cardEl) ACTION_META[cardEl.id] = action;
           wrap.insertBefore(div.firstChild, wrap.firstChild);
         }
       }
