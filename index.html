@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Ponk Note</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Audiowide&display=swap" rel="stylesheet">
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
 
@@ -92,9 +92,17 @@
     }
     .profile-icon svg { width:28px; height:28px; fill:#00dcff; }
     .profile-app-name {
-      font-family:'Rajdhani', sans-serif;
-      font-size:28px; font-weight:700; letter-spacing:2px; color:#fff;
-      text-shadow: 0 0 20px rgba(0,200,255,0.5);
+      font-family:'Audiowide', sans-serif;
+      font-size:28px; font-weight:400; letter-spacing:0.5px;
+      display:flex; gap:10px; justify-content:center;
+    }
+    .profile-app-name .ponk {
+      color:#00dcff;
+      text-shadow:0 0 20px rgba(0,220,255,0.8), 0 0 50px rgba(0,220,255,0.3);
+    }
+    .profile-app-name .note {
+      color:#fff;
+      text-shadow:0 0 20px rgba(0,220,255,0.6), 0 0 40px rgba(0,220,255,0.2);
     }
     .profile-welcome { text-align:center; }
     .profile-welcome p:first-child { font-size:18px; font-weight:600; margin-bottom:4px; color:#fff; }
@@ -102,24 +110,34 @@
     .profile-input-wrap { width:100%; display:flex; flex-direction:column; gap:10px; }
     .profile-input {
       width:100%; padding:13px 16px; border-radius:10px;
-      border:1px solid rgba(0,220,255,0.35);
-      background: rgba(255,255,255,0.08);
+      border:1.5px solid rgba(0,200,255,0.55);
+      background: rgba(0,180,255,0.12);
       font-family:'Inter', sans-serif; font-size:15px; color:#fff;
       outline:none; text-align:center;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 0 12px rgba(0,180,255,0.08);
       transition:border-color 0.2s, box-shadow 0.2s, background 0.2s;
     }
     .profile-input:focus {
-      border-color:rgba(0,220,255,0.8);
-      background: rgba(0,220,255,0.1);
-      box-shadow: 0 0 0 2px rgba(0,220,255,0.15), 0 0 20px rgba(0,220,255,0.12);
+      border-color:rgba(0,220,255,1);
+      background: rgba(0,180,255,0.18);
+      box-shadow: 0 0 0 2px rgba(0,220,255,0.2), 0 0 24px rgba(0,200,255,0.18);
     }
-    .profile-input::placeholder { color:rgba(180,160,255,0.5); }
+    .profile-input::placeholder { color:rgba(160,220,255,0.55); }
+    /* Forcer le style sur autofill navigateur */
+    .profile-input:-webkit-autofill,
+    .profile-input:-webkit-autofill:hover,
+    .profile-input:-webkit-autofill:focus {
+      -webkit-text-fill-color: #fff;
+      -webkit-box-shadow: 0 0 0 1000px rgba(0,140,200,0.25) inset;
+      transition: background-color 5000s ease-in-out 0s;
+      caret-color: #fff;
+    }
     .profile-prefs {
       width:100%; display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;
     }
     .pref-col { display:flex; flex-direction:column; align-items:center; gap:8px; }
     .pref-col-label {
-      font-family:'Rajdhani', sans-serif;
+      font-family:'Audiowide', sans-serif;
       font-size:10px; font-weight:600; letter-spacing:1.5px;
       text-transform:uppercase; color:rgba(180,160,255,0.7);
     }
@@ -141,7 +159,7 @@
     .profile-submit {
       width:100%; padding:14px; border-radius:10px; border:none;
       background: linear-gradient(90deg, rgba(100,40,220,0.9), rgba(0,160,255,0.9));
-      color:#fff; font-family:'Rajdhani', sans-serif;
+      color:#fff; font-family:'Audiowide', sans-serif;
       font-size:17px; font-weight:700; letter-spacing:2px;
       cursor:pointer; text-transform:uppercase; position:relative; overflow:hidden;
       box-shadow: 0 0 24px rgba(0,180,255,0.3), 0 0 0 1px rgba(0,220,255,0.3);
@@ -582,7 +600,7 @@
   <canvas id="geoCanvas"></canvas>
   <div class="profile-content">
     <div class="profile-logo">
-      <div class="profile-app-name">Ponk Note</div>
+      <div class="profile-app-name"><span class="ponk">Ponk</span><span class="note">Note</span></div>
     </div>
     <div class="profile-welcome">
       <p>Bienvenue !</p>
@@ -590,12 +608,12 @@
     </div>
     <div class="profile-input-wrap">
       <input type="text" id="profileName" class="profile-input" placeholder="Ton prénom" maxlength="20" autocomplete="off" autocapitalize="words" />
-      <input type="email" id="profileEmail" class="profile-input" placeholder="Ton adresse email" autocomplete="email" />
+      <input type="text" id="profileEmail" class="profile-input" placeholder="Ton adresse email" autocomplete="email" inputmode="email" />
       <input type="text" id="profileVille" class="profile-input" placeholder="Ta ville (ex: Cambrai)" autocomplete="address-level2" />
 
       <div class="profile-prefs">
         <div class="pref-col">
-          <div class="pref-col-label">📬 Mail</div>
+          <div class="pref-col-label">Mail</div>
           <div class="pref-options" id="prefMail">
             <div class="pref-btn active" data-value="gmail">Gmail</div>
             <div class="pref-btn" data-value="outlook">Outlook</div>
@@ -603,7 +621,7 @@
           </div>
         </div>
         <div class="pref-col">
-          <div class="pref-col-label">📅 Agenda</div>
+          <div class="pref-col-label">Agenda</div>
           <div class="pref-options" id="prefCal">
             <div class="pref-btn active" data-value="google">Google</div>
             <div class="pref-btn" data-value="outlook">Outlook</div>
@@ -611,7 +629,7 @@
           </div>
         </div>
         <div class="pref-col">
-          <div class="pref-col-label">🗺️ Maps</div>
+          <div class="pref-col-label">Maps</div>
           <div class="pref-options" id="prefMaps">
             <div class="pref-btn active" data-value="google">Google Maps</div>
             <div class="pref-btn" data-value="waze">Waze</div>
@@ -2551,18 +2569,18 @@
     window.addEventListener('resize', resize);
 
     const shapes = [
-      { type:'hex',    x:0.10, y:0.13, size:38, rot:0,   speed:0.003,  color:'rgba(0,200,255,0.55)',   fill:'rgba(0,200,255,0.03)' },
-      { type:'hex',    x:0.82, y:0.09, size:24, rot:1.2,  speed:-0.004, color:'rgba(160,80,255,0.55)',  fill:'rgba(160,80,255,0.03)' },
-      { type:'hex',    x:0.88, y:0.72, size:32, rot:0.5,  speed:0.002,  color:'rgba(0,200,255,0.4)',    fill:'rgba(0,200,255,0.02)' },
-      { type:'hex',    x:0.08, y:0.74, size:20, rot:0.8,  speed:-0.005, color:'rgba(200,100,255,0.45)', fill:'rgba(200,100,255,0.02)' },
-      { type:'cube',   x:0.74, y:0.07, size:28, rot:0.3,  speed:0.004,  color:'rgba(0,220,255,0.55)' },
-      { type:'cube',   x:0.18, y:0.90, size:22, rot:1.0,  speed:-0.003, color:'rgba(140,60,255,0.55)' },
-      { type:'cube',   x:0.95, y:0.38, size:18, rot:0.6,  speed:0.006,  color:'rgba(0,180,255,0.45)' },
-      { type:'cube',   x:0.82, y:0.83, size:20, rot:0.9,  speed:-0.004, color:'rgba(100,60,220,0.45)' },
-      { type:'tri',    x:0.50, y:0.04, size:18, rot:0,    speed:0.005,  color:'rgba(180,100,255,0.55)', fill:'rgba(180,100,255,0.03)' },
-      { type:'tri',    x:0.04, y:0.40, size:16, rot:2.0,  speed:-0.004, color:'rgba(0,220,255,0.45)',   fill:'rgba(0,220,255,0.02)' },
-      { type:'circle', x:0.20, y:0.14, size:10, rot:0,    speed:0.002,  color:'rgba(0,220,255,0.65)' },
-      { type:'circle', x:0.86, y:0.26, size:8,  rot:0,    speed:0.004,  color:'rgba(160,80,255,0.65)' },
+      { type:'hex',    x:0.10, y:0.13, size:38, rot:0,   speed:0.003,  color:'rgba(0,220,255,0.6)',   fill:'rgba(0,220,255,0.03)' },
+      { type:'hex',    x:0.82, y:0.09, size:24, rot:1.2,  speed:-0.004, color:'rgba(0,200,255,0.45)',  fill:'rgba(0,200,255,0.02)' },
+      { type:'hex',    x:0.88, y:0.72, size:32, rot:0.5,  speed:0.002,  color:'rgba(0,180,255,0.4)',    fill:'rgba(0,180,255,0.02)' },
+      { type:'hex',    x:0.08, y:0.74, size:20, rot:0.8,  speed:-0.005, color:'rgba(0,210,255,0.4)', fill:'rgba(0,210,255,0.02)' },
+      { type:'cube',   x:0.74, y:0.07, size:28, rot:0.3,  speed:0.004,  color:'rgba(0,220,255,0.6)' },
+      { type:'cube',   x:0.18, y:0.90, size:22, rot:1.0,  speed:-0.003, color:'rgba(0,200,255,0.5)' },
+      { type:'cube',   x:0.95, y:0.38, size:18, rot:0.6,  speed:0.006,  color:'rgba(0,215,255,0.45)' },
+      { type:'cube',   x:0.82, y:0.83, size:20, rot:0.9,  speed:-0.004, color:'rgba(0,190,255,0.4)' },
+      { type:'tri',    x:0.50, y:0.04, size:18, rot:0,    speed:0.005,  color:'rgba(0,220,255,0.5)', fill:'rgba(0,220,255,0.03)' },
+      { type:'tri',    x:0.04, y:0.40, size:16, rot:2.0,  speed:-0.004, color:'rgba(0,200,255,0.45)',   fill:'rgba(0,200,255,0.02)' },
+      { type:'circle', x:0.20, y:0.14, size:10, rot:0,    speed:0.002,  color:'rgba(0,230,255,0.7)' },
+      { type:'circle', x:0.86, y:0.26, size:8,  rot:0,    speed:0.004,  color:'rgba(0,210,255,0.55)' },
     ];
     const connections = [[0,4],[1,4],[1,10],[2,6],[3,5],[0,9],[8,1],[10,0],[11,1],[2,11],[5,3],[7,2]];
 
