@@ -1031,12 +1031,12 @@
       chunks = [];
       recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 16000 });
       recorder.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
+      // ── CORRECTION : l'upload se fait uniquement dans analyze() ──
       recorder.onstop = () => {
         blob = new Blob(chunks, {type:'audio/webm'});
         stream.getTracks().forEach(t=>t.stop());
-        setStatus('loading', 'Sauvegarde en cours…');
+        setStatus('active', 'Enregistrement terminé ✓');
         document.getElementById('btnAnalyze').classList.add('visible');
-        uploadAudio();
       };
       recorder.start(500);
       recording = true;
@@ -1072,34 +1072,7 @@
       : 'linear-gradient(145deg, #dce8f8 0%, #e8d8f0 40%, #f5e6d8 100%)';
   }
 
-  async function uploadAudio() {
-    if (!blob) return;
-    const profile = localStorage.getItem('ponk_profile') || 'user';
-    try {
-      const checkRes = await fetch('/api/list?uid=' + encodeURIComponent(profile));
-      const checkData = await checkRes.json();
-      const count = (checkData.files || []).filter(f => f.name && f.name !== '.emptyFolderPlaceholder').length;
-      if (count >= 5) {
-        setStatus('error', 'Bibliothèque pleine (5/5) — supprime un enregistrement');
-        return;
-      }
-    } catch(e) { console.warn('Quota check failed:', e.message); }
 
-    const title = document.getElementById('title').value || 'enregistrement';
-    const fd = new FormData();
-    fd.append('audio', blob, 'rec.webm');
-    fd.append('title', title);
-    fd.append('email', localStorage.getItem('ponk_email') || profile);
-    fd.append('profile', profile);
-    try {
-      const res = await fetch('/api/upload', {method:'POST', body:fd});
-      if (res.ok) {
-        const r = await res.json();
-        localStorage.setItem('ponk_drive_file', JSON.stringify(r));
-        setStatus('active', 'Audio sauvegardé ☁️ — ' + fmt(seconds));
-      }
-    } catch(e) { console.warn('Upload:', e.message); }
-  }
 
   function tick() {
     const m = String(Math.floor(seconds/60)).padStart(2,'0');
