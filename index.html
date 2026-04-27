@@ -2692,7 +2692,10 @@
     const ctx = canvas.getContext('2d');
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     resize();
-    window.addEventListener('resize', resize);
+    window.addEventListener('resize', () => {
+      resize();
+      if (img.complete) drawBackground();
+    });
 
     const shapes = [
       { type:'hex',    x:0.10, y:0.13, size:38, rot:0,   speed:0.003,  color:'rgba(0,220,255,0.6)',   fill:'rgba(0,220,255,0.03)' },
@@ -2852,11 +2855,12 @@
     }, 150);
   });
 
-  // ── Silhouette neurale animée ──
+  // ── Animations néon (particules + lignes) ──
   function initNeuroCanvas() {
     const canvas = document.getElementById('neuroCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
+
     function resize() {
       const rect = canvas.parentElement.getBoundingClientRect();
       canvas.width = rect.width;
@@ -2865,19 +2869,14 @@
     resize();
     window.addEventListener('resize', resize);
 
-    // Charger l'image de la silhouette
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = '/public/silhouette.png?' + Date.now(); // cache-bust
-
     // Particules voyageuses
     const particles = [];
-    for (let i = 0; i < 28; i++) {
+    for (let i = 0; i < 35; i++) {
       particles.push({
         x: Math.random(),
         y: Math.random(),
-        vx: (Math.random() - 0.5) * 0.0008,
-        vy: (Math.random() - 0.5) * 0.0008,
+        vx: (Math.random() - 0.5) * 0.0006,
+        vy: (Math.random() - 0.5) * 0.0006,
         size: 1 + Math.random() * 2.5,
         opacity: 0.4 + Math.random() * 0.6,
         pulse: Math.random() * Math.PI * 2,
@@ -2885,64 +2884,55 @@
       });
     }
 
-    // Cercles d'aura concentriques
-    const auras = [
-      { r: 0.22, speed: 0.006, phase: 0 },
-      { r: 0.30, speed: 0.004, phase: 1.5 },
-      { r: 0.38, speed: 0.003, phase: 3 },
-    ];
-
     // Lignes neurales flottantes
     const lines = [];
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 12; i++) {
       lines.push({
-        x1: Math.random() * 0.6, y1: Math.random(),
-        x2: Math.random() * 0.6, y2: Math.random(),
-        speed: 0.0003 + Math.random() * 0.0004,
+        x1: Math.random(), y1: Math.random(),
+        x2: Math.random(), y2: Math.random(),
+        vx: (Math.random() - 0.5) * 0.0002,
+        vy: (Math.random() - 0.5) * 0.0002,
         phase: Math.random() * Math.PI * 2,
-        opacity: 0.08 + Math.random() * 0.12
+        speed: 0.003 + Math.random() * 0.004,
+        opacity: 0.06 + Math.random() * 0.10
       });
     }
 
-    let frame = 0;
+    // Cercles d'aura
+    const auras = [
+      { x:0.30, y:0.40, r:0.18, speed:0.005, phase:0 },
+      { x:0.30, y:0.40, r:0.26, speed:0.003, phase:1.5 },
+      { x:0.30, y:0.40, r:0.34, speed:0.002, phase:3 },
+    ];
+
     function animate() {
       const w = canvas.width, h = canvas.height;
       ctx.clearRect(0, 0, w, h);
-      frame++;
 
-      // Image de la silhouette — couvre toute la zone gauche
-      if (img.complete && img.naturalWidth > 0) {
-        const imgRatio = img.naturalWidth / img.naturalHeight;
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        // Hauteur = 130%, silhouette bien cadrée
-        const dh = h * 1.30;
-        const dw = dh * imgRatio;
-        const dx = -w * 0.02;
-        const dy = h - dh * 0.88;
-        ctx.drawImage(img, dx, dy, dw, dh);
-      }
-
-      // Cercles d'aura pulsants centrés sur la tête (~40% gauche, 35% haut)
-      const cx = w * 0.38, cy = h * 0.35;
+      // Auras
       auras.forEach(a => {
         a.phase += a.speed;
-        const pulse = 1 + Math.sin(a.phase) * 0.025;
-        const r = a.r * Math.min(w, h) * pulse;
-        const alpha = 0.03 + Math.sin(a.phase) * 0.015;
+        const r = a.r * Math.min(w, h) * (1 + Math.sin(a.phase) * 0.02);
+        const alpha = 0.04 + Math.sin(a.phase) * 0.015;
         ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.arc(a.x * w, a.y * h, r, 0, Math.PI * 2);
         ctx.strokeStyle = `rgba(0,220,255,${alpha})`;
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 1;
         ctx.shadowColor = '#00dcff';
-        ctx.shadowBlur = 6;
+        ctx.shadowBlur = 4;
         ctx.stroke();
         ctx.shadowBlur = 0;
       });
 
-      // Lignes neurales flottantes
+      // Lignes
       lines.forEach(l => {
-        l.phase += l.speed * Math.PI * 2;
+        l.phase += l.speed;
+        l.x1 += l.vx; l.y1 += l.vy;
+        l.x2 -= l.vx; l.y2 -= l.vy;
+        if (l.x1 < 0 || l.x1 > 1) l.vx *= -1;
+        if (l.y1 < 0 || l.y1 > 1) l.vy *= -1;
+        if (l.x2 < 0 || l.x2 > 1) l.vx *= -1;
+        if (l.y2 < 0 || l.y2 > 1) l.vy *= -1;
         const alpha = l.opacity * (0.5 + 0.5 * Math.sin(l.phase));
         ctx.beginPath();
         ctx.moveTo(l.x1 * w, l.y1 * h);
@@ -2950,19 +2940,14 @@
         ctx.strokeStyle = `rgba(0,180,255,${alpha})`;
         ctx.lineWidth = 0.5;
         ctx.stroke();
-        // Dérive lente
-        l.x1 += l.vx || 0.0001; l.y1 += l.vy || 0.0001;
-        l.x2 -= l.vx || 0.0001; l.y2 -= l.vy || 0.0001;
-        if (l.x1 < 0 || l.x1 > 0.7) l.vx = -(l.vx || 0.0001);
-        if (l.y1 < 0 || l.y1 > 1)   l.vy = -(l.vy || 0.0001);
       });
 
-      // Particules lumineuses
+      // Particules
       particles.forEach(p => {
         p.x += p.vx; p.y += p.vy;
         p.pulse += p.pulseSpeed;
-        if (p.x < 0 || p.x > 0.65) p.vx = -p.vx;
-        if (p.y < 0 || p.y > 1)    p.vy = -p.vy;
+        if (p.x < 0 || p.x > 1) p.vx *= -1;
+        if (p.y < 0 || p.y > 1) p.vy *= -1;
         const alpha = p.opacity * (0.5 + 0.5 * Math.sin(p.pulse));
         const size = p.size * (0.8 + 0.2 * Math.sin(p.pulse));
         // Halo
@@ -2982,17 +2967,7 @@
 
       requestAnimationFrame(animate);
     }
-
-    img.onload = () => { 
-      console.log('[neuro] image chargée', img.naturalWidth, 'x', img.naturalHeight);
-      resize(); // forcer resize après chargement
-      animate(); 
-    };
-    img.onerror = () => {
-      console.warn('[neuro] silhouette.png non trouvée, animations sans image');
-      animate();
-    };
-    if (img.complete && img.naturalWidth > 0) animate();
+    animate();
   }
   // Lancer neuroCanvas quand showApp est appelé
   const _origShowApp = showApp;
