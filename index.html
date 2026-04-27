@@ -2859,12 +2859,8 @@
     const ctx = canvas.getContext('2d');
     function resize() {
       const rect = canvas.parentElement.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      canvas.style.width = rect.width + 'px';
-      canvas.style.height = rect.height + 'px';
-      ctx.scale(dpr, dpr);
+      canvas.width = rect.width;
+      canvas.height = rect.height;
     }
     resize();
     window.addEventListener('resize', resize);
@@ -2917,14 +2913,13 @@
       // Image de la silhouette — couvre toute la zone gauche
       if (img.complete && img.naturalWidth > 0) {
         const imgRatio = img.naturalWidth / img.naturalHeight;
-        // Qualité maximale
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        // Hauteur = 145%, descendu
-        const dh = h * 1.45;
+        // Hauteur = 130%, silhouette bien cadrée
+        const dh = h * 1.30;
         const dw = dh * imgRatio;
         const dx = -w * 0.02;
-        const dy = h - dh * 0.86;
+        const dy = h - dh * 0.88;
         ctx.drawImage(img, dx, dy, dw, dh);
       }
 
