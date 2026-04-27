@@ -568,6 +568,43 @@ function addMemoRappel(btn) {
   btn.before(input); input.focus();
 }
 
+function updateProchaineEtape(textarea) {
+  const val = textarea.value;
+  // Sauvegarder dans localStorage
+  const data = JSON.parse(localStorage.getItem('ponk_result') || '{}');
+  if (!data.summary) data.summary = {};
+  data.summary.prochaine_etape = val;
+  localStorage.setItem('ponk_result', JSON.stringify(data));
+  // Mettre à jour la case à cocher
+  const cb = document.getElementById('ecb_prochaine');
+  if (cb) { cb.checked = !!val; cb.dataset.exportContent = encodeURIComponent(val); }
+  // Mettre à jour la carte CALENDRIER dans Actions IA
+  const existing = document.querySelector('[data-prochaine-etape]');
+  if (val) {
+    if (existing) {
+      // Mettre à jour la description
+      const desc = existing.querySelector('.action-ia-desc');
+      if (desc) desc.textContent = val;
+      existing.dataset.prochaineEtape = val;
+    } else {
+      // Créer une nouvelle carte CALENDRIER
+      const wrap = document.getElementById('actionsIAWrap');
+      if (wrap) {
+        const action = { type:'CALENDRIER', icone:'📅', titre:'Prochaine étape', description: val, _prochaineEtape: true };
+        const html = buildActionCard(action);
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        if (div.firstChild) {
+          div.firstChild.dataset.prochaineEtape = val;
+          wrap.insertBefore(div.firstChild, wrap.firstChild);
+        }
+      }
+    }
+  } else if (existing) {
+    existing.remove();
+  }
+}
+
 function saveSummary(s) {
   const data = JSON.parse(localStorage.getItem('ponk_result') || '{}');
   data.summary = s;
@@ -705,21 +742,17 @@ function buildSummaryHTML(s) {
 
 
 
-  // Prochaine étape — toujours visible, modifiable, vide si non détecté
+  // Prochaine étape — toujours visible, textarea modifiable
   {
     const pe = s.prochaine_etape || '';
-    const sJson = JSON.stringify(s).replace(/"/g,'&quot;');
     html += `<div class="summary-section">
       <div class="summary-section-title">📅 Prochaine étape</div>
-      <div class="export-row" style="align-items:center;">
-        <input type="checkbox" class="export-cb" id="ecb_prochaine" ${pe ? 'checked' : ''} data-export-label="prochaine" data-export-content="${encodeURIComponent(pe)}">
-        <div style="flex:1">
-          <div class="prochaine-wrap" style="cursor:pointer;min-height:36px;" onclick="editItem(this,'prochaine_etape',${sJson},null,null)">
-            <span class="prochaine-icon">📅</span>
-            <span class="prochaine-text">${pe || '<span style="color:var(--muted);font-style:italic;font-size:13px;">Cliquer pour ajouter…</span>'}</span>
-          </div>
+      <div class="export-row" style="align-items:flex-start;">
+        <input type="checkbox" class="export-cb" id="ecb_prochaine" ${pe ? 'checked' : ''} data-export-label="prochaine" data-export-content="${encodeURIComponent(pe)}" style="margin-top:10px;">
+        <div class="prochaine-wrap" style="flex:1;cursor:default;">
+          <span class="prochaine-icon">📅</span>
+          <textarea id="prochaineTextarea" placeholder="Cliquer pour ajouter…" style="flex:1;background:none;border:none;outline:none;font-family:inherit;font-size:14px;color:var(--text);resize:none;width:100%;min-height:24px;" oninput="updateProchaineEtape(this)">${pe}</textarea>
         </div>
-        ${pe ? `<button class="edit-btn" style="color:var(--danger)" onclick="deleteItem('prochaine_etape',${sJson},null)" title="Supprimer">🗑</button>` : ''}
       </div>
     </div>`;
   }
