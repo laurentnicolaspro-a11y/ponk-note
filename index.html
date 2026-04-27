@@ -2913,23 +2913,14 @@
 
       // Image de la silhouette — couvre toute la zone gauche
       if (img.complete && img.naturalWidth > 0) {
+        // Image 16:9 — on la fait couvrir toute la hauteur, cadrée à gauche
         const imgRatio = img.naturalWidth / img.naturalHeight;
         const dh = h;
         const dw = dh * imgRatio;
-        const dx = -dw * 0.05;
+        // Décaler légèrement à gauche pour centrer la silhouette
+        const dx = -dw * 0.08;
         const dy = 0;
-
-        // Créer un canvas offscreen pour aplatir l'image sur fond dark
-        const offscreen = document.createElement('canvas');
-        offscreen.width = w; offscreen.height = h;
-        const octx = offscreen.getContext('2d');
-        // Fond dark
-        octx.fillStyle = 'rgb(5,4,18)';
-        octx.fillRect(0, 0, w, h);
-        // Dessiner l'image par dessus
-        octx.drawImage(img, dx, dy, dw, dh);
-        // Dessiner le résultat aplati sur le canvas principal
-        ctx.drawImage(offscreen, 0, 0);
+        ctx.drawImage(img, dx, dy, dw, dh);
       }
 
       // Cercles d'aura pulsants centrés sur la tête (~40% gauche, 35% haut)
