@@ -2856,7 +2856,12 @@
     const canvas = document.getElementById('neuroCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    function resize() { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; }
+    function resize() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      console.log('[neuro] canvas size:', canvas.width, 'x', canvas.height);
+    }
     resize();
     window.addEventListener('resize', resize);
 
@@ -2978,7 +2983,11 @@
       requestAnimationFrame(animate);
     }
 
-    img.onload = () => { console.log('[neuro] image chargée'); animate(); };
+    img.onload = () => { 
+      console.log('[neuro] image chargée', img.naturalWidth, 'x', img.naturalHeight);
+      resize(); // forcer resize après chargement
+      animate(); 
+    };
     img.onerror = () => {
       console.warn('[neuro] silhouette.png non trouvée, animations sans image');
       animate();
