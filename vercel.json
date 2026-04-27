@@ -7,6 +7,7 @@
     { "src": "/library.html", "dest": "/library.html" },
     { "src": "/settings.html", "dest": "/settings.html" },
     { "src": "/test.html", "dest": "/test.html" },
+    { "src": "/(.*\\.(png|jpg|jpeg|gif|svg|ico|webp|js|css|pdf|webm|mp3|woff|woff2|ttf))", "dest": "/$1" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
