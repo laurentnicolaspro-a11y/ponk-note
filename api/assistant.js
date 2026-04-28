@@ -2,6 +2,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
   try {
     const { question, mode } = req.body;
     if (!question) return res.status(400).json({ error: 'Question requise' });
@@ -14,29 +15,61 @@ module.exports = async function handler(req, res) {
       'gemini-2.5-flash-lite',
     ];
 
+    // Timeouts courts spécifiques au mode assistant direct
+    const timeouts = [3000, 5000, 5000];
+
     async function callGemini(prompt) {
-      for (const _mn of _models_a) {
+      for (let i = 0; i < _models_a.length; i++) {
         try {
-          const model = genAI.getGenerativeModel({ model: _mn });
-          // Timeout augmenté à 10s
-          const _t = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000));
+          const model = genAI.getGenerativeModel({ model: _models_a[i] });
+          const _t = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeouts[i]));
           const _r = await Promise.race([model.generateContent(prompt), _t]);
+          console.log('[assistant] succès avec', _models_a[i]);
           return _r.response.text().trim();
         } catch(e) {
-          console.log('[assistant fallback]', _mn, 'failed:', e.message);
+          console.log('[assistant fallback]', _models_a[i], 'failed:', e.message);
         }
       }
       return null;
     }
 
-    // Mode détection d'action IA
+    // ── Mode fusionné : réponse + détection action en un seul appel ──
+    if (!mode || mode === 'full') {
+      const prompt = `Tu es un assistant vocal intégré dans une app d'enregistrement.
+Phrase reçue : "${question}"
+
+Fais les deux choses suivantes en même temps :
+
+1. RÉPONSE : Si c'est une question ou une demande d'information, réponds en 1 phrase courte (max 20 mots). Si info privée ou pas une question → null.
+
+2. ACTION : Détecte si l'utilisateur exprime une INTENTION CLAIRE de faire quelque chose.
+Types possibles : EMAIL, WHATSAPP, APPEL, CALENDRIER, MAPS, RESERVATION, COMMANDE, RECHERCHE, ANALYSE
+Règles STRICTES :
+- Une intention = verbe d'action au présent ou futur ("envoie", "appelle", "réserve", "mets", "planifie", "commande", "cherche")
+- Passé = pas une intention
+- Informatif = pas une intention
+- Conditionnel vague = pas une intention
+- Si aucune intention claire → null
+
+Réponds UNIQUEMENT en JSON sans markdown :
+{"answer":"réponse courte ou null","action":"TYPE ou null","texte":"résumé court de l'action ou null"}`;
+
+      const raw = await callGemini(prompt);
+      if (!raw) return res.status(200).json({ answer: null, action: null, texte: null });
+
+      try {
+        const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+        return res.status(200).json(parsed);
+      } catch(e) {
+        return res.status(200).json({ answer: null, action: null, texte: null });
+      }
+    }
+
+    // ── Mode detect seul (gardé pour compatibilité) ──
     if (mode === 'detect') {
       const detectPrompt = `Analyse cette phrase et détecte si l'utilisateur exprime une INTENTION CLAIRE de faire quelque chose.
-
 Phrase : "${question}"
-
 Types possibles : EMAIL, WHATSAPP, APPEL, CALENDRIER, MAPS, RESERVATION, COMMANDE, RECHERCHE, ANALYSE
-
 Règles STRICTES :
 - Une intention = verbe d'action au présent ou futur ("envoie", "appelle", "réserve", "mets", "planifie", "commande", "cherche")
 - Passé = pas une intention ("j'ai envoyé", "on a appelé")
@@ -44,7 +77,6 @@ Règles STRICTES :
 - Conditionnel vague = pas une intention ("on pourrait peut-être...")
 - Maximum 1 action par phrase
 - Si aucune intention claire → action null
-
 Réponds UNIQUEMENT en JSON sans markdown :
 {"action":"EMAIL","texte":"Résumé court de l'action"}
 ou
@@ -59,12 +91,9 @@ ou
       }
     }
 
-    // Mode normal : réponse à une question
-    const prompt = `Tu es un assistant intelligent intégré dans une app d'enregistrement.
-Question : "${question}"
-Réponds en UNE phrase courte et précise (maximum 25 mots).
-Réponds TOUJOURS sauf si la question demande des informations PRIVÉES que tu ne peux pas connaître (numéro de téléphone, adresse personnelle, mot de passe...) → réponds uniquement : IGNORE
-Réponds maintenant :`;
+    // ── Mode normal seul (gardé pour compatibilité) ──
+    const prompt = `Assistant vocal. Réponds en 1 phrase courte et précise (max 20 mots). Si info privée → "IGNORE".
+Question : "${question}"`;
 
     const answer = await callGemini(prompt);
     if (!answer) return res.status(200).json({ answer: 'IGNORE' });
