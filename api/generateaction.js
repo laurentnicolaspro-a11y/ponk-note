@@ -2,6 +2,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
   try {
     let body = req.body;
     if (!body || typeof body === 'string') {
@@ -22,6 +23,7 @@ module.exports = async function handler(req, res) {
       const lower = t.toLowerCase();
       return contacts.find(c => c.name && lower.includes(c.name.toLowerCase().split(' ')[0].toLowerCase()));
     }
+
     const contact = findContact(text);
 
     if (type === 'APPEL') {
@@ -29,11 +31,13 @@ module.exports = async function handler(req, res) {
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
     const MODELS = [
-      'gemini-3.1-flash-lite-preview',
       'gemini-2.5-flash',
-      'gemini-2.5-flash-lite',
     ];
+
+    // Timeout généreux car tâche complexe (rédaction email, message...)
+    const TIMEOUTS = [8000];
 
     let prompt = '';
     switch(type) {
@@ -61,17 +65,16 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({ raw: text });
     }
 
-    // Essayer chaque modèle avec timeout 10s
     let result = null;
-    for (const mn of MODELS) {
+    for (let i = 0; i < MODELS.length; i++) {
       try {
-        const model = genAI.getGenerativeModel({ model: mn });
-        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000));
+        const model = genAI.getGenerativeModel({ model: MODELS[i] });
+        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), TIMEOUTS[i]));
         result = await Promise.race([model.generateContent(prompt), timeout]);
-        console.log('[generateaction] succès avec', mn);
+        console.log('[generateaction] succès avec', MODELS[i]);
         break;
       } catch(e) {
-        console.log('[generateaction]', mn, 'failed:', e.message);
+        console.log('[generateaction]', MODELS[i], 'failed:', e.message);
       }
     }
 
