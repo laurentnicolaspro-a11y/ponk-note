@@ -343,7 +343,10 @@ function makeCard(file, index) {
   try {
     const joined = nameParts.join('-');
     const timeMatch = joined.match(/T(\d{2})-(\d{2})-(\d{2})/);
-    if (timeMatch) timeStr = timeMatch[1] + 'h' + timeMatch[2];
+    if (timeMatch) {
+      const localHour = (parseInt(timeMatch[1]) + Math.round(new Date().getTimezoneOffset() / -60)) % 24;
+      timeStr = String(localHour).padStart(2,'0') + 'h' + timeMatch[2];
+    }
     const afterT = joined.split(/T\d{2}-\d{2}-\d{2}-?/)[1];
     if (afterT && afterT.trim()) titleStr = afterT.replace(/-/g,' ').trim();
   } catch(e) {}
