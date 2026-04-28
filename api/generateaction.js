@@ -21,7 +21,15 @@ module.exports = async function handler(req, res) {
     function findContact(t) {
       if (!contacts.length) return null;
       const lower = t.toLowerCase();
-      return contacts.find(c => c.name && lower.includes(c.name.toLowerCase().split(' ')[0].toLowerCase()));
+      // 1. Cherche sur les alias en premier (plus précis)
+      const byAlias = contacts.find(c =>
+        c.aliases && c.aliases.some(a => lower.includes(a.toLowerCase()))
+      );
+      if (byAlias) return byAlias;
+      // 2. Fallback sur le prénom (premier mot du nom)
+      return contacts.find(c =>
+        c.name && lower.includes(c.name.toLowerCase().split(' ')[0].toLowerCase())
+      );
     }
 
     const contact = findContact(text);
