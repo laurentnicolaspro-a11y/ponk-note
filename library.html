@@ -530,26 +530,47 @@ function changeProfile() {
     const w = canvas.width, h = canvas.height;
     ctx.clearRect(0, 0, w, h);
 
+    // Lignes neurales fixes
     lines.forEach(l => {
       l.phase += l.speed;
       l.x1 += l.vx; l.y1 += l.vy;
       l.x2 -= l.vx; l.y2 -= l.vy;
       const bx = l.left ? 0 : (1 - SIDE);
-      [['x1','vx'],['x2','vx']].forEach(([xk, vk]) => {
-        if (l[xk] < bx) { l[xk] = bx; l[vk] *= -1; }
-        if (l[xk] > bx + SIDE) { l[xk] = bx + SIDE; l[vk] *= -1; }
-      });
+      if (l.x1 < bx || l.x1 > bx + SIDE) l.vx *= -1;
+      if (l.x2 < bx || l.x2 > bx + SIDE) l.vx *= -1;
       if (l.y1 < 0 || l.y1 > 1) l.vy *= -1;
       if (l.y2 < 0 || l.y2 > 1) l.vy *= -1;
-      const alpha = l.opacity * (0.5 + 0.5 * Math.sin(l.phase));
+      const alpha = 0.25 + 0.2 * Math.sin(l.phase);
       ctx.beginPath();
       ctx.moveTo(l.x1 * w, l.y1 * h);
       ctx.lineTo(l.x2 * w, l.y2 * h);
-      ctx.strokeStyle = `rgba(0,180,255,${alpha})`;
-      ctx.lineWidth = 0.5;
+      ctx.strokeStyle = `rgba(0,200,255,${alpha})`;
+      ctx.lineWidth = 0.7;
       ctx.stroke();
     });
 
+    // Connexions entre particules proches dans la même bande
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const a = particles[i], b = particles[j];
+        const sameSide = (a.x < 0.5) === (b.x < 0.5);
+        if (!sameSide) continue;
+        const dx = (a.x - b.x) * w, dy = (a.y - b.y) * h;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const maxDist = w * SIDE * 0.9;
+        if (dist < maxDist) {
+          const alpha = 0.3 * (1 - dist / maxDist);
+          ctx.beginPath();
+          ctx.moveTo(a.x * w, a.y * h);
+          ctx.lineTo(b.x * w, b.y * h);
+          ctx.strokeStyle = `rgba(0,180,255,${alpha})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Particules
     particles.forEach(p => {
       p.x += p.vx; p.y += p.vy;
       p.pulse += p.pulseSpeed;
@@ -563,8 +584,8 @@ function changeProfile() {
       ctx.fillStyle = g; ctx.fill();
       ctx.beginPath(); ctx.arc(p.x*w, p.y*h, size, 0, Math.PI*2);
       ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-      ctx.shadowColor = '#fff';
-      ctx.shadowBlur = 6;
+      ctx.shadowColor = '#00dcff';
+      ctx.shadowBlur = 8;
       ctx.fill();
       ctx.shadowBlur = 0;
     });
