@@ -10,11 +10,12 @@ module.exports = async function handler(req, res) {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
     const _models_a = [
+      'gemini-2.5-flash-lite-preview-06-17',
       'gemini-2.5-flash',
     ];
 
-    // Timeout unique pour réponse directe
-    const timeouts = [5000];
+    // Timeouts courts spécifiques au mode assistant direct
+    const timeouts = [3000, 5000];
 
     async function callGemini(prompt) {
       for (let i = 0; i < _models_a.length; i++) {
