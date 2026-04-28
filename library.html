@@ -91,8 +91,9 @@
       display:flex; align-items:center; justify-content:center;
       font-family:var(--font-display); font-size:12px; font-weight:700;
       color:#fff;
-      border:1.5px solid var(--cyan);
-      box-shadow:0 0 8px var(--cyan-dim);
+      background:#0d2a4a;
+      border:2px solid var(--cyan);
+      box-shadow:0 0 10px var(--cyan-dim), inset 0 0 8px rgba(0,80,140,0.5);
     }
 
     /* Content */
@@ -105,8 +106,9 @@
       display:flex; align-items:center; justify-content:center;
       font-family:var(--font-display); font-size:20px; font-weight:700;
       color:#fff;
+      background:#0d2a4a;
       border:2px solid var(--cyan);
-      box-shadow:0 0 16px var(--cyan-dim), inset 0 0 8px rgba(0,212,255,0.1);
+      box-shadow:0 0 14px var(--cyan-dim), inset 0 0 10px rgba(0,80,140,0.5);
     }
     .profile-name { font-family:var(--font-display); font-size:15px; font-weight:600; letter-spacing:0.5px; color:var(--text); }
     .profile-email { font-family:var(--font-body); font-size:13px; color:var(--muted); margin-top:2px; }
@@ -310,9 +312,6 @@ const color = getColor(profile);
 ['headerAvatar','profileAvatarLg'].forEach(id => {
   const el = document.getElementById(id);
   el.textContent = profile[0].toUpperCase();
-  el.style.background = color;
-  el.style.borderColor = color;
-  el.style.boxShadow = `0 0 10px ${color}88`;
 });
 document.getElementById('profileName').textContent = profile;
 document.getElementById('profileEmail').textContent = email || '';
