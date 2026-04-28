@@ -15,7 +15,7 @@ module.exports = async function handler(req, res) {
     ];
 
     // Timeouts courts spécifiques au mode assistant direct
-    const timeouts = [3000, 5000];
+    const timeouts = [1500, 5000];
 
     async function callGemini(prompt) {
       for (let i = 0; i < _models_a.length; i++) {
