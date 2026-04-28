@@ -354,6 +354,9 @@ function makeCard(file, index) {
 
   const dateDisplay = formatDate(file.created_at);
   const duration = file.metadata?.size ? formatSize(file.metadata.size) : '';
+  const durationSec = file.metadata?.size ? Math.round(file.metadata.size / 2000) : null;
+  const durationStr = durationSec ? formatDuration(durationSec) : '';
+  const metaStr = [dateDisplay, durationStr].filter(Boolean).join(' · ');
   const analyzed = localStorage.getItem(`ponk_analyzed_${file.name}`);
 
   const bars = Array.from({length:40}, (_,i) => {
@@ -368,7 +371,7 @@ function makeCard(file, index) {
   card.innerHTML = `
     <div class="card-main">
       <div class="card-title">${displayTitle}</div>
-      <div class="card-meta">${dateDisplay}${duration ? ' · ' + duration : ''}</div>
+      <div class="card-meta">${metaStr}</div>
       <div class="player" onclick="toggleActions(this.closest('.card'))">
         <button class="play-btn-sm" id="play_${file.name}" onclick="toggleAudio('${file.name}',event)">
           <svg viewBox="0 0 24 24" width="12" height="12"><path d="M8 5v14l11-7z"/></svg>
@@ -453,6 +456,14 @@ async function handleDelete(fileName, btn) {
     btn.disabled = false;
     alert('Erreur : ' + e.message);
   }
+}
+
+function formatDuration(sec) {
+  if (!sec || sec <= 0) return '';
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  if (m === 0) return `${s}s`;
+  return `${m}min${s > 0 ? s+'s' : ''}`;
 }
 
 function formatSize(bytes) {
