@@ -2,7 +2,6 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
   try {
     let body = req.body;
     if (!body || typeof body === 'string') {
@@ -30,9 +29,13 @@ module.exports = async function handler(req, res) {
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    let model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
-    let prompt = '';
+    const MODELS = [
+      'gemini-3.1-flash-lite-preview',
+      'gemini-2.5-flash',
+      'gemini-2.5-flash-lite',
+    ];
 
+    let prompt = '';
     switch(type) {
       case 'EMAIL': {
         const dest = contact ? (contact.email || contact.name) : '';
@@ -58,26 +61,27 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({ raw: text });
     }
 
-    let result;
-    try {
-      // Timeout after 5s - switch to fallback model
-      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
-      result = await Promise.race([model.generateContent(prompt), timeout]);
-    } catch(e) {
-      console.log('[generateaction] Primary failed:', e.message, '- trying gemini-2.5-flash');
+    // Essayer chaque modèle avec timeout 10s
+    let result = null;
+    for (const mn of MODELS) {
       try {
-        model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        const timeout2 = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
-        result = await Promise.race([model.generateContent(prompt), timeout2]);
-      } catch(e2) {
-        console.log('[generateaction] Fallback failed:', e2.message);
-        return res.status(200).json({ raw: text });
+        const model = genAI.getGenerativeModel({ model: mn });
+        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000));
+        result = await Promise.race([model.generateContent(prompt), timeout]);
+        console.log('[generateaction] succès avec', mn);
+        break;
+      } catch(e) {
+        console.log('[generateaction]', mn, 'failed:', e.message);
       }
+    }
+
+    if (!result) {
+      console.log('[generateaction] tous les modèles ont échoué');
+      return res.status(200).json({ raw: text });
     }
 
     const answer = result.response.text().trim();
     const clean = answer.replace(/```json|```/g, '').trim();
-
     try {
       return res.status(200).json(JSON.parse(clean));
     } catch(e) {
