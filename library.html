@@ -90,7 +90,7 @@
       width:32px; height:32px; border-radius:50%;
       display:flex; align-items:center; justify-content:center;
       font-family:var(--font-display); font-size:12px; font-weight:700;
-      color:var(--bg-deep);
+      color:#fff;
       border:1.5px solid var(--cyan);
       box-shadow:0 0 8px var(--cyan-dim);
     }
@@ -104,7 +104,7 @@
       width:52px; height:52px; border-radius:50%; flex-shrink:0;
       display:flex; align-items:center; justify-content:center;
       font-family:var(--font-display); font-size:20px; font-weight:700;
-      color:var(--bg-deep);
+      color:#fff;
       border:2px solid var(--cyan);
       box-shadow:0 0 16px var(--cyan-dim), inset 0 0 8px rgba(0,212,255,0.1);
     }
@@ -293,18 +293,26 @@
 </div>
 
 <script>
-const COLORS_BG = ['#00d4ff'];
+const COLORS = ['#4a7fd4','#e05555','#3db87a','#e07a30','#8a55d4','#d45580','#30a8d4','#50c87a'];
 const MAX = 5;
+
+function getColor(name) {
+  let hash=0; for(let i=0;i<name.length;i++) hash=name.charCodeAt(i)+((hash<<5)-hash);
+  return COLORS[Math.abs(hash)%COLORS.length];
+}
 
 const profile = localStorage.getItem('ponk_profile');
 const email   = localStorage.getItem('ponk_email');
 const uid     = localStorage.getItem('ponk_profile');
 if (!profile) { window.location.href='/'; }
 
+const color = getColor(profile);
 ['headerAvatar','profileAvatarLg'].forEach(id => {
   const el = document.getElementById(id);
   el.textContent = profile[0].toUpperCase();
-  el.style.background = 'var(--cyan)';
+  el.style.background = color;
+  el.style.borderColor = color;
+  el.style.boxShadow = `0 0 10px ${color}88`;
 });
 document.getElementById('profileName').textContent = profile;
 document.getElementById('profileEmail').textContent = email || '';
