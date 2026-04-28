@@ -1525,8 +1525,7 @@
 
       speechRecognition.onresult = e => {
         const t = e.results[0][0].transcript.trim();
-        detectActionWithAI(t);
-        if (isQuestion(t)) askGemini(t);
+        askAndDetect(t);
         try { speechRecognition.stop(); } catch(err) {}
       };
 
@@ -1585,16 +1584,39 @@
     return isForeign && frenchCount < 2;
   }
 
-  async function askGemini(question) {
+  // ── Appel fusionné : réponse + détection action en un seul call ──
+  async function askAndDetect(text) {
+    if (text.split(' ').length < 3) return;
     try {
       const res = await fetch('/api/assistant', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({question})
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ question: text, mode: 'full' })
       });
-      if (!res.ok) return;
+      if (!res.ok) { detectActionKeywords(text); return; }
       const data = await res.json();
-      if (data.answer && data.answer !== 'IGNORE') showAssistantResponse(question, data.answer);
-    } catch(e) {}
+
+      // Affiche la réponse si présente
+      if (data.answer && data.answer !== 'IGNORE' && data.answer !== 'null') {
+        showAssistantResponse(text, data.answer);
+      }
+
+      // Crée la bulle d'action si détectée
+      if (data.action) {
+        const type = data.action;
+        const config = ACTION_KEYWORDS[type];
+        if (config && !config.disabled) {
+          const activeBubbles = actionBubbles.filter(b => b.confirmed === null);
+          if (activeBubbles.length < MAX_BUBBLES) {
+            const recent = actionBubbles.find(b => b.type === type && b.confirmed === null && Date.now() - b.time < 30000);
+            if (!recent) addActionBubble(type, ACTION_SVG[type] || '', config.label, cleanTranscript(data.texte || text));
+          }
+        }
+      }
+    } catch(e) {
+      // Fallback local si API échoue
+      detectActionKeywords(text);
+    }
   }
 
   function showAssistantResponse(question, answer) {
@@ -1701,6 +1723,7 @@
 
   const MAX_BUBBLES = 5;
 
+  // Gardée comme fallback si askAndDetect échoue
   async function detectActionWithAI(text) {
     if (text.split(' ').length < 3) return;
     try {
@@ -1719,7 +1742,6 @@
       const recent = actionBubbles.find(b => b.type === type && b.confirmed === null && Date.now() - b.time < 30000);
       if (!recent) addActionBubble(type, ACTION_SVG[type] || '', config.label, cleanTranscript(text));
     } catch(e) {
-      // Fallback sur détection locale si l'API échoue
       detectActionKeywords(text);
     }
   }
