@@ -35,22 +35,8 @@
       position:fixed; inset:0; z-index:0;
       background: radial-gradient(ellipse at 20% 30%, #1a3060 0%, #101e40 40%, #080f28 100%);
     }
-    .stars {
-      position:fixed; inset:0; z-index:0; pointer-events:none;
-      background-image:
-        radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.7) 0%, transparent 100%),
-        radial-gradient(1px 1px at 25% 40%, rgba(0,212,255,0.6) 0%, transparent 100%),
-        radial-gradient(1.5px 1.5px at 50% 10%, rgba(255,255,255,0.5) 0%, transparent 100%),
-        radial-gradient(1px 1px at 70% 60%, rgba(0,212,255,0.5) 0%, transparent 100%),
-        radial-gradient(1px 1px at 85% 25%, rgba(255,255,255,0.6) 0%, transparent 100%),
-        radial-gradient(1px 1px at 35% 75%, rgba(255,255,255,0.4) 0%, transparent 100%),
-        radial-gradient(1px 1px at 60% 85%, rgba(0,212,255,0.4) 0%, transparent 100%),
-        radial-gradient(1.5px 1.5px at 90% 45%, rgba(255,255,255,0.5) 0%, transparent 100%),
-        radial-gradient(1px 1px at 15% 90%, rgba(0,212,255,0.3) 0%, transparent 100%),
-        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.3) 0%, transparent 100%),
-        radial-gradient(1px 1px at 78% 12%, rgba(255,255,255,0.5) 0%, transparent 100%),
-        radial-gradient(1px 1px at 5% 50%, rgba(0,212,255,0.4) 0%, transparent 100%);
-    }
+    .stars { display:none; }
+    #neuroCanvas { position:fixed; inset:0; z-index:0; pointer-events:none; }
 
     /* Header */
     header {
@@ -250,7 +236,7 @@
   </style>
 </head>
 <body>
-<div class="stars"></div>
+<canvas id="neuroCanvas"></canvas>
 <div class="scanline"></div>
 
 <header>
@@ -489,6 +475,104 @@ function changeProfile() {
     window.location.href = '/';
   }
 }
+
+(function initNeuro() {
+  const canvas = document.getElementById('neuroCanvas');
+  const ctx = canvas.getContext('2d');
+  const SIDE = 0.22;
+
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function inSide(x) { return x < SIDE || x > (1 - SIDE); }
+
+  const particles = [];
+  for (let i = 0; i < 40; i++) {
+    const left = Math.random() < 0.5;
+    particles.push({
+      x: left ? Math.random() * SIDE : (1 - SIDE) + Math.random() * SIDE,
+      y: Math.random(),
+      vx: (Math.random() - 0.5) * 0.0005,
+      vy: (Math.random() - 0.5) * 0.0005,
+      size: 0.8 + Math.random() * 2,
+      opacity: 0.3 + Math.random() * 0.6,
+      pulse: Math.random() * Math.PI * 2,
+      pulseSpeed: 0.015 + Math.random() * 0.025
+    });
+  }
+
+  const lines = [];
+  for (let i = 0; i < 14; i++) {
+    const left = Math.random() < 0.5;
+    const bx = left ? 0 : (1 - SIDE);
+    lines.push({
+      x1: bx + Math.random() * SIDE, y1: Math.random(),
+      x2: bx + Math.random() * SIDE, y2: Math.random(),
+      vx: (Math.random() - 0.5) * 0.00015,
+      vy: (Math.random() - 0.5) * 0.00015,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.002 + Math.random() * 0.003,
+      opacity: 0.05 + Math.random() * 0.08,
+      left
+    });
+  }
+
+  function clampSide(p) {
+    const bx = p.x < 0.5 ? 0 : (1 - SIDE);
+    if (p.x < bx) { p.x = bx; p.vx *= -1; }
+    if (p.x > bx + SIDE) { p.x = bx + SIDE; p.vx *= -1; }
+    if (p.y < 0) { p.y = 0; p.vy *= -1; }
+    if (p.y > 1) { p.y = 1; p.vy *= -1; }
+  }
+
+  function animate() {
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    lines.forEach(l => {
+      l.phase += l.speed;
+      l.x1 += l.vx; l.y1 += l.vy;
+      l.x2 -= l.vx; l.y2 -= l.vy;
+      const bx = l.left ? 0 : (1 - SIDE);
+      [['x1','vx'],['x2','vx']].forEach(([xk, vk]) => {
+        if (l[xk] < bx) { l[xk] = bx; l[vk] *= -1; }
+        if (l[xk] > bx + SIDE) { l[xk] = bx + SIDE; l[vk] *= -1; }
+      });
+      if (l.y1 < 0 || l.y1 > 1) l.vy *= -1;
+      if (l.y2 < 0 || l.y2 > 1) l.vy *= -1;
+      const alpha = l.opacity * (0.5 + 0.5 * Math.sin(l.phase));
+      ctx.beginPath();
+      ctx.moveTo(l.x1 * w, l.y1 * h);
+      ctx.lineTo(l.x2 * w, l.y2 * h);
+      ctx.strokeStyle = `rgba(0,180,255,${alpha})`;
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    });
+
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      p.pulse += p.pulseSpeed;
+      clampSide(p);
+      const alpha = p.opacity * (0.5 + 0.5 * Math.sin(p.pulse));
+      const size = p.size * (0.8 + 0.2 * Math.sin(p.pulse));
+      const g = ctx.createRadialGradient(p.x*w, p.y*h, 0, p.x*w, p.y*h, size*4);
+      g.addColorStop(0, `rgba(255,255,255,${alpha * 0.25})`);
+      g.addColorStop(1, 'transparent');
+      ctx.beginPath(); ctx.arc(p.x*w, p.y*h, size*4, 0, Math.PI*2);
+      ctx.fillStyle = g; ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x*w, p.y*h, size, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.shadowColor = '#fff';
+      ctx.shadowBlur = 6;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
 </script>
 </body>
 </html>
