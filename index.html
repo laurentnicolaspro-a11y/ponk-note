@@ -1311,16 +1311,27 @@
   let stepInterval = null;
   let overlayRaf = null;
 
-  function showOverlay() {
+  function showOverlay(recordingSeconds) {
     const overlay = document.getElementById('overlay');
     overlay.classList.add('active');
-    let currentStep = 0;
-    let progress = 0, targetProgress = STEPS_PCT[0] / 100;
 
-    // Init steps
+    // Estimation durée totale : 5s fixe + 8s par minute d'audio
+    const estimatedMs = (5 + (recordingSeconds / 60) * 8) * 1000;
+    // Chaque étape occupe une fraction du temps total
+    const stepDurations = [0.18, 0.15, 0.17, 0.18, 0.17, 0.15]; // somme = 1
+    const stepTimings = [];
+    let acc = 0;
+    stepDurations.forEach(d => { stepTimings.push(acc); acc += d; });
+
+    const startTime = Date.now();
+    let currentStep = 0;
+    let progress = 0;
+
+    // Init steps UI
     const stepEls = document.querySelectorAll('.overlay-step');
     stepEls.forEach(s => {
       s.querySelector('.overlay-step-dot').classList.remove('active');
+      s.querySelector('.overlay-step-dot').style.background = 'rgba(0,220,255,0.15)';
       s.querySelector('.overlay-step-label').classList.remove('active','done');
     });
     document.getElementById('overlayText').textContent = STEPS[0];
@@ -1337,10 +1348,32 @@
     const cx = W/2, cy = H/2;
     const RING_R = 72, ORB_ORBIT = 94;
     let orbAngle = -Math.PI/2, bgAngle = 0;
+    let smoothProgress = 0;
 
     function drawOrbe() {
       ctx.clearRect(0, 0, W, H);
-      progress += (targetProgress - progress) * 0.035;
+
+      // Calcul % basé sur temps écoulé — plafonné à 97%
+      const elapsed = Date.now() - startTime;
+      const rawPct = Math.min(elapsed / estimatedMs, 0.97);
+      smoothProgress += (rawPct - smoothProgress) * 0.04;
+      progress = smoothProgress;
+
+      // Mise à jour étape courante selon progression
+      const newStep = stepTimings.filter(t => rawPct >= t).length - 1;
+      if (newStep !== currentStep && newStep >= 0 && newStep < STEPS.length) {
+        currentStep = newStep;
+        document.getElementById('overlayText').textContent = STEPS[currentStep];
+        stepEls.forEach((s, i) => {
+          const dot = s.querySelector('.overlay-step-dot');
+          const lbl = s.querySelector('.overlay-step-label');
+          dot.classList.remove('active'); lbl.classList.remove('active','done');
+          if (i < currentStep) { lbl.classList.add('done'); dot.style.background = 'rgba(0,220,255,0.4)'; dot.style.boxShadow = 'none'; }
+          else if (i === currentStep) { dot.classList.add('active'); lbl.classList.add('active'); }
+          else { dot.style.background = 'rgba(0,220,255,0.15)'; dot.style.boxShadow = 'none'; }
+        });
+      }
+
       bgAngle += 0.008;
       orbAngle += 0.025;
 
@@ -1392,33 +1425,22 @@
       overlayRaf = requestAnimationFrame(drawOrbe);
     }
     drawOrbe();
-
-    // Avancer les étapes
-    stepInterval = setInterval(() => {
-      currentStep = (currentStep + 1) % STEPS.length;
-      targetProgress = STEPS_PCT[currentStep] / 100;
-      document.getElementById('overlayText').textContent = STEPS[currentStep];
-      stepEls.forEach((s, i) => {
-        const dot = s.querySelector('.overlay-step-dot');
-        const lbl = s.querySelector('.overlay-step-label');
-        dot.classList.remove('active'); lbl.classList.remove('active','done');
-        if (i < currentStep) { lbl.classList.add('done'); dot.style.background = 'rgba(0,220,255,0.4)'; }
-        else if (i === currentStep) { dot.classList.add('active'); lbl.classList.add('active'); }
-        else { dot.style.background = 'rgba(0,220,255,0.15)'; }
-      });
-    }, 1800);
   }
 
   function hideOverlay() {
-    document.getElementById('overlay').classList.remove('active');
-    if (stepInterval) clearInterval(stepInterval);
-    if (overlayRaf) { cancelAnimationFrame(overlayRaf); overlayRaf = null; }
+    // Finir à 100% brièvement avant de fermer
+    const pctEl = document.getElementById('overlayPct');
+    if (pctEl) pctEl.textContent = '100%';
+    setTimeout(() => {
+      document.getElementById('overlay').classList.remove('active');
+      if (overlayRaf) { cancelAnimationFrame(overlayRaf); overlayRaf = null; }
+    }, 400);
   }
 
   async function analyze() {
     if(!blob) return;
     document.getElementById('btnAnalyze').disabled = true;
-    showOverlay();
+    showOverlay(seconds);
     const title    = document.getElementById('title').value || '';
     const duration = fmt(seconds);
     const now      = new Date();
