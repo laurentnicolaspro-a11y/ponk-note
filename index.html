@@ -1318,8 +1318,8 @@
     const overlay = document.getElementById('overlay');
     overlay.classList.add('active');
 
-    // Estimation durée totale : 5s fixe + 8s par minute d'audio
-    const estimatedMs = (5 + (recordingSeconds / 60) * 8) * 1000;
+    // Estimation durée totale : 5s fixe + 8s par minute d'audio — x2 pour laisser le temps à l'analyse
+    const estimatedMs = (5 + (recordingSeconds / 60) * 8) * 1000 * 2;
     // Chaque étape occupe une fraction du temps total
     const stepDurations = [0.18, 0.15, 0.17, 0.18, 0.17, 0.15]; // somme = 1
     const stepTimings = [];
