@@ -1202,7 +1202,7 @@
     return d + 'Z';
   }
   document.getElementById('spikyPath').setAttribute('d', buildSpiky(32, 88, 8, 110, 110));
-  let recorder=null, chunks=[], blob=null, interval=null, seconds=0, recording=false;
+  let recorder=null, chunks=[], blob=null, interval=null, seconds=0, recording=false, uploadedFileName=null;
 
   async function checkQuota() {
     const profile = localStorage.getItem('ponk_profile') || 'user';
@@ -1294,6 +1294,7 @@
       const res = await fetch('/api/upload', {method:'POST', body:fd});
       if (res.ok) {
         const r = await res.json();
+        uploadedFileName = r.fileName;
         localStorage.setItem('ponk_drive_file', JSON.stringify(r));
         setStatus('active', 'Audio sauvegardé ☁️ — ' + fmt(seconds));
       }
@@ -1449,15 +1450,9 @@
     const savedBubbles = actionBubbles.filter(b => b.confirmed === true || b.confirmed === 'done' || b.confirmed === 'kept');
 
     try {
-      // Étape 1 : upload audio sur Supabase, récupérer le fileName
-      const uploadFd = new FormData();
-      uploadFd.append('audio', blob, 'rec.webm');
-      uploadFd.append('title', title);
-      uploadFd.append('profile', profile);
-      const uploadRes = await fetch('/api/upload', {method:'POST', body:uploadFd});
-      if (!uploadRes.ok) throw new Error('Upload audio échoué ' + uploadRes.status);
-      const uploadData = await uploadRes.json();
-      const fileName = uploadData.fileName;
+      // Étape 1 : utiliser le fileName déjà uploadé automatiquement
+      if (!uploadedFileName) throw new Error('Audio non encore uploadé, réessaie dans un instant');
+      const fileName = uploadedFileName;
 
       // Étape 2 : envoyer fileName + métadonnées à analyze (pas le fichier brut)
       const analyzeRes = await fetch('/api/analyze', {
