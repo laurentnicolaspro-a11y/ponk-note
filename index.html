@@ -298,16 +298,40 @@
     /* Overlay */
     .overlay {
       display:none; position:fixed; inset:0; z-index:100;
-      background:rgba(5,4,18,0.85); backdrop-filter:blur(20px);
-      flex-direction:column; align-items:center; justify-content:center; gap:24px;
+      background:rgba(5,4,18,0.92); backdrop-filter:blur(20px);
+      align-items:center; justify-content:center; gap:48px;
     }
     .overlay.active { display:flex; }
-    .spinner { width:52px; height:52px; }
-    .spinner svg { animation:spin 1s linear infinite; }
-    .spinner-arc { fill:none; stroke:#00dcff; stroke-width:3; stroke-linecap:round; stroke-dasharray:100 200; animation:arc 1s linear infinite; filter:drop-shadow(0 0 6px rgba(0,220,255,0.8)); }
-    @keyframes arc { 0%{stroke-dashoffset:0} 50%{stroke-dashoffset:-70} 100%{stroke-dashoffset:-180} }
-    .overlay-text { font-family:'Audiowide',sans-serif; font-size:14px; color:#00dcff; letter-spacing:1px; }
-    .overlay-text::after { content:'▎'; animation:cursor .8s step-end infinite; opacity:0.5; }
+    .overlay-orbe-wrap { position:relative; width:220px; height:220px; flex-shrink:0; }
+    .overlay-orbe-wrap canvas { position:absolute; inset:0; }
+    .overlay-orbe-center {
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      pointer-events:none;
+    }
+    .overlay-pct {
+      font-family:'Audiowide',sans-serif; font-size:28px; color:#fff; font-weight:400;
+      text-shadow:0 0 16px rgba(0,220,255,0.5); text-align:center;
+    }
+    .overlay-pct-label { font-size:10px; color:rgba(0,220,255,0.5); letter-spacing:0.5px; margin-top:3px; }
+    .overlay-steps { display:flex; flex-direction:column; gap:12px; }
+    .overlay-step { display:flex; align-items:center; gap:10px; }
+    .overlay-step-dot {
+      width:8px; height:8px; border-radius:50%;
+      background:rgba(0,220,255,0.15); flex-shrink:0;
+      transition:background 0.4s, box-shadow 0.4s;
+    }
+    .overlay-step-dot.active { background:#00dcff; box-shadow:0 0 8px rgba(0,220,255,0.9); }
+    .overlay-step-label {
+      font-size:13px; color:rgba(0,220,255,0.3);
+      transition:color 0.4s;
+    }
+    .overlay-step-label.active { color:#00dcff; font-weight:500; }
+    .overlay-step-label.done { color:rgba(0,220,255,0.55); }
+    .overlay-current {
+      font-family:'Audiowide',sans-serif; font-size:11px;
+      color:rgba(0,220,255,0.5); letter-spacing:0.5px; margin-top:8px;
+    }
+    .overlay-current::after { content:'▎'; animation:cursor .8s step-end infinite; opacity:0.5; }
     @keyframes cursor { 0%,100%{opacity:.5} 50%{opacity:0} }
 
         /* ── Profile screen dark tech ── */
@@ -1145,12 +1169,24 @@
 
 <!-- Overlay -->
 <div class="overlay" id="overlay">
-  <div class="spinner">
-    <svg viewBox="0 0 56 56" width="56" height="56">
-      <circle class="spinner-arc" cx="28" cy="28" r="24"/>
-    </svg>
+  <div class="overlay-orbe-wrap">
+    <canvas id="overlayCanvas" width="220" height="220"></canvas>
+    <div class="overlay-orbe-center">
+      <div>
+        <div class="overlay-pct" id="overlayPct">0%</div>
+        <div class="overlay-pct-label">traitement</div>
+      </div>
+    </div>
   </div>
-  <div class="overlay-text" id="overlayText"></div>
+  <div class="overlay-steps">
+    <div class="overlay-step" data-step="0"><div class="overlay-step-dot"></div><span class="overlay-step-label">Transcription</span></div>
+    <div class="overlay-step" data-step="1"><div class="overlay-step-dot"></div><span class="overlay-step-label">Analyse du contexte</span></div>
+    <div class="overlay-step" data-step="2"><div class="overlay-step-dot"></div><span class="overlay-step-label">Identification des thèmes</span></div>
+    <div class="overlay-step" data-step="3"><div class="overlay-step-dot"></div><span class="overlay-step-label">Génération du résumé</span></div>
+    <div class="overlay-step" data-step="4"><div class="overlay-step-dot"></div><span class="overlay-step-label">Extraction des actions</span></div>
+    <div class="overlay-step" data-step="5"><div class="overlay-step-dot"></div><span class="overlay-step-label">Finalisation</span></div>
+    <div class="overlay-current" id="overlayText"></div>
+  </div>
 </div>
 
 <script>
@@ -1271,18 +1307,112 @@
   }
 
   const STEPS = ['Transcription en cours…','Analyse du contexte…','Identification des thèmes…','Génération du résumé…','Extraction des actions…','Finalisation…'];
+  const STEPS_PCT = [10, 25, 45, 65, 82, 95];
   let stepInterval = null;
+  let overlayRaf = null;
 
   function showOverlay() {
     const overlay = document.getElementById('overlay');
-    const text = document.getElementById('overlayText');
     overlay.classList.add('active');
-    let i = 0; text.textContent = STEPS[0];
-    stepInterval = setInterval(() => { i=(i+1)%STEPS.length; text.textContent=STEPS[i]; }, 1800);
+    let currentStep = 0;
+    let progress = 0, targetProgress = STEPS_PCT[0] / 100;
+
+    // Init steps
+    const stepEls = document.querySelectorAll('.overlay-step');
+    stepEls.forEach(s => {
+      s.querySelector('.overlay-step-dot').classList.remove('active');
+      s.querySelector('.overlay-step-label').classList.remove('active','done');
+    });
+    document.getElementById('overlayText').textContent = STEPS[0];
+    document.getElementById('overlayPct').textContent = '0%';
+    if (stepEls[0]) {
+      stepEls[0].querySelector('.overlay-step-dot').classList.add('active');
+      stepEls[0].querySelector('.overlay-step-label').classList.add('active');
+    }
+
+    // Canvas orbe
+    const canvas = document.getElementById('overlayCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const cx = W/2, cy = H/2;
+    const RING_R = 72, ORB_ORBIT = 94;
+    let orbAngle = -Math.PI/2, bgAngle = 0;
+
+    function drawOrbe() {
+      ctx.clearRect(0, 0, W, H);
+      progress += (targetProgress - progress) * 0.035;
+      bgAngle += 0.008;
+      orbAngle += 0.025;
+
+      // Anneaux décoratifs
+      [88, 80].forEach((r, ri) => {
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+        ctx.strokeStyle = `rgba(0,220,255,${0.05 + 0.01*Math.sin(bgAngle+ri)})`;
+        ctx.lineWidth = 0.5; ctx.stroke();
+      });
+
+      // Arc fond
+      ctx.beginPath(); ctx.arc(cx, cy, RING_R, -Math.PI/2, -Math.PI/2 + Math.PI*2);
+      ctx.strokeStyle = 'rgba(0,220,255,0.08)'; ctx.lineWidth = 4;
+      ctx.lineCap = 'round'; ctx.stroke();
+
+      // Arc progression
+      ctx.beginPath(); ctx.arc(cx, cy, RING_R, -Math.PI/2, -Math.PI/2 + Math.PI*2*progress);
+      ctx.strokeStyle = 'rgba(0,220,255,0.85)'; ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.shadowColor = '#00dcff'; ctx.shadowBlur = 10; ctx.stroke(); ctx.shadowBlur = 0;
+
+      // Orbe satellite
+      const ox = cx + ORB_ORBIT * Math.cos(orbAngle);
+      const oy = cy + ORB_ORBIT * Math.sin(orbAngle);
+
+      for (let t = 1; t <= 10; t++) {
+        const ta = orbAngle - t * 0.055;
+        const tx = cx + ORB_ORBIT * Math.cos(ta);
+        const ty = cy + ORB_ORBIT * Math.sin(ta);
+        ctx.beginPath(); ctx.arc(tx, ty, 2.5*(1-t/11), 0, Math.PI*2);
+        ctx.fillStyle = `rgba(0,220,255,${0.35*(1-t/11)})`; ctx.fill();
+      }
+
+      const g2 = ctx.createRadialGradient(ox, oy, 0, ox, oy, 16);
+      g2.addColorStop(0, 'rgba(200,240,255,0.18)'); g2.addColorStop(1, 'transparent');
+      ctx.beginPath(); ctx.arc(ox, oy, 16, 0, Math.PI*2); ctx.fillStyle = g2; ctx.fill();
+
+      const g = ctx.createRadialGradient(ox, oy, 0, ox, oy, 8);
+      g.addColorStop(0, 'rgba(255,255,255,1)');
+      g.addColorStop(0.35, 'rgba(180,240,255,0.95)');
+      g.addColorStop(1, 'rgba(0,220,255,0)');
+      ctx.beginPath(); ctx.arc(ox, oy, 8, 0, Math.PI*2);
+      ctx.fillStyle = g;
+      ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 16; ctx.fill();
+      ctx.shadowColor = '#00dcff'; ctx.shadowBlur = 20; ctx.fill();
+      ctx.shadowBlur = 0;
+
+      document.getElementById('overlayPct').textContent = Math.round(progress * 100) + '%';
+      overlayRaf = requestAnimationFrame(drawOrbe);
+    }
+    drawOrbe();
+
+    // Avancer les étapes
+    stepInterval = setInterval(() => {
+      currentStep = (currentStep + 1) % STEPS.length;
+      targetProgress = STEPS_PCT[currentStep] / 100;
+      document.getElementById('overlayText').textContent = STEPS[currentStep];
+      stepEls.forEach((s, i) => {
+        const dot = s.querySelector('.overlay-step-dot');
+        const lbl = s.querySelector('.overlay-step-label');
+        dot.classList.remove('active'); lbl.classList.remove('active','done');
+        if (i < currentStep) { lbl.classList.add('done'); dot.style.background = 'rgba(0,220,255,0.4)'; }
+        else if (i === currentStep) { dot.classList.add('active'); lbl.classList.add('active'); }
+        else { dot.style.background = 'rgba(0,220,255,0.15)'; }
+      });
+    }, 1800);
   }
+
   function hideOverlay() {
     document.getElementById('overlay').classList.remove('active');
     if (stepInterval) clearInterval(stepInterval);
+    if (overlayRaf) { cancelAnimationFrame(overlayRaf); overlayRaf = null; }
   }
 
   async function analyze() {
