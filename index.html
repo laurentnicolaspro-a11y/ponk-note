@@ -1752,7 +1752,7 @@
   }
 
   function addActionBubble(type, icon, label, text) {
-    const bubble = { type, icon, label, text, time: Date.now(), confirmed: null, generated: null, generating: true };
+    const bubble = { type, icon, label, text, time: Date.now(), confirmed: null };
     actionBubbles.push(bubble);
     const index = actionBubbles.length - 1;
 
@@ -1765,22 +1765,6 @@
     const wrap = document.getElementById('actionBubblesWrap');
     wrap.insertBefore(el, wrap.firstChild);
     updateSlots();
-
-    // Pré-générer le contenu en arrière-plan
-    const profile = localStorage.getItem('ponk_profile') || 'user';
-    let contacts = [];
-    try { contacts = JSON.parse(localStorage.getItem('ponk_contacts') || '[]'); } catch(e) {}
-    fetch('/api/generateaction', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ type, text, profile, contacts })
-    })
-    .then(r => r.json())
-    .then(data => {
-      actionBubbles[index].generated = data;
-      actionBubbles[index].generating = false;
-    })
-    .catch(() => { actionBubbles[index].generating = false; });
   }
 
   function openBubbleModal(index) {
@@ -1788,27 +1772,7 @@
     const b = actionBubbles[index];
     document.getElementById('bubbleModalIcon').innerHTML = b.icon;
     document.getElementById('bubbleModalType').textContent = b.label;
-
-    if (b.generating) {
-      document.getElementById('bubbleModalText').value = '⏳ Génération en cours…';
-      document.getElementById('bubbleModalText').disabled = true;
-      // Recheck toutes les 300ms
-      const wait = setInterval(() => {
-        if (!actionBubbles[index].generating) {
-          clearInterval(wait);
-          const g = actionBubbles[index].generated;
-          const preview = g ? (g.corps || g.message || g.texte || g.titre || b.text) : b.text;
-          document.getElementById('bubbleModalText').value = preview;
-          document.getElementById('bubbleModalText').disabled = false;
-        }
-      }, 300);
-    } else {
-      const g = b.generated;
-      const preview = g ? (g.corps || g.message || g.texte || g.titre || b.text) : b.text;
-      document.getElementById('bubbleModalText').value = preview;
-      document.getElementById('bubbleModalText').disabled = false;
-    }
-
+    document.getElementById('bubbleModalText').value = b.text;
     document.getElementById('bubbleModal').classList.remove('hidden');
     setTimeout(() => document.getElementById('bubbleModalText').focus(), 100);
   }
