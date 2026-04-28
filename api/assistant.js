@@ -40,14 +40,16 @@ Fais les deux choses suivantes en même temps :
 
 1. RÉPONSE : Si c'est une question ou une demande d'information, réponds en 1 phrase courte (max 20 mots). Si info privée ou pas une question → null.
 
-2. ACTION : Détecte si l'utilisateur exprime une INTENTION CLAIRE de faire quelque chose.
+2. ACTION : Est-ce qu'il y a une action concrète et utile à créer ?
 Types possibles : EMAIL, WHATSAPP, APPEL, CALENDRIER, MAPS, RESERVATION, COMMANDE, RECHERCHE, ANALYSE
-Règles STRICTES :
-- Une intention = verbe d'action au présent ou futur ("envoie", "appelle", "réserve", "mets", "planifie", "commande", "cherche")
-- Passé = pas une intention
-- Informatif = pas une intention
-- Conditionnel vague = pas une intention
-- Si aucune intention claire → null
+Pose-toi la question : "Si je crée cette action, sera-t-elle vraiment utile à l'utilisateur ?"
+- OUI si : intention claire explicite OU implicite ("j'ai besoin d'un taxi", "il faut appeler Xavier", "la réunion vendredi à 14h")
+- OUI si : conditionnel réaliste ("on devrait réserver", "faudrait envoyer")
+- NON si : constat passé ("j'ai envoyé", "on a appelé")
+- NON si : information neutre sans suite ("il y a une réunion", "le temps est beau")
+- NON si : trop vague pour être actionnable
+- Maximum 1 action, la plus utile
+- Si aucune action utile → null
 
 Réponds UNIQUEMENT en JSON sans markdown :
 {"answer":"réponse courte ou null","action":"TYPE ou null","texte":"résumé court de l'action ou null"}`;
