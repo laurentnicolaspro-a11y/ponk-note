@@ -835,7 +835,9 @@
 <!-- Calendrier modal -->
 <div class="bubble-modal hidden" id="calendrierModal">
   <div class="bubble-modal-card" style="max-height:88vh;overflow-y:auto">
-    <div style="font-size:36px;text-align:center;margin-bottom:8px">📅</div>
+    <div class="bubble-modal-icon" style="margin-bottom:8px">
+      <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#00dcff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    </div>
     <div class="bubble-modal-type" id="calendrierModalTitle">Événement</div>
 
     <!-- Step 1: Event info + actions -->
@@ -878,7 +880,9 @@
 <!-- Commande modal -->
 <div class="bubble-modal hidden" id="commandeModal">
   <div class="bubble-modal-card" style="max-height:85vh;overflow-y:auto">
-    <div style="font-size:36px;text-align:center;margin-bottom:8px">🛒</div>
+    <div class="bubble-modal-icon" id="commandeModalIcon" style="margin-bottom:8px">
+      <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#00dcff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+    </div>
     <div class="bubble-modal-type" id="commandeModalTitle">Brief produit</div>
 
     <!-- Loading state -->
@@ -919,7 +923,9 @@
 <!-- WhatsApp modal -->
 <div class="bubble-modal hidden" id="waModal">
   <div class="bubble-modal-card">
-    <div style="font-size:36px;text-align:center;margin-bottom:12px">💬</div>
+    <div class="bubble-modal-icon" style="margin-bottom:12px">
+      <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#00dcff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </div>
     <div class="bubble-modal-type">Message WhatsApp</div>
     <div style="background:rgba(0,220,255,0.04);border-radius:12px;padding:12px;margin:12px 0;font-size:14px;line-height:1.6;color:#ffffff" id="waModalMessage"></div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px" id="waAppLinks"></div>
@@ -933,7 +939,9 @@
 <!-- Call modal -->
 <div class="bubble-modal hidden" id="callModal">
   <div class="bubble-modal-card" style="text-align:center">
-    <div style="font-size:42px;margin-bottom:12px">📞</div>
+    <div class="bubble-modal-icon" style="margin-bottom:12px">
+      <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#00dcff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4a2 2 0 0 1 2-2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 5.61 5.61l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+    </div>
     <div class="bubble-modal-type" id="callModalName"></div>
     <div style="font-size:28px;font-weight:300;letter-spacing:2px;color:#ffffff;margin:16px 0" id="callModalPhone"></div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px" id="callAppLinks"></div>
@@ -947,7 +955,9 @@
 <!-- Maps / Itinéraire modal -->
 <div class="bubble-modal hidden" id="mapsModal">
   <div class="bubble-modal-card" style="max-height:90vh;overflow-y:auto">
-    <div style="font-size:36px;text-align:center;margin-bottom:8px">🗺️</div>
+    <div class="bubble-modal-icon" style="margin-bottom:8px">
+      <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#00dcff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+    </div>
     <div class="bubble-modal-type" id="mapsModalTitle">Itinéraire</div>
 
     <!-- Champs départ / arrivée -->
@@ -956,7 +966,7 @@
         <div style="font-size:10px;font-weight:600;color:rgba(0,220,255,0.5);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.6px">Départ</div>
         <div style="display:flex;align-items:center;gap:8px">
           <input type="text" id="mapsDepart" placeholder="Ma position actuelle…"
-            style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:13px;color:#ffffff;outline:none"/>
+            style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(0,220,255,0.06);font-family:inherit;font-size:13px;color:#ffffff;outline:none;border-color:rgba(0,220,255,0.3)"/>
           <button onclick="geolocateDepart()" title="Ma position"
             style="width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,160,255,0.8);color:#fff;font-size:16px;cursor:pointer;flex-shrink:0">📍</button>
         </div>
@@ -964,7 +974,7 @@
       <div style="margin-bottom:12px">
         <div style="font-size:10px;font-weight:600;color:rgba(0,220,255,0.5);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.6px">Destination</div>
         <input type="text" id="mapsArrivee" placeholder="Adresse de destination…"
-          style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:13px;color:#ffffff;outline:none"/>
+          style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(0,220,255,0.06);font-family:inherit;font-size:13px;color:#ffffff;outline:none;border-color:rgba(0,220,255,0.3)"/>
       </div>
       <!-- Mode transport -->
       <div style="display:flex;gap:6px;margin-bottom:12px" id="mapsMode">
@@ -1003,7 +1013,7 @@
       </div>
 
       <!-- Météo destination -->
-      <div id="mapsMeteo" style="background:rgba(0,220,255,0.04);border:1px solid rgba(255,255,255,0.8);border-radius:14px;padding:12px;margin-bottom:10px;display:none">
+      <div id="mapsMeteo" style="background:rgba(0,220,255,0.04);border:1px solid rgba(0,220,255,0.2);border-radius:14px;padding:12px;margin-bottom:10px;display:none">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="font-size:32px" id="mapsMeteoIcon">🌤️</div>
           <div style="flex:1">
@@ -1048,7 +1058,9 @@
 <!-- Réservation modal -->
 <div class="bubble-modal hidden" id="reservationModal">
   <div class="bubble-modal-card" style="max-height:90vh;overflow-y:auto">
-    <div style="font-size:36px;text-align:center;margin-bottom:8px">🎫</div>
+    <div class="bubble-modal-icon" id="reservationModalIcon" style="margin-bottom:8px">
+      <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#00dcff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8a2 2 0 0 0-2 2v2h12V5a2 2 0 0 0-2-2z"/><path d="M12 12v5M9.5 14.5h5"/></svg>
+    </div>
     <div class="bubble-modal-type" id="reservationModalTitle">Réservation</div>
 
     <!-- Loading -->
@@ -1077,7 +1089,9 @@
 <!-- Analyse modal -->
 <div class="bubble-modal hidden" id="analyseModal">
   <div class="bubble-modal-card" style="max-height:90vh;overflow-y:auto">
-    <div style="font-size:36px;text-align:center;margin-bottom:8px">🧠</div>
+    <div class="bubble-modal-icon" style="margin-bottom:8px">
+      <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#00dcff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    </div>
     <div class="bubble-modal-type" id="analyseModalTitle">Analyse</div>
 
     <!-- Loading -->
@@ -1100,9 +1114,11 @@
 <!-- Rappel modal -->
 <div class="bubble-modal hidden" id="rappelModal">
   <div class="bubble-modal-card">
-    <div style="font-size:36px;text-align:center;margin-bottom:8px">🔔</div>
+    <div class="bubble-modal-icon" style="margin-bottom:8px">
+      <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#00dcff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+    </div>
     <div class="bubble-modal-type">Rappel</div>
-    <div style="background:rgba(0,220,255,0.05);border:1px solid rgba(255,255,255,0.8);border-radius:12px;padding:14px;margin:12px 0;font-size:14px;line-height:1.6;color:#ffffff;text-align:center" id="rappelText"></div>
+    <div style="background:rgba(0,220,255,0.05);border:1px solid rgba(0,220,255,0.2);border-radius:12px;padding:14px;margin:12px 0;font-size:14px;line-height:1.6;color:#ffffff;text-align:center" id="rappelText"></div>
     <button onclick="copyRappel()" id="rappelCopyBtn"
       style="width:100%;padding:13px;border-radius:12px;border:none;background:rgba(0,160,255,0.8);color:#fff;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:8px">
       📋 Copier
@@ -1877,18 +1893,18 @@
             <div style="margin-bottom:8px">
               <div style="font-size:10px;font-weight:600;color:rgba(0,220,255,0.5);margin-bottom:4px">DATE</div>
               <input type="date" id="calDateInput" value="${(() => { const m = (data.date||'').match(/[0-9]{4}-[0-9]{2}-[0-9]{2}/); return m ? m[0] : ''; })()}"
-                style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:14px;color:#ffffff;outline:none"/>
+                style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(0,220,255,0.06);font-family:inherit;font-size:13px;color:#ffffff;outline:none"/>
             </div>
             <div style="display:flex;gap:8px;margin-bottom:8px">
               <div style="flex:1">
                 <div style="font-size:10px;font-weight:600;color:rgba(0,220,255,0.5);margin-bottom:4px">HEURE</div>
                 <input type="time" id="calHeureInput" value="${heureDefault}"
-                  style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:14px;color:#ffffff;outline:none"/>
+                  style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(0,220,255,0.06);font-family:inherit;font-size:13px;color:#ffffff;outline:none"/>
               </div>
               <div style="flex:1">
                 <div style="font-size:10px;font-weight:600;color:rgba(0,220,255,0.5);margin-bottom:4px">DURÉE</div>
                 <select id="calDureeInput"
-                  style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:14px;color:#ffffff;outline:none;cursor:pointer">
+                  style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(0,220,255,0.06);font-family:inherit;font-size:13px;color:#ffffff;outline:none;cursor:pointer">
                   <option value="30" ${dureeDefault==='30' ? 'selected' : ''}>30 min</option>
                   <option value="60" ${dureeDefault==='60' ? 'selected' : ''}>1h</option>
                   <option value="90" ${dureeDefault==='90' ? 'selected' : ''}>1h30</option>
@@ -2022,7 +2038,7 @@
     document.getElementById('calendrierQuestions').innerHTML = questions.map(q => `
       <div style="margin-bottom:12px">
         <div style="font-size:13px;font-weight:500;color:#ffffff;margin-bottom:6px">🤖 ${q.question}</div>
-        <textarea data-qid="${q.id}" data-question="${q.question.replace(/"/g,'&quot;')}" placeholder="Votre réponse..." style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.7);background:rgba(0,220,255,0.04);font-family:inherit;font-size:13px;color:#ffffff;outline:none;resize:none;min-height:60px;"></textarea>
+        <textarea data-qid="${q.id}" data-question="${q.question.replace(/"/g,'&quot;')}" placeholder="Votre réponse..." style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(0,220,255,0.2);background:rgba(0,220,255,0.04);font-family:inherit;font-size:13px;color:#ffffff;outline:none;resize:none;min-height:60px;"></textarea>
       </div>
     `).join('');
   }
@@ -2087,7 +2103,7 @@
       }
 
       if (data.pdf) {
-        btnsHtml += `<button onclick="downloadCalendrierPDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.8);background:rgba(0,220,255,0.05);color:#ffffff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;width:100%">📄 Exporter en PDF</button>`;
+        btnsHtml += `<button onclick="downloadCalendrierPDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(0,220,255,0.3);background:rgba(0,220,255,0.05);color:#ffffff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;width:100%;transition:background 0.15s,border-color 0.15s" onmouseover="this.style.background='rgba(0,220,255,0.12)';this.style.borderColor='rgba(0,220,255,0.5)'" onmouseout="this.style.background='rgba(0,220,255,0.05)';this.style.borderColor='rgba(0,220,255,0.3)'">📄 Exporter en PDF</button>`;
         window._calendrierPDF = data.pdf;
       }
 
@@ -2118,7 +2134,9 @@
         document.getElementById('commandeVerifier').innerHTML = (data.verifier || []).map(v => `<div>→ ${v}</div>`).join('');
         document.getElementById('commandeAttention').innerHTML = (data.attention || []).map(a => `<div>→ ${a}</div>`).join('');
         document.getElementById('commandeSites').innerHTML = (data.sites || []).map(s =>
-          `<a href="${s.url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:rgba(0,220,255,0.05);border:1px solid rgba(255,255,255,0.8);text-decoration:none;color:#ffffff">
+          `<a href="${s.url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:rgba(0,220,255,0.05);border:1px solid rgba(0,220,255,0.2);text-decoration:none;color:#ffffff;transition:background 0.15s,border-color 0.15s"
+            onmouseover="this.style.background='rgba(0,220,255,0.12)';this.style.borderColor='rgba(0,220,255,0.45)'"
+            onmouseout="this.style.background='rgba(0,220,255,0.05)';this.style.borderColor='rgba(0,220,255,0.2)'">
             <span style="font-size:20px">${s.icon}</span>
             <div style="flex:1"><div style="font-size:13px;font-weight:600">${s.nom}</div><div style="font-size:11px;color:rgba(0,220,255,0.5)">${s.desc}</div></div>
             <div style="width:24px;height:24px;border-radius:50%;background:rgba(0,160,255,0.8);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="12" height="12" fill="white"><path d="M8 5v14l11-7z"/></svg></div>
@@ -2175,9 +2193,9 @@
     if (linksEl && phone) {
       const enc = encodeURIComponent(phone);
       linksEl.innerHTML = `
-        <a href="tel:${phone}" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(0,220,255,0.04);color:#ffffff;text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,0.7);text-align:center">📱 Phone Link</a>
-        <a href="skype:${phone}?call" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(0,220,255,0.04);color:#ffffff;text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,0.7);text-align:center">💙 Skype</a>
-        <a href="msteams://call?phone=${enc}" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(0,220,255,0.04);color:#ffffff;text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,0.7);text-align:center">💼 Teams</a>
+        <a href="tel:${phone}" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(0,220,255,0.04);color:#ffffff;text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(0,220,255,0.25);text-align:center;transition:background 0.15s,border-color 0.15s" onmouseover="this.style.background='rgba(0,220,255,0.12)';this.style.borderColor='rgba(0,220,255,0.5)'" onmouseout="this.style.background='rgba(0,220,255,0.04)';this.style.borderColor='rgba(0,220,255,0.25)'">📱 Phone Link</a>
+        <a href="skype:${phone}?call" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(0,220,255,0.04);color:#ffffff;text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(0,220,255,0.25);text-align:center;transition:background 0.15s,border-color 0.15s" onmouseover="this.style.background='rgba(0,220,255,0.12)';this.style.borderColor='rgba(0,220,255,0.5)'" onmouseout="this.style.background='rgba(0,220,255,0.04)';this.style.borderColor='rgba(0,220,255,0.25)'">💙 Skype</a>
+        <a href="msteams://call?phone=${enc}" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(0,220,255,0.04);color:#ffffff;text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(0,220,255,0.25);text-align:center;transition:background 0.15s,border-color 0.15s" onmouseover="this.style.background='rgba(0,220,255,0.12)';this.style.borderColor='rgba(0,220,255,0.5)'" onmouseout="this.style.background='rgba(0,220,255,0.04)';this.style.borderColor='rgba(0,220,255,0.25)'">💼 Teams</a>
       `;
     }
     document.getElementById('callModal').classList.remove('hidden');
@@ -2317,7 +2335,7 @@
         const city = (weather && weather.city) ? weather.city : '';
         document.getElementById('mapsPOIList').innerHTML = poi.pois.map(p => {
           const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(p.name + (city ? ' ' + city : ''))}`;
-          return `<a href="${searchUrl}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:rgba(0,220,255,0.05);border:1px solid rgba(255,255,255,0.8);text-decoration:none;-webkit-tap-highlight-color:transparent" onmouseover="this.style.background='rgba(255,255,255,0.95)'" onmouseout="this.style.background='rgba(255,255,255,0.6)'">
+          return `<a href="${searchUrl}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:rgba(0,220,255,0.05);border:1px solid rgba(0,220,255,0.2);text-decoration:none;-webkit-tap-highlight-color:transparent;transition:background 0.15s,border-color 0.15s" onmouseover="this.style.background='rgba(0,220,255,0.12)';this.style.borderColor='rgba(0,220,255,0.45)'" onmouseout="this.style.background='rgba(0,220,255,0.05)';this.style.borderColor='rgba(0,220,255,0.2)'">
             <span style="font-size:20px">${p.emoji}</span>
             <div style="flex:1">
               <div style="font-size:13px;font-weight:600;color:#ffffff">${p.name}</div>
@@ -2392,8 +2410,9 @@
         `<span style="font-size:11px;background:rgba(0,220,255,0.1);color:#00dcff;padding:3px 10px;border-radius:100px;font-weight:500">${t}</span>`
       ).join('');
       document.getElementById('reservationPlateformes').innerHTML = (data.plateformes || []).map(p => `
-        <a href="${p.url}" target="_blank" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:rgba(0,220,255,0.05);border:1px solid rgba(255,255,255,0.8);text-decoration:none;-webkit-tap-highlight-color:transparent"
-          onmouseover="this.style.background='rgba(255,255,255,0.95)'" onmouseout="this.style.background='rgba(255,255,255,0.6)'">
+        <a href="${p.url}" target="_blank" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:rgba(0,220,255,0.05);border:1px solid rgba(0,220,255,0.2);text-decoration:none;-webkit-tap-highlight-color:transparent;transition:background 0.15s,border-color 0.15s"
+          onmouseover="this.style.background='rgba(0,220,255,0.12)';this.style.borderColor='rgba(0,220,255,0.45)'"
+          onmouseout="this.style.background='rgba(0,220,255,0.05)';this.style.borderColor='rgba(0,220,255,0.2)'">
           <span style="font-size:24px">${p.icon}</span>
           <div style="flex:1">
             <div style="font-size:13px;font-weight:700;color:#ffffff">${p.nom}</div>
@@ -2442,7 +2461,7 @@
               <div style="font-size:10px;font-weight:700;color:#00dcff;text-transform:uppercase;margin-bottom:4px">${v.titre||''}</div>
               <table style="width:100%;border-collapse:collapse;font-size:11px">
                 <thead><tr>${(v.colonnes||[]).map(c=>`<th style="background:rgba(0,220,255,0.1);color:#00dcff;padding:6px 8px;text-align:left;font-weight:600;border:1px solid rgba(74,127,212,0.15)">${c}</th>`).join('')}</tr></thead>
-                <tbody>${(v.lignes||[]).map((l,i)=>`<tr style="background:${i%2===0?'rgba(255,255,255,0.6)':'rgba(255,255,255,0.3)'}">${l.map(cell=>`<td style="padding:5px 8px;border:1px solid rgba(0,0,0,0.06);color:#ffffff">${cell}</td>`).join('')}</tr>`).join('')}</tbody>
+                <tbody>${(v.lignes||[]).map((l,i)=>`<tr style="background:${i%2===0?'rgba(0,220,255,0.05)':'rgba(0,220,255,0.02)'}">${l.map(cell=>`<td style="padding:5px 8px;border:1px solid rgba(0,220,255,0.1);color:#ffffff">${cell}</td>`).join('')}</tr>`).join('')}</tbody>
               </table></div>`;
           } else if (v.type === 'barres') {
             const max = Math.max(...(v.valeurs||[1]));
@@ -2509,7 +2528,7 @@
 
       document.getElementById('analyseActionBtns').innerHTML = `
         <a href="${emailUrls[prefMail]}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:rgba(0,160,255,0.8);color:#fff;text-decoration:none;font-size:14px;font-weight:600">📧 Envoyer par email</a>
-        <button onclick="downloadAnalysePDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.8);background:rgba(0,220,255,0.05);color:#ffffff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;width:100%">📄 Exporter en PDF</button>
+        <button onclick="downloadAnalysePDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(0,220,255,0.3);background:rgba(0,220,255,0.05);color:#ffffff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;width:100%;transition:background 0.15s,border-color 0.15s" onmouseover="this.style.background='rgba(0,220,255,0.12)';this.style.borderColor='rgba(0,220,255,0.5)'" onmouseout="this.style.background='rgba(0,220,255,0.05)';this.style.borderColor='rgba(0,220,255,0.3)'">📄 Exporter en PDF</button>
       `;
       setTimeout(() => declencherRebond(
         'Analyse : ' + (data.titre || text),
