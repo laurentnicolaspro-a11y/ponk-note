@@ -902,7 +902,7 @@
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px" id="calendrierActionBtns"></div>
     </div>
 
-    <button class="modal-close-btn" onclick="document.getElementById('calendrierModal').classList.add('hidden')">Fermer</button>
+    <button class="modal-close-btn" onclick="fermerCalendrier()">Fermer</button>
   </div>
 </div>
 
@@ -2123,11 +2123,12 @@
           </div>`;
         document.getElementById('calendrierCalBtn').style.display = 'block';
         document.getElementById('calendrierOrganiseBtn').style.display = 'block';
-        setTimeout(() => declencherRebond(
-          'Calendrier : ' + (data.titre || text),
-          'date: ' + (data.date || '') + ', lieu: ' + (data.description || ''),
-          (data.titre || text) + (data.date ? ' — ' + data.date : '')
-        ), 400);
+        // Stocker le contexte rebond pour quand l'utilisateur ferme
+        window._calendrierRebond = {
+          action: 'Calendrier : ' + (data.titre || text),
+          contexte: 'date: ' + (data.date || '') + ', lieu: ' + (data.description || ''),
+          resume: (data.titre || text) + (data.date ? ' — ' + data.date : '')
+        };
       }
     } catch(e) {
       document.getElementById('calendrierLoading').textContent = 'Service indisponible';
@@ -2219,6 +2220,15 @@
       document.body.appendChild(a);
       a.click();
       setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1000);
+    }
+  }
+
+  function fermerCalendrier() {
+    document.getElementById('calendrierModal').classList.add('hidden');
+    if (window._calendrierRebond) {
+      const r = window._calendrierRebond;
+      window._calendrierRebond = null;
+      setTimeout(() => declencherRebond(r.action, r.contexte, r.resume), 300);
     }
   }
 
