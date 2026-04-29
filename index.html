@@ -1011,10 +1011,10 @@
       </div>
       <!-- Mode transport -->
       <div style="display:flex;gap:6px;margin-bottom:12px" id="mapsMode">
-        <button class="maps-mode-btn active" data-mode="car"     onclick="setMapsMode(this)">🚗 Voiture</button>
-        <button class="maps-mode-btn"         data-mode="transit" onclick="setMapsMode(this)">🚌 Transport</button>
-        <button class="maps-mode-btn"         data-mode="walk"    onclick="setMapsMode(this)">🚶 À pied</button>
-        <button class="maps-mode-btn"         data-mode="bike"    onclick="setMapsMode(this)">🚲 Vélo</button>
+        <button class="maps-mode-btn active" data-mode="car"     onclick="setMapsMode(this)">Voiture</button>
+        <button class="maps-mode-btn"         data-mode="transit" onclick="setMapsMode(this)">Transport</button>
+        <button class="maps-mode-btn"         data-mode="walk"    onclick="setMapsMode(this)">À pied</button>
+        <button class="maps-mode-btn"         data-mode="bike"    onclick="setMapsMode(this)">Vélo</button>
       </div>
       <button onclick="lancerItineraire()" id="mapsLancerBtn"
         style="width:100%;padding:12px;border-radius:12px;border:none;background:rgba(0,160,255,0.8);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">
@@ -2512,6 +2512,8 @@
     const departVal  = document.getElementById('mapsDepart').value.trim();
     const arriveeVal = document.getElementById('mapsArrivee').value.trim();
     if (!arriveeVal) { alert('Veuillez entrer une destination'); return; }
+    // Mettre à jour le contexte rebond avec la destination réelle saisie
+    if (window._mapsRebond) window._mapsRebond.resume = 'Itinéraire vers ' + arriveeVal;
 
     document.getElementById('mapsLoading').style.display = 'block';
     document.getElementById('mapsResult').style.display = 'none';
@@ -2548,7 +2550,7 @@
 
       document.getElementById('mapsLoading').style.display = 'none';
       document.getElementById('mapsResult').style.display = 'block';
-      const modeIcons = { car:'🚗', transit:'🚌', walk:'🚶', bike:'🚲' };
+      const modeIcons = { car:'🚗', transit:'🚌', walk:'🚶', bike:'🚴' };
       const modeLabels = { car:'En voiture', transit:'En transport', walk:'À pied', bike:'À vélo' };
       document.getElementById('mapsModeIcon').textContent = modeIcons[mapsState.mode] || '🚗';
 
