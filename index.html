@@ -2612,9 +2612,9 @@
       const appleUrl  = `https://maps.apple.com/?saddr=${dep}&daddr=${arr}&dirflg=${{ car:'d', transit:'r', walk:'w', bike:'b' }[mapsState.mode] || 'd'}`;
 
       const appLinks = {
-        google: `<a href="${googleUrl}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:rgba(0,160,255,0.8);color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">🗺️ Ouvrir dans Google Maps</a>`,
-        waze:   `<a href="${wazeUrl}"   target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:#33ccff;color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">🚗 Ouvrir dans Waze</a>`,
-        apple:  `<a href="${appleUrl}"  target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:#555;color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">🍎 Ouvrir dans Apple Maps</a>`,
+        google: `<a href="${googleUrl}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:rgba(0,160,255,0.8);color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">Google Maps</a>`,
+        waze:   `<a href="${wazeUrl}"   target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:#33ccff;color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">Waze</a>`,
+        apple:  `<a href="${appleUrl}"  target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:#555;color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">Apple Maps</a>`,
       };
       const allApps = ['google','waze','apple'];
       const ordered = [prefMaps, ...allApps.filter(a => a !== prefMaps)];
