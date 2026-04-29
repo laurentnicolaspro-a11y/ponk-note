@@ -936,12 +936,12 @@
           </div>
         </div>
         <div style="margin-bottom:8px">
-          <div style="font-size:11px;font-weight:600;color:#ffffff;margin-bottom:4px">✅ Ce qu'il faut vérifier</div>
-          <div id="commandeVerifier" style="font-size:12px;color:rgba(0,220,255,0.5);line-height:1.8"></div>
+          <div style="font-size:11px;font-weight:600;color:#ffffff;margin-bottom:6px">Ce qu'il faut vérifier</div>
+          <div id="commandeVerifier" style="font-size:13px;color:rgba(200,220,255,0.85);line-height:1.8"></div>
         </div>
         <div>
-          <div style="font-size:11px;font-weight:600;color:#ffffff;margin-bottom:4px">⚠️ Points d'attention</div>
-          <div id="commandeAttention" style="font-size:12px;color:rgba(0,220,255,0.5);line-height:1.8"></div>
+          <div style="font-size:11px;font-weight:600;color:#ffffff;margin-bottom:6px">Points d'attention</div>
+          <div id="commandeAttention" style="font-size:13px;color:rgba(200,220,255,0.85);line-height:1.8"></div>
         </div>
       </div>
 
@@ -949,7 +949,7 @@
       <div id="commandeSites" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px"></div>
     </div>
 
-    <button class="modal-close-btn" onclick="document.getElementById('commandeModal').classList.add('hidden')">Fermer</button>
+    <button class="modal-close-btn" onclick="fermerCommande()">Fermer</button>
   </div>
 </div>
 
@@ -2355,8 +2355,8 @@
       if (data.produit) {
         document.getElementById('commandePrix').textContent = data.fourchette_prix || '';
         document.getElementById('commandePrixNote').textContent = data.fourchette_note || '';
-        document.getElementById('commandeVerifier').innerHTML = (data.verifier || []).map(v => `<div>→ ${v}</div>`).join('');
-        document.getElementById('commandeAttention').innerHTML = (data.attention || []).map(a => `<div>→ ${a}</div>`).join('');
+        document.getElementById('commandeVerifier').innerHTML = (data.verifier || []).map(v => `<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid rgba(0,220,255,0.06)"><span style="color:#00dcff;flex-shrink:0">›</span><span>${v}</span></div>`).join('');
+        document.getElementById('commandeAttention').innerHTML = (data.attention || []).map(a => `<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid rgba(0,220,255,0.06)"><span style="color:#00dcff;flex-shrink:0">›</span><span>${a}</span></div>`).join('');
         document.getElementById('commandeSites').innerHTML = (data.sites || []).map(s =>
           `<a href="${s.url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:rgba(0,220,255,0.05);border:1px solid rgba(0,220,255,0.2);text-decoration:none;color:#ffffff;transition:background 0.15s,border-color 0.15s"
             onmouseover="this.style.background='rgba(0,220,255,0.12)';this.style.borderColor='rgba(0,220,255,0.45)'"
@@ -2368,14 +2368,23 @@
         ).join('');
         document.getElementById('commandeLoading').style.display = 'none';
         document.getElementById('commandeBrief').style.display = 'block';
-        setTimeout(() => declencherRebond(
-          'Commande : ' + text,
-          'produit: ' + (data.produit || text),
-          'Commande de ' + (data.produit || text)
-        ), 400);
+        window._commandeRebond = {
+          action: 'Commande : ' + text,
+          contexte: 'produit: ' + (data.produit || text),
+          resume: 'Commande de ' + (data.produit || text)
+        };
       }
     } catch(e) {
       document.getElementById('commandeLoading').innerHTML = '<div style="font-size:13px;color:rgba(0,220,255,0.5);padding:10px">Service temporairement indisponible</div>';
+    }
+  }
+
+  function fermerCommande() {
+    document.getElementById('commandeModal').classList.add('hidden');
+    if (window._commandeRebond) {
+      const r = window._commandeRebond;
+      window._commandeRebond = null;
+      setTimeout(() => declencherRebond(r.action, r.contexte, r.resume), 300);
     }
   }
 
