@@ -2617,11 +2617,6 @@
       const allApps = ['google','waze','apple'];
       const ordered = [prefMaps, ...allApps.filter(a => a !== prefMaps)];
       document.getElementById('mapsAppBtns').innerHTML = ordered.map(a => appLinks[a]).join('');
-      setTimeout(() => declencherRebond(
-        'Itineraire : ' + (arriveeVal || ''),
-        'trajet vers ' + (arriveeVal || '') + ', mode: ' + mapsState.mode,
-        'Itinéraire vers ' + (arriveeVal || '')
-      ), 400);
 
     } catch(e) {
       document.getElementById('mapsLoading').style.display = 'none';
