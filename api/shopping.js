@@ -226,6 +226,20 @@ JSON uniquement, pas de texte autour.`;
     if (action === 'rebond') {
       const { actionFaite, contexte } = body;
 
+      async function callGeminiRebond(prompt) {
+        try {
+          const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
+          const timeout = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('timeout')), 6000)
+          );
+          const result = await Promise.race([model.generateContent(prompt), timeout]);
+          return result.response.text().trim();
+        } catch(e) {
+          console.log('[rebond] failed:', e.message);
+          return null;
+        }
+      }
+
       const ACTIONS_DISPO = [
         { type: 'EMAIL',       label: 'Envoyer un email',         icon: '📧' },
         { type: 'WHATSAPP',    label: 'Envoyer un message',        icon: '💬' },
@@ -270,12 +284,12 @@ JSON uniquement :
 Maximum 2 rebonds. Si aucun rebond pertinent, retourne {"rebonds": []}.
 JSON uniquement.`;
 
-      const raw = await callGemini(prompt, 8000);
+      const raw = await callGeminiRebond(prompt);
+      if (!raw) return res.status(200).json({ rebonds: [] });
       const clean = raw.replace(/```json|```/g, '').trim();
 
       try {
         const parsed = JSON.parse(clean);
-        // Enrichir avec les icônes
         parsed.rebonds = (parsed.rebonds || []).map(r => {
           const action = ACTIONS_DISPO.find(a => a.type === r.type);
           return { ...r, icon: action?.icon || '✨' };
@@ -285,8 +299,6 @@ JSON uniquement.`;
         return res.status(200).json({ rebonds: [] });
       }
     }
-
-    return res.status(400).json({ error: 'Action non reconnue' });
 
     // ── RECHERCHE ─────────────────────────────────────────────────────────────
     if (action === 'recherche') {
@@ -305,6 +317,8 @@ Réponds UNIQUEMENT avec la requête reformulée, sans guillemets, sans ponctuat
       const query = await callGemini(prompt, 5000);
       return res.status(200).json({ query: query.trim() });
     }
+
+    return res.status(400).json({ error: 'Action non reconnue' });
 
   } catch(err) {
     console.error('[shopping]', err.message);
