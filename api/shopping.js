@@ -288,6 +288,24 @@ JSON uniquement.`;
 
     return res.status(400).json({ error: 'Action non reconnue' });
 
+    // ── RECHERCHE ─────────────────────────────────────────────────────────────
+    if (action === 'recherche') {
+      const prompt = `Tu es un expert en recherche web. Reformule cette demande en une requête de recherche courte et efficace, optimisée pour un moteur de recherche.
+
+Demande : "${text}"
+
+Règles :
+- Maximum 6 mots
+- Supprime les mots inutiles (je veux, je cherche, trouver, etc.)
+- Garde les mots clés essentiels
+- En français
+
+Réponds UNIQUEMENT avec la requête reformulée, sans guillemets, sans ponctuation, sans explication.`;
+
+      const query = await callGemini(prompt, 5000);
+      return res.status(200).json({ query: query.trim() });
+    }
+
   } catch(err) {
     console.error('[shopping]', err.message);
     return res.status(500).json({ error: err.message });
