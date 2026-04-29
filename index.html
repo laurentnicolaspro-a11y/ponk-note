@@ -1950,6 +1950,36 @@
       return;
     }
 
+    if (bubble.type === 'RECHERCHE') {
+      document.getElementById('bubbleModal').classList.add('hidden');
+      bubble.confirmed = 'done';
+      removeBubbleEl(currentBubbleIndex);
+      const prefMoteur = localStorage.getItem('ponk_pref_moteur') || 'google';
+      const MOTEURS = {
+        google: q => `https://www.google.com/search?q=${encodeURIComponent(q)}`,
+        bing:   q => `https://www.bing.com/search?q=${encodeURIComponent(q)}`,
+        duck:   q => `https://duckduckgo.com/?q=${encodeURIComponent(q)}`,
+      };
+      try {
+        const res = await fetch('/api/shopping', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ text: bubble.text, action: 'recherche' })
+        });
+        const data = await res.json();
+        const query = data.query || bubble.text;
+        const url = (MOTEURS[prefMoteur] || MOTEURS.google)(query);
+        window.open(url, '_blank');
+        setTimeout(() => declencherRebond(
+          'Recherche : ' + query,
+          'recherche web sur ' + query,
+          'Recherche : ' + query
+        ), 400);
+      } catch(e) {
+        window.open(`https://www.google.com/search?q=${encodeURIComponent(bubble.text)}`, '_blank');
+      }
+      return;
+    }
+
     const aiTypes = ['EMAIL','WHATSAPP','CALENDRIER'];
 
     if (aiTypes.includes(bubble.type) && bubble.text) {
