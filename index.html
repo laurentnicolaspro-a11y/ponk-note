@@ -1232,6 +1232,9 @@
     try {
       const stream = await navigator.mediaDevices.getUserMedia({audio:true});
       chunks = [];
+      blob = null;
+      uploadedFileName = null;
+      document.getElementById('btnAnalyze').classList.remove('visible');
       recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 16000 });
       recorder.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
       recorder.onstop = () => {
