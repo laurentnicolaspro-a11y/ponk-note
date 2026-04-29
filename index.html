@@ -2052,7 +2052,8 @@
     document.getElementById('calendrierCalBtn').style.display = 'none';
     document.getElementById('calendrierOrganiseBtn').style.display = 'none';
     document.getElementById('calendrierLoading').style.display = 'block';
-    document.getElementById('calendrierLoadingText').textContent = 'Analyse en cours…';
+    const loadingTextEl = document.getElementById('calendrierLoadingText');
+    if (loadingTextEl) loadingTextEl.textContent = 'Analyse en cours…';
     modal.classList.remove('hidden');
 
     const now = new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
@@ -2131,7 +2132,9 @@
         };
       }
     } catch(e) {
-      document.getElementById('calendrierLoading').textContent = 'Service indisponible';
+      document.getElementById('calendrierLoading').style.display = 'block';
+      const lt = document.getElementById('calendrierLoadingText');
+      if (lt) lt.textContent = 'Service indisponible';
     }
   }
 
@@ -2254,7 +2257,8 @@
 
     document.getElementById('calendrierStep2').style.display = 'none';
     document.getElementById('calendrierLoading').style.display = 'block';
-    document.getElementById('calendrierLoadingText').textContent = 'Préparation en cours…';
+    const loadingTextEl2 = document.getElementById('calendrierLoadingText');
+    if (loadingTextEl2) loadingTextEl2.textContent = 'Préparation en cours…';
 
     const now = new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
 
@@ -2324,7 +2328,9 @@
       btns.innerHTML = btnsHtml;
 
     } catch(e) {
-      document.getElementById('calendrierLoading').textContent = 'Erreur lors de la préparation';
+      document.getElementById('calendrierLoading').style.display = 'block';
+      const lt2 = document.getElementById('calendrierLoadingText');
+      if (lt2) lt2.textContent = 'Erreur lors de la préparation';
     }
   }
 
