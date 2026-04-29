@@ -169,17 +169,32 @@ JSON uniquement, pas de texte autour.`;
           { nom: 'Google Hotels', icon: '🔍', url: `https://www.google.com/travel/hotels?q=hotel+${dest}`, desc: 'Comparer tous les prix' },
         ];
       } else if (type === 'TRAIN') {
+        const sncfUrl = ori
+          ? `https://www.sncf-connect.com/app/home/shop/search?userInput=${ori}+${dest}`
+          : `https://www.sncf-connect.com/app/home/shop/search?userInput=${dest}`;
+        const trainlineUrl = ori
+          ? `https://www.thetrainline.com/fr/search?origin=${ori}&destination=${dest}`
+          : `https://www.thetrainline.com/fr/search?destination=${dest}`;
         plateformes = [
-          { nom: 'SNCF Connect',   icon: '🚄', url: `https://www.sncf-connect.com/app/home/shop/search?userInput=${ori}+${dest}`, desc: 'Billets officiels SNCF' },
-          { nom: 'Trainline',      icon: '🚆', url: `https://www.thetrainline.com/fr/search?origin=${ori}&destination=${dest}`, desc: 'Meilleurs prix trains' },
+          { nom: 'SNCF Connect',   icon: '🚄', url: sncfUrl, desc: 'Billets officiels SNCF' },
+          { nom: 'Trainline',      icon: '🚆', url: trainlineUrl, desc: 'Meilleurs prix trains' },
           { nom: 'Ouigo',          icon: '💚', url: `https://www.ouigo.com/`, desc: 'TGV low-cost' },
           { nom: 'Eurostar',       icon: '🌍', url: `https://www.eurostar.com/fr-fr/train`, desc: 'Trains internationaux' },
         ];
       } else if (type === 'VOL') {
+        const flightsUrl = ori
+          ? `https://www.google.com/flights?q=vols+${ori}+${dest}`
+          : `https://www.google.com/flights?q=vols+${dest}`;
+        const skyscannerUrl = ori
+          ? `https://www.skyscanner.fr/transport/flights/${ori}/${dest}/`
+          : `https://www.skyscanner.fr/transport/flights/fr/${dest}/`;
+        const kayakUrl = ori
+          ? `https://www.kayak.fr/flights/${ori}-${dest}`
+          : `https://www.kayak.fr/flights/FR-${dest}`;
         plateformes = [
-          { nom: 'Google Flights', icon: '✈️', url: `https://www.google.com/flights?q=vols+${ori}+${dest}`, desc: 'Comparer tous les vols' },
-          { nom: 'Skyscanner',     icon: '🔵', url: `https://www.skyscanner.fr/transport/flights/${ori}/${dest}/`, desc: 'Meilleurs tarifs vols' },
-          { nom: 'Kayak',          icon: '🛫', url: `https://www.kayak.fr/flights/${ori}-${dest}`, desc: 'Comparateur de vols' },
+          { nom: 'Google Flights', icon: '✈️', url: flightsUrl, desc: 'Comparer tous les vols' },
+          { nom: 'Skyscanner',     icon: '🔵', url: skyscannerUrl, desc: 'Meilleurs tarifs vols' },
+          { nom: 'Kayak',          icon: '🛫', url: kayakUrl, desc: 'Comparateur de vols' },
           { nom: 'Transavia',      icon: '🟢', url: `https://www.transavia.com/fr-FR/accueil/`, desc: 'Vols low-cost' },
         ];
       } else if (type === 'RESTAURANT') {
