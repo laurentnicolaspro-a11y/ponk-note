@@ -582,8 +582,10 @@
       box-shadow:0 0 16px rgba(0,180,255,0.25);
     }
     .btn-now {
-      background:rgba(0,180,100,0.12); color:#3db87a;
-      border:1px solid rgba(61,184,122,0.35);
+      background:linear-gradient(135deg, rgba(0,160,80,0.9), rgba(61,184,122,0.85));
+      border:1px solid rgba(61,184,122,0.5);
+      box-shadow:0 0 16px rgba(61,184,122,0.25);
+      color:#fff;
     }
     .btn-reject {
       background:rgba(255,255,255,0.04); color:rgba(200,210,255,0.4);
@@ -1163,7 +1165,7 @@
     <textarea class="bubble-modal-textarea" id="bubbleModalText" placeholder="Décris l'action..."></textarea>
     <div class="bubble-modal-btns">
       <button class="bubble-modal-btn btn-reject" onclick="rejectBubble()">✗ Ignorer</button>
-      <button class="bubble-modal-btn btn-now" onclick="doNow()">→ Faire</button>
+      <button class="bubble-modal-btn btn-now" onclick="doNow()">▶ Faire</button>
       <button class="bubble-modal-btn btn-confirm" onclick="confirmBubble()">✓ Garder</button>
     </div>
   </div>
@@ -1896,7 +1898,7 @@
       } catch(e) {}
       const phone = (contactWA?.phone || bubble.generated?.phone || '').replace(/[^0-9+]/g,'');
       const msg = bubble.generated?.message || bubble.text;
-      document.querySelectorAll('.btn-now').forEach(b => { b.textContent = '→ Faire'; b.disabled = false; });
+      document.querySelectorAll('.btn-now').forEach(b => { b.textContent = '▶ Faire'; b.disabled = false; });
       showWhatsAppModal(phone, msg);
       return;
     }
@@ -1964,7 +1966,7 @@
         const data = await res.json();
         bubble.generated = data;
       } catch(e) {}
-      if (confirmBtn) { confirmBtn.textContent = '→ Faire'; confirmBtn.disabled = false; }
+      if (confirmBtn) { confirmBtn.textContent = '▶ Faire'; confirmBtn.disabled = false; }
       const url = getActionUrlFromBubble(bubble);
       if (url) {
         if (isMobile) {
