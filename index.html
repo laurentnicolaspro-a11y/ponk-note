@@ -2872,7 +2872,15 @@
             if (data.prefs.maps)  localStorage.setItem('ponk_pref_maps', data.prefs.maps);
             if (data.prefs.ville) localStorage.setItem('ponk_ville', data.prefs.ville);
           }
-          if (data.contacts) localStorage.setItem('ponk_contacts', JSON.stringify(data.contacts));
+          if (data.contacts && data.contacts.length > 0) {
+            // Fusionner : garder les contacts locaux + ceux de Supabase, sans doublons (par nom)
+            const local = (() => { try { return JSON.parse(localStorage.getItem('ponk_contacts') || '[]'); } catch(e) { return []; } })();
+            const merged = [...data.contacts];
+            local.forEach(lc => {
+              if (!merged.find(sc => sc.name === lc.name)) merged.push(lc);
+            });
+            localStorage.setItem('ponk_contacts', JSON.stringify(merged));
+          }
           if (data.name) localStorage.setItem('ponk_profile', data.name);
         }
       } catch(e) {}
@@ -2910,10 +2918,23 @@
     if (ville) localStorage.setItem('ponk_ville', ville);
 
     try {
+      // Récupérer les contacts existants avant d'écraser
+      let existingContacts = [];
+      try {
+        const existing = await fetch('/api/profile?email=' + encodeURIComponent(email));
+        if (existing.ok) {
+          const existingData = await existing.json();
+          existingContacts = existingData.contacts || [];
+          // Fusionner avec les contacts locaux
+          const local = (() => { try { return JSON.parse(localStorage.getItem('ponk_contacts') || '[]'); } catch(e) { return []; } })();
+          local.forEach(lc => { if (!existingContacts.find(sc => sc.name === lc.name)) existingContacts.push(lc); });
+        }
+      } catch(e) {}
+      localStorage.setItem('ponk_contacts', JSON.stringify(existingContacts));
       await fetch('/api/profile', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ email, name, prefs: {mail, cal, maps, ville}, contacts: [] })
+        body: JSON.stringify({ email, name, prefs: {mail, cal, maps, ville}, contacts: existingContacts })
       });
     } catch(e) { console.warn('Profile save failed:', e); }
 
