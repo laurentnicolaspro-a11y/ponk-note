@@ -2437,9 +2437,21 @@
   let mapsState = { mode: 'car', departLat: null, departLon: null, arriveeLat: null, arriveeLon: null };
 
   function showMapsModal(text) {
-    document.getElementById('mapsModalTitle').textContent = text ? text.substring(0, 40) : 'Itinéraire';
+    // Nettoyer le texte pour extraire uniquement la destination
+    const cleanDest = (text || '')
+      .replace(/afficher l'itinéraire pour\s*/i, '')
+      .replace(/afficher l.itin[eé]raire pour\s*/i, '')
+      .replace(/aller [àa]\s*/i, '')
+      .replace(/va chez\s*/i, '')
+      .replace(/se rendre [àa]\s*/i, '')
+      .replace(/trajet (vers|pour|jusqu'[àa])\s*/i, '')
+      .replace(/itinéraire (vers|pour|jusqu'[àa])\s*/i, '')
+      .replace(/navigation (vers|pour)\s*/i, '')
+      .replace(/chemin pour\s*/i, '')
+      .trim();
+    document.getElementById('mapsModalTitle').textContent = cleanDest ? cleanDest.substring(0, 40) : 'Itinéraire';
     document.getElementById('mapsDepart').value = '';
-    document.getElementById('mapsArrivee').value = text || '';
+    document.getElementById('mapsArrivee').value = cleanDest || '';
     document.getElementById('mapsResult').style.display = 'none';
     document.getElementById('mapsLoading').style.display = 'none';
     document.getElementById('mapsMeteo').style.display = 'none';
