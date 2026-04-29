@@ -22,7 +22,7 @@ module.exports = async function handler(req, res) {
     const timeoutMs = 120000;
 
     async function tryGenerate(content_arg) {
-      const _models = ['gemini-3.1-flash-lite-preview', 'gemini-2.5-flash', 'gemini-2.5-flash-lite-preview-06-17'];
+      const _models = ['gemini-3.1-flash-lite-preview', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'];
       for (const _mn of _models) {
         try {
           const _m = genAI.getGenerativeModel({ model: _mn });
