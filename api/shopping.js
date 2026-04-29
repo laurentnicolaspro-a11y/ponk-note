@@ -169,15 +169,9 @@ JSON uniquement, pas de texte autour.`;
           { nom: 'Google Hotels', icon: '🔍', url: `https://www.google.com/travel/hotels?q=hotel+${dest}`, desc: 'Comparer tous les prix' },
         ];
       } else if (type === 'TRAIN') {
-        const sncfUrl = ori
-          ? `https://www.sncf-connect.com/app/home/shop/search?userInput=${ori}+${dest}`
-          : `https://www.sncf-connect.com/app/home/shop/search?userInput=${dest}`;
-        const trainlineUrl = ori
-          ? `https://www.thetrainline.com/fr/search?origin=${ori}&destination=${dest}`
-          : `https://www.thetrainline.com/fr/search?destination=${dest}`;
         plateformes = [
-          { nom: 'SNCF Connect',   icon: '🚄', url: sncfUrl, desc: 'Billets officiels SNCF' },
-          { nom: 'Trainline',      icon: '🚆', url: trainlineUrl, desc: 'Meilleurs prix trains' },
+          { nom: 'SNCF Connect',   icon: '🚄', url: `https://www.sncf-connect.com`, desc: infos.destination ? `Vers ${infos.destination}` : 'Billets officiels SNCF' },
+          { nom: 'Trainline',      icon: '🚆', url: `https://www.thetrainline.com/fr`, desc: infos.destination ? `Vers ${infos.destination}` : 'Meilleurs prix trains' },
           { nom: 'Ouigo',          icon: '💚', url: `https://www.ouigo.com/`, desc: 'TGV low-cost' },
           { nom: 'Eurostar',       icon: '🌍', url: `https://www.eurostar.com/fr-fr/train`, desc: 'Trains internationaux' },
         ];
