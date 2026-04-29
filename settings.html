@@ -358,13 +358,33 @@
     return COLORS[Math.abs(h)%COLORS.length];
   }
 
-  function loadPrefs() {
+  async function loadPrefs() {
+    // Charger les prefs depuis localStorage
     ['prefMail','prefCal','prefMaps'].forEach(id => {
       const key = 'ponk_pref_' + id.replace('pref','').toLowerCase();
       const val = localStorage.getItem(key);
       if (val) document.getElementById(id).value = val;
     });
     document.getElementById('prefVille').value = localStorage.getItem('ponk_ville') || '';
+
+    // Charger les contacts depuis Supabase pour être à jour
+    const email = localStorage.getItem('ponk_email');
+    if (!email) return;
+    try {
+      const res = await fetch('/api/profile?email=' + encodeURIComponent(email));
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.contacts && Array.isArray(data.contacts)) {
+        localStorage.setItem('ponk_contacts', JSON.stringify(data.contacts));
+        renderContacts();
+      }
+      if (data.prefs) {
+        if (data.prefs.mail)  { localStorage.setItem('ponk_pref_mail', data.prefs.mail);   document.getElementById('prefMail').value = data.prefs.mail; }
+        if (data.prefs.cal)   { localStorage.setItem('ponk_pref_cal', data.prefs.cal);     document.getElementById('prefCal').value = data.prefs.cal; }
+        if (data.prefs.maps)  { localStorage.setItem('ponk_pref_maps', data.prefs.maps);   document.getElementById('prefMaps').value = data.prefs.maps; }
+        if (data.prefs.ville) { localStorage.setItem('ponk_ville', data.prefs.ville);      document.getElementById('prefVille').value = data.prefs.ville; }
+      }
+    } catch(e) { console.warn('Chargement Supabase échoué, fallback localStorage', e); }
   }
 
   function savePref(key, value) {
