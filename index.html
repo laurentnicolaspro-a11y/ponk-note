@@ -1959,6 +1959,7 @@
         google: q => `https://www.google.com/search?q=${encodeURIComponent(q)}`,
         bing:   q => `https://www.bing.com/search?q=${encodeURIComponent(q)}`,
         duck:   q => `https://duckduckgo.com/?q=${encodeURIComponent(q)}`,
+        yahoo:  q => `https://search.yahoo.com/search?p=${encodeURIComponent(q)}`,
       };
       try {
         const res = await fetch('/api/shopping', {
