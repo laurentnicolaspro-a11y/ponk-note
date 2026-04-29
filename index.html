@@ -2470,7 +2470,7 @@
   function geolocateDepart() {
     if (!navigator.geolocation) return;
     const btn = document.querySelector('[onclick="geolocateDepart()"]');
-    if (btn) btn.textContent = '⏳';
+    if (btn) btn.innerHTML = '<div style="width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite"></div>';
     navigator.geolocation.getCurrentPosition(pos => {
       mapsState.departLat = pos.coords.latitude;
       mapsState.departLon = pos.coords.longitude;
