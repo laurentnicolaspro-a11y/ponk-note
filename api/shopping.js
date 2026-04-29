@@ -19,7 +19,7 @@ module.exports = async function handler(req, res) {
     if (!text) return res.status(400).json({ error: 'Texte requis' });
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-1.5-flash'];
+    const MODELS = ['gemini-3.1-flash-lite-preview', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'];
 
     async function callGemini(prompt, timeoutMs = 10000) {
       for (const mn of MODELS) {
@@ -186,7 +186,7 @@ JSON uniquement, pas de texte autour.`;
         plateformes = [
           { nom: 'TheFork',        icon: '🍽️', url: `https://www.thefork.fr/recherche?q=${dest}`, desc: 'Réserver une table' },
           { nom: 'Google Restos',  icon: '🔍', url: `https://www.google.com/search?q=restaurant+${dest}`, desc: 'Trouver un restaurant' },
-          { nom: 'Tripadvisor',    icon: '🦉', url: `https://www.tripadvisor.fr/Restaurants-${dest}`, desc: 'Avis et réservations' },
+          { nom: 'Tripadvisor',    icon: '🦉', url: `https://www.google.com/search?q=tripadvisor+restaurant+${dest}`, desc: 'Avis et réservations' },
         ];
       } else if (type === 'SPECTACLE') {
         plateformes = [
