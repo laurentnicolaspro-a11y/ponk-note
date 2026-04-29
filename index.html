@@ -8,6 +8,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Audiowide&display=swap" rel="stylesheet">
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+    ::-webkit-scrollbar { width:5px; height:5px; }
+    ::-webkit-scrollbar-track { background:rgba(0,0,0,0.2); border-radius:10px; }
+    ::-webkit-scrollbar-thumb { background:rgba(0,220,255,0.25); border-radius:10px; }
+    ::-webkit-scrollbar-thumb:hover { background:rgba(0,220,255,0.45); }
 
     :root {
       --grad-idle: linear-gradient(145deg, #dce8f8 0%, #e8d8f0 40%, #f5e6d8 100%);
@@ -997,7 +1001,7 @@
           <input type="text" id="mapsDepart" placeholder="Ma position actuelle…"
             style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(0,220,255,0.06);font-family:inherit;font-size:13px;color:#ffffff;outline:none;border-color:rgba(0,220,255,0.3)"/>
           <button onclick="geolocateDepart()" title="Ma position"
-            style="width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,160,255,0.8);color:#fff;font-size:16px;cursor:pointer;flex-shrink:0">📍</button>
+            style="width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,160,255,0.8);color:#fff;font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center">📍</button>
         </div>
       </div>
       <div style="margin-bottom:12px">
@@ -1064,7 +1068,7 @@
     </div>
 
     <button class="modal-close-btn"
-      onclick="document.getElementById('mapsModal').classList.add('hidden')">Fermer</button>
+      onclick="fermerMaps()">Fermer</button>
   </div>
 </div>
 
@@ -2457,8 +2461,22 @@
     document.getElementById('mapsMeteo').style.display = 'none';
     document.getElementById('mapsPOIWrap').style.display = 'none';
     mapsState = { mode: 'car', departLat: null, departLon: null, arriveeLat: null, arriveeLon: null };
+    window._mapsRebond = {
+      action: 'Maps : ' + (cleanDest || text),
+      contexte: 'itineraire vers ' + (cleanDest || text),
+      resume: 'Itinéraire vers ' + (cleanDest || text)
+    };
     document.getElementById('mapsModal').classList.remove('hidden');
     geolocateDepart();
+  }
+
+  function fermerMaps() {
+    document.getElementById('mapsModal').classList.add('hidden');
+    if (window._mapsRebond) {
+      const r = window._mapsRebond;
+      window._mapsRebond = null;
+      setTimeout(() => declencherRebond(r.action, r.contexte, r.resume), 300);
+    }
   }
 
   function setMapsMode(btn) {
