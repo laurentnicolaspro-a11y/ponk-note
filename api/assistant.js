@@ -9,23 +9,36 @@ module.exports = async function handler(req, res) {
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-    const _models_a = [
-      'gemini-2.5-flash',
-    ];
-
-    // Timeout unique pour réponse directe
-    const timeouts = [5000];
+    // flash en premier (meilleure qualité pour vocal), flash-lite en fallback
+    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+    const TIMEOUT_MS = 10000;
 
     async function callGemini(prompt) {
-      for (let i = 0; i < _models_a.length; i++) {
-        try {
-          const model = genAI.getGenerativeModel({ model: _models_a[i] });
-          const _t = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeouts[i]));
-          const _r = await Promise.race([model.generateContent(prompt), _t]);
-          console.log('[assistant] succès avec', _models_a[i]);
-          return _r.response.text().trim();
-        } catch(e) {
-          console.log('[assistant fallback]', _models_a[i], 'failed:', e.message);
+      for (const modelName of MODELS) {
+        // 1 retry sur erreur transitoire, délai court (500ms) pour ne pas casser le temps réel
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const model = genAI.getGenerativeModel({ model: modelName });
+            const timeout = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('timeout')), TIMEOUT_MS)
+            );
+            const result = await Promise.race([model.generateContent(prompt), timeout]);
+            console.log(`[assistant] success: ${modelName} attempt ${attempt}`);
+            return result.response.text().trim();
+          } catch (e) {
+            const isTransient =
+              e.message.includes('503') ||
+              e.message.includes('429') ||
+              e.message.includes('UNAVAILABLE');
+
+            console.log(`[assistant] ${modelName} attempt ${attempt} failed (${isTransient ? 'transient' : 'fatal'}):`, e.message);
+
+            if (isTransient && attempt < 2) {
+              await new Promise(r => setTimeout(r, 500));
+              continue;
+            }
+            break; // erreur fatale ou 2 tentatives épuisées → modèle suivant
+          }
         }
       }
       return null;
@@ -60,7 +73,7 @@ Réponds UNIQUEMENT en JSON sans markdown :
       try {
         const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
         return res.status(200).json(parsed);
-      } catch(e) {
+      } catch (e) {
         return res.status(200).json({ answer: null, action: null, texte: null });
       }
     }
@@ -86,7 +99,7 @@ ou
       if (!raw) return res.status(200).json({ action: null });
       try {
         return res.status(200).json(JSON.parse(raw.replace(/```json|```/g, '').trim()));
-      } catch(e) {
+      } catch (e) {
         return res.status(200).json({ action: null });
       }
     }
