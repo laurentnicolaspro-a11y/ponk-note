@@ -19,17 +19,41 @@ module.exports = async function handler(req, res) {
     } = body;
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const timeoutMs = 120000;
 
+    // ── Timeout aligné sur Vercel Pro (55s max pour laisser de la marge) ──
+    const TIMEOUT_MS = 50000;
+
+    // ── Retry exponentiel : 3 tentatives par modèle, backoff 1.5s / 3s ──
     async function tryGenerate(content_arg) {
-      const _models = ['gemini-3.1-flash-lite-preview', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'];
-      for (const _mn of _models) {
-        try {
-          const _m = genAI.getGenerativeModel({ model: _mn });
-          const _t = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs));
-          const _r = await Promise.race([_m.generateContent(content_arg), _t]);
-          return _r;
-        } catch(e) { console.log('[analyze fallback]', _mn, 'failed:', e.message); }
+      const models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+
+      for (const modelName of models) {
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const model = genAI.getGenerativeModel({ model: modelName });
+            const timeout = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('timeout')), TIMEOUT_MS)
+            );
+            const result = await Promise.race([model.generateContent(content_arg), timeout]);
+            console.log(`[analyze] success: ${modelName} attempt ${attempt}`);
+            return result;
+          } catch (e) {
+            const isTransient =
+              e.message.includes('503') ||
+              e.message.includes('429') ||
+              e.message.includes('timeout') ||
+              e.message.includes('UNAVAILABLE');
+
+            console.log(`[analyze] ${modelName} attempt ${attempt} failed (${isTransient ? 'transient' : 'fatal'}):`, e.message);
+
+            if (isTransient && attempt < 3) {
+              // Backoff : 1.5s puis 3s
+              await new Promise(r => setTimeout(r, attempt * 1500));
+              continue;
+            }
+            break; // erreur fatale ou 3 tentatives épuisées → modèle suivant
+          }
+        }
       }
       throw new Error('All models failed');
     }
@@ -40,7 +64,7 @@ module.exports = async function handler(req, res) {
       const result = await tryGenerate(rewritePrompt);
       const raw = result.response.text().replace(/```json|```/g, '').trim();
       try { return res.status(200).json(JSON.parse(raw)); }
-      catch(e) { return res.status(200).json(summaryToRewrite); }
+      catch (e) { return res.status(200).json(summaryToRewrite); }
     }
 
     // ── Mode transcript_only : détecte les actions IA ──
@@ -57,18 +81,28 @@ module.exports = async function handler(req, res) {
     const audioUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/audio/${fileName}`;
     console.log('[analyze] audio URL:', audioUrl);
 
-    // ── APPEL 1 : Transcription via URL Supabase ──
-    let transcriptResult;
+    // ── APPEL 1 : Transcription via base64 (fiable) ──
+    let transcript = '';
     try {
-      transcriptResult = await tryGenerate([
-        { fileData: { mimeType: 'audio/webm', fileUri: audioUrl } },
+      console.log('[analyze] fetching audio from Supabase...');
+      const audioResponse = await fetch(audioUrl);
+      if (!audioResponse.ok) throw new Error(`Supabase fetch failed: ${audioResponse.status}`);
+      const audioBuffer = await audioResponse.arrayBuffer();
+      const audioBase64 = Buffer.from(audioBuffer).toString('base64');
+      console.log('[analyze] audio fetched, size:', audioBuffer.byteLength, 'bytes');
+
+      const transcriptResult = await tryGenerate([
+        { inlineData: { mimeType: 'audio/webm', data: audioBase64 } },
         { text: `Transcris cet audio mot par mot en français. Sois fidèle à ce qui est dit. Réponds UNIQUEMENT avec le texte transcrit, sans commentaire.` }
       ]);
-    } catch(e) { throw e; }
-    const transcript = transcriptResult.response.text().trim();
+      transcript = transcriptResult.response.text().trim();
+      console.log('[analyze] transcript length:', transcript.length);
+    } catch (e) {
+      console.error('[analyze] transcription failed:', e.message);
+      throw new Error('Transcription échouée : ' + e.message);
+    }
 
-
-    // ── APPEL 2 : Analyse structurée ──
+    // ── APPEL 2 : Analyse structurée — avec fallback si ça plante ──
     const analysisPrompt = `Tu es un assistant intelligent qui analyse des retranscriptions audio et en extrait les informations utiles.
 IMPORTANT : Réponds OBLIGATOIREMENT en FRANÇAIS.
 
@@ -243,24 +277,27 @@ Règles STRICTES pour les actions_ia :
 - Maximum 3 actions par transcription
 - Si aucune action claire n'est détectée, mets "actions_ia": []`;
 
-    const analysisResult = await tryGenerate(analysisPrompt);
-    const rawText = analysisResult.response.text();
-    const clean = rawText.replace(/```json|```/g, '').trim();
-
     let parsed;
     try {
+      const analysisResult = await tryGenerate(analysisPrompt);
+      const rawText = analysisResult.response.text();
+      const clean = rawText.replace(/```json|```/g, '').trim();
       parsed = JSON.parse(clean);
-    } catch {
+    } catch (e) {
+      // L'analyse a planté — on sauvegarde quand même la transcription
+      console.error('[analyze] analysis failed, returning transcript only:', e.message);
       parsed = {
         modes: ['MEMO'],
         summary: {
+          resume: 'Analyse indisponible — la transcription a été sauvegardée.',
           contexte: '',
           points_discutes: [],
           decisions: [],
           actions: [],
           prochaine_etape: ''
         },
-        memo: { notes: clean }
+        memo: { rappels: [], notes: 'Analyse indisponible — réessaie depuis la bibliothèque.' },
+        actions_ia: []
       };
     }
 
