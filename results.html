@@ -433,15 +433,7 @@
 </header>
 
 <div class="content">
-  <div id="metaHeader" class="card" style="display:none;flex-direction:row;align-items:center;gap:12px;padding:14px 16px;">
-    <input type="checkbox" class="export-cb" id="ecb_title" checked data-export-label="title" data-export-content="" style="flex-shrink:0;margin-top:0;">
-    <div style="flex:1;min-width:0;">
-      <div id="metaTitle"
-        style="font-family:Audiowide,sans-serif;font-size:13px;color:#e8f4ff;cursor:text;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-        onclick="editMetaTitle(this)"></div>
-      <div id="metaSub" style="font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:0.3px;"></div>
-    </div>
-  </div>
+  <div id="metaCardWrap"></div>
   <div id="meta" class="meta" style="display:none"></div>
   <div id="cards"></div>
   <div class="action-btns">
@@ -485,17 +477,29 @@ function render(data, meta) {
 
   if (meta && (meta.title || meta.datetime || meta.duration)) {
     const rawTitle = meta.title || 'Enregistrement';
-    const sub = [meta.datetime, meta.duration ? meta.duration : ''].filter(Boolean).join(' · ');
+    const sub = [meta.datetime, meta.duration].filter(Boolean).join(' · ');
 
-    const titleEl = document.getElementById('metaTitle');
-    const subEl   = document.getElementById('metaSub');
-    const cb      = document.getElementById('ecb_title');
-    const header  = document.getElementById('metaHeader');
+    // Contenu : titre brut modifiable + sous-titre
+    const bodyHTML = `
+      <div class="sec" style="padding-top:10px;">
+        <div style="display:flex;align-items:flex-start;gap:8px;">
+          <input type="checkbox" class="export-cb" id="ecb_title" checked
+            data-export-label="title" data-export-content="${encodeURIComponent(rawTitle)}"
+            style="flex-shrink:0;margin-top:3px;">
+          <div style="flex:1;min-width:0;">
+            <div id="metaTitle"
+              style="font-size:14px;color:#e8f4ff;cursor:text;line-height:1.5;word-break:break-all;"
+              onclick="editMetaTitle(this)">${rawTitle}</div>
+            ${sub ? `<div style="font-size:11px;color:var(--muted);margin-top:4px;">${sub}</div>` : ''}
+          </div>
+          <button class="edit-btn" style="color:var(--danger);flex-shrink:0;" onclick="document.getElementById('metaCardWrap').innerHTML=''" title="Supprimer">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>`;
 
-    titleEl.textContent = rawTitle;
-    if (subEl) subEl.textContent = sub;
-    if (cb) cb.dataset.exportContent = encodeURIComponent(rawTitle);
-    if (header) header.style.display = 'flex';
+    const titleCard = makeCard('Enregistrement', bodyHTML, false);
+    document.getElementById('metaCardWrap').appendChild(titleCard);
   }
 
   // ── Synthèse ──
@@ -715,8 +719,6 @@ function editMetaTitle(el) {
   el.style.outline = '1px solid var(--cyan)';
   el.style.borderRadius = '4px';
   el.style.padding = '2px 6px';
-  el.style.whiteSpace = 'normal';
-  el.style.overflow = 'visible';
   const range = document.createRange();
   const sel = window.getSelection();
   range.selectNodeContents(el);
@@ -730,21 +732,17 @@ function editMetaTitle(el) {
     el.style.outline = '';
     el.style.borderRadius = '';
     el.style.padding = '';
-    el.style.whiteSpace = 'nowrap';
-    el.style.overflow = 'hidden';
     el.textContent = val;
-    // Sauvegarder dans ponk_meta
     const m = JSON.parse(localStorage.getItem('ponk_meta') || '{}');
     m.title = val;
     localStorage.setItem('ponk_meta', JSON.stringify(m));
-    // Mettre à jour la case export
     const cb = document.getElementById('ecb_title');
     if (cb) cb.dataset.exportContent = encodeURIComponent(val);
   };
   el.onblur = save;
   el.onkeydown = e => {
     if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
-    if (e.key === 'Escape') { el.contentEditable = 'false'; }
+    if (e.key === 'Escape') { el.contentEditable = 'false'; el.style.outline = ''; el.style.borderRadius = ''; el.style.padding = ''; }
   };
 }
 
