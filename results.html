@@ -476,7 +476,12 @@ function render(data, meta) {
   const c = document.getElementById('cards');
 
   if (meta && (meta.title || meta.datetime || meta.duration)) {
-    const rawTitle = meta.title || 'Enregistrement';
+    // Si le titre est générique, prendre le nom du fichier audio
+    let rawTitle = meta.title || '';
+    if (!rawTitle || rawTitle === 'enregistrement') {
+      const fileName = driveFile.fileName || '';
+      rawTitle = fileName.split('/').pop().replace('.webm', '') || 'enregistrement';
+    }
     const sub = [meta.datetime, meta.duration].filter(Boolean).join(' · ');
 
     const bodyHTML = `
@@ -664,25 +669,34 @@ function addMemoRappel(btn) {
 
 function updateProchaineEtape(textarea) {
   const val = textarea.value;
-  // Sauvegarder dans localStorage
   const data = JSON.parse(localStorage.getItem('ponk_result') || '{}');
   if (!data.summary) data.summary = {};
   data.summary.prochaine_etape = val;
   localStorage.setItem('ponk_result', JSON.stringify(data));
-  // Mettre à jour la case à cocher
   const cb = document.getElementById('ecb_prochaine');
   if (cb) { cb.checked = !!val; cb.dataset.exportContent = encodeURIComponent(val); }
-  // Mettre à jour la carte CALENDRIER dans Actions IA
   const existing = document.querySelector('[data-prochaine-etape]');
   if (val) {
     if (existing) {
-      // Mettre à jour la description
       const desc = existing.querySelector('.action-ia-desc');
       if (desc) desc.textContent = val;
       existing.dataset.prochaineEtape = val;
+      const cardEl = existing.querySelector('.action-ia-card[id]') || existing.querySelector('[id^="action_"]');
+      if (cardEl) ACTION_META[cardEl.id] = { type:'CALENDRIER', icone:'📅', titre:'Prochaine étape', description: val, evenement: val, _prochaineEtape: true };
     } else {
-      // Créer une nouvelle carte CALENDRIER
-      const wrap = document.getElementById('actionsIAWrap');
+      // Créer la card Actions IA si elle n'existe pas encore
+      let wrap = document.getElementById('actionsIAWrap');
+      if (!wrap) {
+        const actionsHTML = `<div class="actions-ia-wrap" id="actionsIAWrap"></div>
+          <button class="add-btn" onclick="openAddActionIA()" style="margin-top:8px">+ Ajouter une action</button>`;
+        const iaCard = makeCard('Actions IA', actionsHTML);
+        iaCard.id = 'actionsIACard';
+        const cards = document.getElementById('cards');
+        const memoCard = Array.from(cards.children).find(el => el.querySelector && el.querySelector('.card-lbl')?.textContent === 'Mémo');
+        if (memoCard) cards.insertBefore(iaCard, memoCard);
+        else cards.appendChild(iaCard);
+        wrap = document.getElementById('actionsIAWrap');
+      }
       if (wrap) {
         const action = { type:'CALENDRIER', icone:'📅', titre:'Prochaine étape', description: val, evenement: val, _prochaineEtape: true };
         const html = buildActionCard(action);
@@ -690,7 +704,6 @@ function updateProchaineEtape(textarea) {
         div.innerHTML = html;
         if (div.firstChild) {
           div.firstChild.dataset.prochaineEtape = val;
-          // Enregistrer dans ACTION_META pour que markActionDone fonctionne
           const cardEl = div.firstChild.querySelector('.action-ia-card[id]') || div.firstChild.querySelector('[id^="action_"]');
           if (cardEl) ACTION_META[cardEl.id] = action;
           wrap.insertBefore(div.firstChild, wrap.firstChild);
@@ -699,6 +712,11 @@ function updateProchaineEtape(textarea) {
     }
   } else if (existing) {
     existing.remove();
+    const wrap = document.getElementById('actionsIAWrap');
+    if (wrap && wrap.children.length === 0) {
+      const iaCard = document.getElementById('actionsIACard');
+      if (iaCard) iaCard.remove();
+    }
   }
 }
 
