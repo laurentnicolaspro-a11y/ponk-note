@@ -433,7 +433,18 @@
 </header>
 
 <div class="content">
-  <div id="meta" class="meta"></div>
+  <div id="metaHeader" style="display:none;align-items:center;gap:10px;padding:12px 16px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);border-radius:12px;">
+    <input type="checkbox" class="export-cb" id="ecb_title" checked data-export-label="title" data-export-content="" style="flex-shrink:0;margin-top:0;">
+    <div style="flex:1;min-width:0;">
+      <div id="metaTitle"
+        style="font-family:Audiowide,sans-serif;font-size:15px;color:#e8f4ff;cursor:text;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+        title="Cliquer pour modifier"
+        onclick="editMetaTitle(this)"></div>
+      <div id="metaSub" style="font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:0.3px;"></div>
+    </div>
+    <span style="font-size:10px;color:var(--cyan-dim);opacity:0.5;cursor:pointer;flex-shrink:0;" onclick="editMetaTitle(document.getElementById('metaTitle'))" title="Modifier">modifier</span>
+  </div>
+  <div id="meta" class="meta" style="display:none"></div>
   <div id="cards"></div>
   <div class="action-btns">
 
@@ -447,9 +458,9 @@ const ACTION_META = {}; // stocke métadonnées action par actionId
 let actionIdCounter = 0; // garantit l'unicité des IDs
 
 const LABELS = {
-  REUNION:'🏢 Réunion', COURSES:'🛒 Courses', CHANTIER:'🔨 Chantier',
-  IDEES:'💡 Idées', DEPLACEMENT:'📍 Déplacement', FINANCE:'💰 Finance',
-  APPEL:'📞 Appel', MEDICAL:'🏥 Médical', COURS:'🎓 Cours', MEMO:'📝 Mémo'
+  REUNION:'Réunion', COURSES:'Courses', CHANTIER:'Chantier',
+  IDEES:'Idées', DEPLACEMENT:'Déplacement', FINANCE:'Finance',
+  APPEL:'Appel', MEDICAL:'Médical', COURS:'Cours', MEMO:'Mémo'
 };
 let audioEl = null;
 let analyseCardCounter = 0;
@@ -474,8 +485,28 @@ function render(data, meta) {
   const modes = data.modes || [];
   const c = document.getElementById('cards');
 
-  if (meta && (meta.datetime || meta.duration))
-    document.getElementById('meta').textContent = (meta.datetime||'') + (meta.duration?' · '+meta.duration:'');
+  if (meta && (meta.title || meta.datetime || meta.duration)) {
+    // Nettoyer le titre : retirer le timestamp ISO du début
+    const rawTitle = meta.title || '';
+    const cleaned = rawTitle
+      .replace(/^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-?/i, '')
+      .replace(/-/g, ' ')
+      .trim() || 'Enregistrement';
+    const displayTitle = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+
+    // Sous-titre : date + durée
+    const sub = [meta.datetime, meta.duration ? '· ' + meta.duration : ''].filter(Boolean).join(' ');
+
+    const titleEl = document.getElementById('metaTitle');
+    const subEl   = document.getElementById('metaSub');
+    const cb      = document.getElementById('ecb_title');
+    const header  = document.getElementById('metaHeader');
+
+    titleEl.textContent = displayTitle;
+    if (subEl) subEl.textContent = sub;
+    if (cb) cb.dataset.exportContent = encodeURIComponent(displayTitle);
+    if (header) header.style.display = 'flex';
+  }
 
   // ── Synthèse ──
   if (data.summary) {
@@ -483,10 +514,10 @@ function render(data, meta) {
     // Rétrocompatibilité : si summary est un string (ancien format)
     if (typeof s === 'string') {
       const html = s.replace(/[*][*](.*?)[*][*]/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
-      c.appendChild(makeCard('📝 Synthèse', `<div class="sec"><p>${html}</p></div>`, true));
+      c.appendChild(makeCard('Synthèse', `<div class="sec"><p>${html}</p></div>`, true));
     } else {
       // Nouveau format structuré
-      const summaryCard = makeCard('📝 Synthèse', buildSummaryHTML(s), true);
+      const summaryCard = makeCard('Synthèse', buildSummaryHTML(s), true);
       summaryCard.id = 'summaryCard';
       c.appendChild(summaryCard);
     }
@@ -519,7 +550,7 @@ function render(data, meta) {
   if (allActions.length > 0) {
     const actionsHTML = `<div class="actions-ia-wrap" id="actionsIAWrap">${allActions.map(a => buildActionCard(a)).join('')}</div>
       <button class="add-btn" onclick="openAddActionIA()" style="margin-top:8px">+ Ajouter une action</button>`;
-    const iaCard = makeCard('✨ Actions IA', actionsHTML);
+    const iaCard = makeCard('Actions IA', actionsHTML);
     c.appendChild(iaCard);
   }
   localStorage.removeItem('ponk_action_bubbles');
@@ -534,7 +565,7 @@ function render(data, meta) {
       '<textarea id="memoNotesArea" placeholder="Vos notes…" onblur="saveMemoField(this)" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--cyan-border);background:rgba(0,212,255,0.04);font-family:inherit;font-size:13px;color:var(--text);outline:none;resize:none;min-height:100px;caret-color:var(--cyan)"></textarea>' +
       '</div>';
     memoHTML += '</div>';
-    c.appendChild(makeCard('📝 Mémo', memoHTML, true));
+    c.appendChild(makeCard('Mémo', memoHTML, true));
   }
 
   if (audioData) {
@@ -578,7 +609,7 @@ function render(data, meta) {
         ↓ Télécharger
       </a>` : '';
 
-    const aCard = makeCard('🎙 Réécouter', playerHTML, false, downloadBtn);
+    const aCard = makeCard('Réécouter', playerHTML, false, downloadBtn);
     aCard.querySelector('.card-bd').classList.add('hidden');
     aCard.querySelector('.chevron').classList.add('closed');
     c.appendChild(aCard);
@@ -590,8 +621,8 @@ function render(data, meta) {
       <input type="checkbox" class="export-cb" id="ecb_transcript" data-export-label="transcript" data-export-content="${encodeURIComponent(data.transcript)}" style="margin-top:4px">
       <div class="transcript-text" style="flex:1">${data.transcript}</div>
     </div>`;
-    const genActionsBtn = `<button onclick="generateActionsIA()" style="background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.25);color:var(--cyan);padding:4px 10px;border-radius:6px;font-size:10px;font-family:Audiowide,sans-serif;letter-spacing:0.3px;cursor:pointer;" id="genActionsBtn">✨ Générer actions</button>`;
-    const tCard = makeCard('📄 Transcription', transcriptHTML, true, genActionsBtn);
+    const genActionsBtn = `<button onclick="generateActionsIA()" style="background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.25);color:var(--cyan);padding:4px 10px;border-radius:6px;font-size:10px;font-family:Audiowide,sans-serif;letter-spacing:0.3px;cursor:pointer;" id="genActionsBtn">Générer actions</button>`;
+    const tCard = makeCard('Transcription', transcriptHTML, true, genActionsBtn);
     tCard.querySelector('.card-bd').classList.add('hidden');
     tCard.querySelector('.chevron').classList.add('closed');
     c.appendChild(tCard);
@@ -635,7 +666,7 @@ function addMemoRappel(btn) {
     localStorage.setItem('ponk_result', JSON.stringify(data));
     const row = document.createElement('div');
     row.className = 'export-row'; row.style.alignItems = 'center';
-    row.innerHTML = `<input type="checkbox" class="export-cb" checked data-export-label="memo_rappel" data-export-content="${encodeURIComponent(val)}"><div class="point-item" style="background:none;padding:0;flex:1;">${val}</div><button class="edit-btn" style="color:var(--danger)" onclick="this.parentElement.remove()">🗑</button>`;
+    row.innerHTML = `<input type="checkbox" class="export-cb" checked data-export-label="memo_rappel" data-export-content="${encodeURIComponent(val)}"><div class="point-item" style="background:none;padding:0;flex:1;">${val}</div><button class="edit-btn" style="color:var(--danger)" onclick="this.parentElement.remove()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
     input.replaceWith(row);
   };
   input.onkeydown = e => { if (e.key === 'Enter') input.blur(); };
@@ -686,6 +717,45 @@ function saveSummary(s) {
   const data = JSON.parse(localStorage.getItem('ponk_result') || '{}');
   data.summary = s;
   localStorage.setItem('ponk_result', JSON.stringify(data));
+}
+
+function editMetaTitle(el) {
+  if (el.contentEditable === 'true') return;
+  el.contentEditable = 'true';
+  el.style.outline = '1px solid var(--cyan)';
+  el.style.borderRadius = '4px';
+  el.style.padding = '2px 6px';
+  el.style.whiteSpace = 'normal';
+  el.style.overflow = 'visible';
+  const range = document.createRange();
+  const sel = window.getSelection();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(range);
+  el.focus();
+  const save = () => {
+    const val = el.innerText.trim() || 'Enregistrement';
+    el.contentEditable = 'false';
+    el.style.outline = '';
+    el.style.borderRadius = '';
+    el.style.padding = '';
+    el.style.whiteSpace = 'nowrap';
+    el.style.overflow = 'hidden';
+    el.textContent = val;
+    // Sauvegarder dans ponk_meta
+    const m = JSON.parse(localStorage.getItem('ponk_meta') || '{}');
+    m.title = val;
+    localStorage.setItem('ponk_meta', JSON.stringify(m));
+    // Mettre à jour la case export
+    const cb = document.getElementById('ecb_title');
+    if (cb) cb.dataset.exportContent = encodeURIComponent(val);
+  };
+  el.onblur = save;
+  el.onkeydown = e => {
+    if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+    if (e.key === 'Escape') { el.contentEditable = 'false'; }
+  };
 }
 
 function editItem(el, field, s, key, subkey) {
@@ -764,7 +834,7 @@ function buildSummaryHTML(s) {
 
   function cb(label, content, checked=true, onDelete=null) {
     const id = 'ecb_' + (cbId++);
-    const delBtnHtml = onDelete ? `<button class="edit-btn" onclick="${onDelete}" title="Supprimer" style="color:var(--danger)">🗑</button>` : '';
+    const delBtnHtml = onDelete ? `<button class="edit-btn" onclick="${onDelete}" title="Supprimer" style="color:var(--danger)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : '';
     return `<div class="export-row" data-export="${label}" style="align-items:center;">
       <input type="checkbox" class="export-cb" id="${id}" ${checked?'checked':''} data-export-label="${label}" data-export-content="${encodeURIComponent(typeof content === 'string' ? content.replace(/<[^>]*>/g,'') : '')}">
       <div style="flex:1">${content}</div>
@@ -783,7 +853,7 @@ function buildSummaryHTML(s) {
   // Résumé
   if (s.resume) {
     html += `<div class="summary-section">
-      <div class="summary-section-title">📝 Résumé</div>
+      <div class="summary-section-title">Résumé</div>
       ${cb('resume',
         `<div style="font-size:14px;line-height:1.7;color:#e8f4ff;font-style:italic;padding:10px 14px;background:rgba(0,212,255,0.05);border-radius:10px;border-left:3px solid var(--cyan);cursor:pointer" onclick="editItem(this,'resume',${JSON.stringify(s).replace(/"/g,'&quot;')},null,null)">${s.resume}</div>`,
         true, `deleteItem('resume',${JSON.stringify(s).replace(/"/g,'&quot;')},null)`
@@ -793,7 +863,7 @@ function buildSummaryHTML(s) {
 
   // Points discutés
   html += `<div class="summary-section">
-    <div class="summary-section-title">💬 Points discutés</div>
+    <div class="summary-section-title">Points discutés</div>
     <div class="points-list" id="list-points">
       ${(s.points_discutes||[]).map((p,i) => cb('point:'+i,
         `<div class="point-item" style="background:none;padding:0;cursor:pointer" onclick="editItem(this,'points_discutes',${JSON.stringify(s).replace(/"/g,'&quot;')},${i},null)">${p}</div>`,
@@ -805,7 +875,7 @@ function buildSummaryHTML(s) {
 
   // Décisions
   html += `<div class="summary-section">
-    <div class="summary-section-title">✅ Décisions</div>
+    <div class="summary-section-title">Décisions</div>
     <div class="decisions-list" id="list-decisions">
       ${(s.decisions||[]).map((d,i) => cb('decision:'+i,
         `<div class="decision-item" style="margin:0;cursor:pointer" onclick="editItem(this,'decisions',${JSON.stringify(s).replace(/"/g,'&quot;')},${i},null)"><div class="decision-dot"></div><span>${d}</span></div>`,
@@ -823,11 +893,11 @@ function buildSummaryHTML(s) {
   {
     const pe = s.prochaine_etape || '';
     html += `<div class="summary-section">
-      <div class="summary-section-title">📅 Prochaine étape</div>
+      <div class="summary-section-title">Prochaine étape</div>
       <div class="export-row" style="align-items:flex-start;">
         <input type="checkbox" class="export-cb" id="ecb_prochaine" ${pe ? 'checked' : ''} data-export-label="prochaine" data-export-content="${encodeURIComponent(pe)}" style="margin-top:10px;">
         <div class="prochaine-wrap" style="flex:1;cursor:default;">
-          <span class="prochaine-icon">📅</span>
+          
           <textarea id="prochaineTextarea" placeholder="Cliquer pour ajouter…" style="flex:1;background:none;border:none;outline:none;font-family:inherit;font-size:14px;color:var(--text);resize:none;width:100%;min-height:24px;" oninput="updateProchaineEtape(this)">${pe}</textarea>
         </div>
       </div>
@@ -860,7 +930,7 @@ function buildActionCard(a) {
         <div class="analysis-loading" id="loading_${id}"><div class="analysis-spinner"></div><span>Analyse en cours…</span></div>
         <div class="analysis-result" id="result_${id}"></div>
       </div>
-      <button class="edit-btn" style="color:var(--danger)" onclick="this.closest('[style*=display]').remove()" title="Supprimer">🗑</button>
+      <button class="edit-btn" style="color:var(--danger)" onclick="this.closest('[style*=display]').remove()" title="Supprimer"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>`;
   }
   const url = getActionUrl(a);
@@ -882,7 +952,7 @@ function buildActionCard(a) {
           <span style="color:#3db87a;font-size:14px;font-weight:700">✓</span>
         </div>
       </div>
-      <button class="edit-btn" style="color:var(--danger)" onclick="this.closest('[style*=flex]').remove()" title="Supprimer">🗑</button>
+      <button class="edit-btn" style="color:var(--danger)" onclick="this.closest('[style*=flex]').remove()" title="Supprimer"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>`;
   }
   // ID unique garanti par compteur incrémental
@@ -907,7 +977,7 @@ function buildActionCard(a) {
           <span style="color:#3db87a;font-size:14px;font-weight:700">✓</span>
         </div>
       </div>
-      <button class="edit-btn" style="color:var(--danger)" onclick="this.closest('[style*=flex]').remove()" title="Supprimer">🗑</button>
+      <button class="edit-btn" style="color:var(--danger)" onclick="this.closest('[style*=flex]').remove()" title="Supprimer"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>`;
   }
   const cbIdAction = 'ecb_action_' + actionId;
@@ -921,7 +991,7 @@ function buildActionCard(a) {
       </div>
       <div class="action-ia-arrow"><svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg></div>
     </div>
-    <button class="edit-btn" style="color:var(--danger)" onclick="deleteActionIA('${actionId}')" title="Supprimer">🗑</button>
+    <button class="edit-btn" style="color:var(--danger)" onclick="deleteActionIA('${actionId}')" title="Supprimer"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>`;
 }
 
@@ -991,7 +1061,7 @@ const ACTION_TYPES_IA = {
   'RESERVATION':{ icon:'🎫', label:'Réservation' },
   'COMMANDE':   { icon:'🛒', label:'Commande' },
   'RECHERCHE':  { icon:'🔍', label:'Recherche' },
-  'ANALYSE':    { icon:'🧠', label:'Analyse' },
+  'ANALYSE':    { icon:'', label:'Analyse' },
 };
 
 function openAddActionIA() {
@@ -1068,7 +1138,7 @@ async function generateActionsIA() {
 
   const data = JSON.parse(localStorage.getItem('ponk_result') || '{}');
   const transcript = data.transcript || '';
-  if (!transcript) { if (btn) { btn.textContent = '✨ Générer actions'; btn.disabled = false; } return; }
+  if (!transcript) { if (btn) { btn.textContent = 'Générer actions'; btn.disabled = false; } return; }
 
   try {
     const res = await fetch('/api/analyze', {
@@ -1100,9 +1170,9 @@ async function generateActionsIA() {
       });
     }
 
-    if (btn) { btn.textContent = newActions.length + ' action(s) ajoutée(s) ✓'; btn.disabled = true; }
+    if (btn) { btn.textContent = newActions.length + ' action(s) ajoutée(s)'; btn.disabled = true; }
   } catch(e) {
-    if (btn) { btn.textContent = '✨ Générer actions'; btn.disabled = false; }
+    if (btn) { btn.textContent = 'Générer actions'; btn.disabled = false; }
     console.error(e);
   }
 }
@@ -1172,7 +1242,7 @@ async function markActionDone(actionId) {
           '</div>'
         ).join('');
         modal.innerHTML = '<div style="background:rgba(255,255,255,0.95);border-radius:20px;padding:24px;width:100%;max-width:400px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">' +
-          '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:rgba(42,42,58,0.5);margin-bottom:12px;">🧠 Analyse</div>' +
+          '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:rgba(0,212,255,0.4);margin-bottom:12px;">Analyse</div>' +
           (sections || '<div style="color:rgba(180,220,255,0.6);font-style:italic;">Aucun résultat</div>') +
           '<button onclick="this.parentElement.parentElement.remove()" style="width:100%;padding:12px;border-radius:12px;border:none;background:transparent;color:rgba(0,220,255,0.4);font-family:Audiowide,sans-serif;font-size:11px;letter-spacing:0.8px;text-transform:uppercase;cursor:pointer;margin-top:12px;">Fermer</button>' +
           '</div>';
@@ -1399,8 +1469,8 @@ async function showCalendrierModal(text) {
     if (data.titre) {
       document.getElementById('calendrierModalTitle').textContent = data.titre;
 
-      if (data.date) document.getElementById('calendrierDate').textContent = '📅 ' + data.date;
-      if (data.heure) document.getElementById('calendrierHeure').textContent = '🕐 ' + data.heure;
+      if (data.date) document.getElementById('calendrierDate').textContent = data.date;
+      if (data.heure) document.getElementById('calendrierHeure').textContent = data.heure;
       if (data.duree) document.getElementById('calendrierDuree').textContent = '⏱ ' + data.duree;
       if (data.description) document.getElementById('calendrierDesc').textContent = data.description;
       document.getElementById('calendrierInfo').style.display = 'block';
@@ -1446,7 +1516,6 @@ async function showCalendrierModal(text) {
             </div>
           </div>
           <button onclick="openCalendrierUrl()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:11px 14px;border-radius:10px;border:none;background:linear-gradient(135deg,rgba(0,100,200,0.9),rgba(0,180,255,0.8));color:#fff;border:1px solid rgba(0,212,255,0.4);font-family:Audiowide,sans-serif;font-size:11px;cursor:pointer">
-            <span>📅</span>
             <span>Ajouter à ${calNames[prefCal]}</span>
           </button>
         </div>`;
@@ -1564,7 +1633,7 @@ function startCalendrierOrganise() {
   const questions = calendrierData.questions || [];
   document.getElementById('calendrierQuestions').innerHTML = questions.map(q => `
     <div style="margin-bottom:12px">
-      <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px">🤖 ${q.question}</div>
+      <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px">${q.question}</div>
       <textarea data-qid="${q.id}" data-question="${q.question.replace(/"/g,'&quot;')}" placeholder="Votre réponse..." style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(0,212,255,0.2);background:rgba(0,212,255,0.04);font-family:inherit;font-size:13px;color:var(--text);outline:none;resize:none;min-height:60px;caret-color:var(--cyan)"></textarea>
     </div>
   `).join('');
@@ -1603,7 +1672,7 @@ async function submitCalendrierAnswers() {
     const prep = data.preparation;
     if (prep) {
       document.getElementById('calendrierPrepContent').innerHTML = `
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--cyan-dim);margin-bottom:10px">✨ ${prep.titre}</div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--cyan-dim);margin-bottom:10px">${prep.titre}</div>
         ${(prep.sections || []).map(s => `
           <div style="background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.12);border-radius:10px;padding:12px;margin-bottom:8px">
             <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">${s.emoji} ${s.titre}</div>
@@ -1626,11 +1695,11 @@ async function submitCalendrierAnswers() {
         'yahoo': `https://compose.mail.yahoo.com/?subject=${sujet}&body=${corps}`,
         'default': `mailto:?subject=${sujet}&body=${corps}`
       };
-      btnsHtml += `<a href="${emailUrls[prefMail]}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:linear-gradient(135deg,rgba(0,100,200,0.9),rgba(0,180,255,0.8));color:#fff;text-decoration:none;font-size:13px;font-weight:600;border:1px solid rgba(0,220,255,0.4)">📧 Envoyer aux participants</a>`;
+      btnsHtml += `<a href="${emailUrls[prefMail]}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:linear-gradient(135deg,rgba(0,100,200,0.9),rgba(0,180,255,0.8));color:#fff;text-decoration:none;font-size:13px;font-weight:600;border:1px solid rgba(0,220,255,0.4)">Envoyer aux participants</a>`;
     }
 
     if (data.pdf) {
-      btnsHtml += `<button onclick="downloadCalendrierPDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(0,212,255,0.3);background:rgba(0,212,255,0.08);color:var(--cyan);font-family:Audiowide,sans-serif;font-size:11px;letter-spacing:0.3px;cursor:pointer;width:100%">📄 Exporter en PDF</button>`;
+      btnsHtml += `<button onclick="downloadCalendrierPDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(0,212,255,0.3);background:rgba(0,212,255,0.08);color:var(--cyan);font-family:Audiowide,sans-serif;font-size:11px;letter-spacing:0.3px;cursor:pointer;width:100%">Exporter en PDF</button>`;
       window._calendrierPDF = data.pdf;
     }
 
@@ -1684,11 +1753,11 @@ function showWhatsAppModal(phone, message) {
   if (phone) {
     const waPhone = normalizePhone(phone);
     linksEl.innerHTML = `
-      <a href="https://wa.me/${waPhone}?text=${enc}" target="_blank" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(37,211,102,0.15);color:#128C7E;text-decoration:none;font-size:13px;font-weight:600;border:1px solid rgba(37,211,102,0.3);text-align:center">💬 Ouvrir WhatsApp</a>
+      <a href="https://wa.me/${waPhone}?text=${enc}" target="_blank" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(37,211,102,0.15);color:#128C7E;text-decoration:none;font-size:13px;font-weight:600;border:1px solid rgba(37,211,102,0.3);text-align:center">Ouvrir WhatsApp</a>
     `;
   } else {
     linksEl.innerHTML = `
-      <a href="https://wa.me/?text=${enc}" target="_blank" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(37,211,102,0.15);color:#128C7E;text-decoration:none;font-size:13px;font-weight:600;border:1px solid rgba(37,211,102,0.3);text-align:center">💬 Ouvrir WhatsApp</a>
+      <a href="https://wa.me/?text=${enc}" target="_blank" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(37,211,102,0.15);color:#128C7E;text-decoration:none;font-size:13px;font-weight:600;border:1px solid rgba(37,211,102,0.3);text-align:center">Ouvrir WhatsApp</a>
     `;
   }
   document.getElementById('waModal').classList.remove('hidden');
@@ -1698,8 +1767,8 @@ function copyWAMessage() {
   const msg = document.getElementById('waModalMessage').textContent;
   navigator.clipboard.writeText(msg).then(() => {
     const btn = document.getElementById('waCopyBtn');
-    btn.textContent = '✓ Copié !';
-    setTimeout(() => btn.textContent = '📋 Copier', 2000);
+    btn.textContent = 'Copié !';
+    setTimeout(() => btn.textContent = 'Copier', 2000);
   });
 }
 
@@ -1710,9 +1779,9 @@ function showCallModal(phone, name) {
   if (linksEl && phone) {
     const enc = encodeURIComponent(phone);
     linksEl.innerHTML = `
-      <a href="tel:${phone}" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(0,212,255,0.06);color:var(--text);text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(0,212,255,0.2);text-align:center">📱 Phone Link</a>
-      <a href="skype:${phone}?call" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(0,212,255,0.06);color:var(--text);text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(0,212,255,0.2);text-align:center">💙 Skype</a>
-      <a href="msteams://call?phone=${enc}" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(0,212,255,0.06);color:var(--text);text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(0,212,255,0.2);text-align:center">💼 Teams</a>
+      <a href="tel:${phone}" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(0,212,255,0.06);color:var(--text);text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(0,212,255,0.2);text-align:center">Appel téléphonique</a>
+      <a href="skype:${phone}?call" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(0,212,255,0.06);color:var(--text);text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(0,212,255,0.2);text-align:center">Skype</a>
+      <a href="msteams://call?phone=${enc}" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(0,212,255,0.06);color:var(--text);text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(0,212,255,0.2);text-align:center">Teams</a>
     `;
   }
   document.getElementById('callModal').classList.remove('hidden');
@@ -1722,8 +1791,8 @@ function copyPhone() {
   const phone = document.getElementById('callModalPhone').textContent;
   navigator.clipboard.writeText(phone).then(() => {
     const btn = document.getElementById('callCopyBtn');
-    btn.textContent = '✓ Copié !';
-    setTimeout(() => btn.textContent = '📋 Copier', 2000);
+    btn.textContent = 'Copié !';
+    setTimeout(() => btn.textContent = 'Copier', 2000);
   });
 }
 let mapsState = { mode: 'car', departLat: null, departLon: null, arriveeLat: null, arriveeLon: null };
@@ -1766,9 +1835,9 @@ function geolocateDepart() {
     mapsState.departLat = pos.coords.latitude;
     mapsState.departLon = pos.coords.longitude;
     document.getElementById('mapsDepart').value = 'Ma position actuelle';
-    if (btn) btn.textContent = '✅';
+    if (btn) btn.textContent = '✓ Position';
   }, () => {
-    if (btn) btn.textContent = '📍';
+    if (btn) btn.textContent = '·';
     document.getElementById('mapsDepart').placeholder = 'Entrez votre adresse de départ';
   });
 }
@@ -1821,9 +1890,9 @@ async function lancerItineraire() {
 
     document.getElementById('mapsLoading').style.display = 'none';
     document.getElementById('mapsResult').style.display = 'block';
-    const modeIcons = { car:'🚗', transit:'🚌', walk:'🚶', bike:'🚲' };
+    const modeIcons = { car:'→', transit:'→', walk:'→', bike:'→' };
     const modeLabels = { car:'En voiture', transit:'En transport', walk:'À pied', bike:'À vélo' };
-    document.getElementById('mapsModeIcon').textContent = modeIcons[mapsState.mode] || '🚗';
+    document.getElementById('mapsModeIcon').textContent = modeLabels[mapsState.mode] || 'Voiture';
 
     if (mapsState.mode === 'transit') {
       document.getElementById('mapsDuree').textContent = 'Transport en commun';
@@ -1851,7 +1920,7 @@ async function lancerItineraire() {
       document.getElementById('mapsMeteoIcon').textContent = weather.icon;
       document.getElementById('mapsMeteoTemp').textContent = weather.temp + '°C · ' + weather.city;
       document.getElementById('mapsMeteoDesc').textContent = weather.description.charAt(0).toUpperCase() + weather.description.slice(1);
-      document.getElementById('mapsMeteoWind').textContent = '💨 ' + weather.wind + ' km/h  💧 ' + weather.humidity + '%';
+      document.getElementById('mapsMeteoWind').textContent = weather.wind + ' km/h  · ' + weather.humidity + '%';
       document.getElementById('mapsMeteo').style.display = 'block';
     }
     if (poi && poi.pois && poi.pois.length > 0) {
@@ -1866,7 +1935,7 @@ async function lancerItineraire() {
           </div>
           <div style="display:flex;align-items:center;gap:6px">
             <div style="font-size:11px;font-weight:600;color:var(--accent)">${p.distance}m</div>
-            <div style="font-size:10px;color:var(--muted)">🔍</div>
+            
           </div>
         </a>`;
       }).join('');
@@ -1883,9 +1952,9 @@ async function lancerItineraire() {
     const appleUrl  = `https://maps.apple.com/?saddr=${dep}&daddr=${arr}&dirflg=${{ car:'d', transit:'r', walk:'w', bike:'b' }[mapsState.mode] || 'd'}`;
 
     const appLinks = {
-      google: `<a href="${googleUrl}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:var(--accent);color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">🗺️ Ouvrir dans Google Maps</a>`,
-      waze:   `<a href="${wazeUrl}"   target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:#33ccff;color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">🚗 Ouvrir dans Waze</a>`,
-      apple:  `<a href="${appleUrl}"  target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:#555;color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">🍎 Ouvrir dans Apple Maps</a>`,
+      google: `<a href="${googleUrl}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:var(--accent);color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">Google Maps</a>`,
+      waze:   `<a href="${wazeUrl}"   target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:#33ccff;color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">Waze</a>`,
+      apple:  `<a href="${appleUrl}"  target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:#555;color:#fff;text-decoration:none;font-size:14px;font-weight:600;justify-content:center">Apple Maps</a>`,
     };
     const allApps = ['google','waze','apple'];
     const ordered = [prefMaps, ...allApps.filter(a => a !== prefMaps)];
@@ -1917,12 +1986,12 @@ async function showReservationModal(text) {
     document.getElementById('reservationResume').textContent = data.resume || '';
     const infos = data.infos || {};
     const tags = [];
-    if (infos.origine)      tags.push('🚩 ' + infos.origine);
-    if (infos.destination)  tags.push('📍 ' + infos.destination);
-    if (infos.date_aller)   tags.push('📅 ' + infos.date_aller);
-    if (infos.date_retour)  tags.push('🔄 ' + infos.date_retour);
-    if (infos.personnes)    tags.push('👥 ' + infos.personnes + ' pers.');
-    if (infos.budget)       tags.push('💰 ' + infos.budget);
+    if (infos.origine)      tags.push(infos.origine);
+    if (infos.destination)  tags.push(infos.destination);
+    if (infos.date_aller)   tags.push(infos.date_aller);
+    if (infos.date_retour)  tags.push(infos.date_retour);
+    if (infos.personnes)    tags.push(infos.personnes + ' pers.');
+    if (infos.budget)       tags.push(infos.budget);
 
     document.getElementById('reservationTags').innerHTML = tags.map(t =>
       `<span style="font-size:11px;background:rgba(74,127,212,0.1);color:var(--accent);padding:3px 10px;border-radius:100px;font-weight:500">${t}</span>`
@@ -2039,8 +2108,8 @@ async function showAnalyseModal(text) {
     };
 
     document.getElementById('analyseActionBtns').innerHTML = `
-      <a href="${emailUrls[prefMail]}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:linear-gradient(135deg,rgba(0,100,200,0.9),rgba(0,180,255,0.8));color:#fff;text-decoration:none;font-size:13px;font-weight:600;border:1px solid rgba(0,220,255,0.4)">📧 Envoyer par email</a>
-      <button onclick="downloadAnalysePDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(0,212,255,0.3);background:rgba(0,212,255,0.08);color:var(--cyan);font-family:Audiowide,sans-serif;font-size:11px;letter-spacing:0.3px;cursor:pointer;width:100%">📄 Exporter en PDF</button>
+      <a href="${emailUrls[prefMail]}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:linear-gradient(135deg,rgba(0,100,200,0.9),rgba(0,180,255,0.8));color:#fff;text-decoration:none;font-size:13px;font-weight:600;border:1px solid rgba(0,220,255,0.4)">Envoyer par email</a>
+      <button onclick="downloadAnalysePDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(0,212,255,0.3);background:rgba(0,212,255,0.08);color:var(--cyan);font-family:Audiowide,sans-serif;font-size:11px;letter-spacing:0.3px;cursor:pointer;width:100%">Exporter en PDF</button>
     `;
 
   } catch(e) {
@@ -2050,7 +2119,7 @@ async function showAnalyseModal(text) {
 
 function showRappelModal(text) {
   document.getElementById('rappelText').textContent = text;
-  document.getElementById('rappelCopyBtn').textContent = '📋 Copier';
+  document.getElementById('rappelCopyBtn').textContent = 'Copier';
   document.getElementById('rappelModal').classList.remove('hidden');
 }
 
@@ -2058,9 +2127,9 @@ function copyRappel() {
   const text = document.getElementById('rappelText').textContent;
   const btn = document.getElementById('rappelCopyBtn');
   navigator.clipboard.writeText(text).then(() => {
-    btn.textContent = '✓ Copié !';
+    btn.textContent = 'Copié !';
     setTimeout(() => {
-      btn.textContent = '📋 Copier';
+      btn.textContent = 'Copier';
       document.getElementById('rappelModal').classList.add('hidden');
     }, 1500);
   }).catch(() => {
@@ -2072,9 +2141,9 @@ function copyRappel() {
     ta.select();
     document.execCommand('copy');
     document.body.removeChild(ta);
-    btn.textContent = '✓ Copié !';
+    btn.textContent = 'Copié !';
     setTimeout(() => {
-      btn.textContent = '📋 Copier';
+      btn.textContent = 'Copier';
       document.getElementById('rappelModal').classList.add('hidden');
     }, 1500);
   });
@@ -2084,7 +2153,7 @@ function copyRappel() {
 <!-- Calendrier modal -->
 <div class="bubble-modal hidden" id="calendrierModal">
   <div class="bubble-modal-card" style="max-height:88vh;overflow-y:auto">
-    <div style="font-size:36px;text-align:center;margin-bottom:8px">📅</div>
+    
     <div class="bubble-modal-type" id="calendrierModalTitle">Événement</div>
 
     <!-- Step 1: Event info + actions -->
@@ -2098,7 +2167,7 @@ function copyRappel() {
         <div style="font-size:13px;color:var(--muted)" id="calendrierDesc"></div>
       </div>
       <div id="calendrierCalBtn" style="display:none;margin-bottom:8px"></div>
-      <button id="calendrierOrganiseBtn" onclick="startCalendrierOrganise()" style="display:none;width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#4a7fd4,#8a55d4);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">✨ Organiser avec l'IA</button>
+      <button id="calendrierOrganiseBtn" onclick="startCalendrierOrganise()" style="display:none;width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#4a7fd4,#8a55d4);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">Organiser avec l'IA</button>
     </div>
 
     <!-- Loading -->
@@ -2127,7 +2196,7 @@ function copyRappel() {
 <!-- Commande modal -->
 <div class="bubble-modal hidden" id="commandeModal">
   <div class="bubble-modal-card" style="max-height:85vh;overflow-y:auto">
-    <div style="font-size:36px;text-align:center;margin-bottom:8px">🛒</div>
+    
     <div class="bubble-modal-type" id="commandeModalTitle">Brief produit</div>
 
     <!-- Loading state -->
@@ -2139,20 +2208,20 @@ function copyRappel() {
     <!-- Brief content -->
     <div id="commandeBrief" style="display:none">
       <div style="background:rgba(74,127,212,0.06);border:1px solid rgba(74,127,212,0.15);border-radius:14px;padding:14px;margin-bottom:14px">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--accent);margin-bottom:10px">✨ Analyse IA avant achat</div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--accent);margin-bottom:10px">Analyse avant achat</div>
         <div style="display:flex;align-items:center;gap:8px;background:rgba(61,184,122,0.1);border-radius:8px;padding:8px 10px;margin-bottom:10px">
-          <span style="font-size:16px">💰</span>
+          
           <div>
             <div style="font-size:13px;font-weight:600;color:#3db87a" id="commandePrix"></div>
             <div style="font-size:11px;color:var(--muted)" id="commandePrixNote"></div>
           </div>
         </div>
         <div style="margin-bottom:8px">
-          <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px">✅ Ce qu'il faut vérifier</div>
+          <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px">Ce qu'il faut vérifier</div>
           <div id="commandeVerifier" style="font-size:12px;color:var(--muted);line-height:1.8"></div>
         </div>
         <div>
-          <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px">⚠️ Points d'attention</div>
+          <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px">Points d'attention</div>
           <div id="commandeAttention" style="font-size:12px;color:var(--muted);line-height:1.8"></div>
         </div>
       </div>
@@ -2168,12 +2237,12 @@ function copyRappel() {
 <!-- WhatsApp modal -->
 <div class="bubble-modal hidden" id="waModal">
   <div class="bubble-modal-card">
-    <div style="font-size:36px;text-align:center;margin-bottom:12px">💬</div>
+    
     <div class="bubble-modal-type">Message WhatsApp</div>
     <div style="background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.15);border-radius:10px;padding:12px;margin:12px 0;font-size:13px;line-height:1.6;color:var(--text)" id="waModalMessage"></div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px" id="waAppLinks"></div>
     <div style="display:flex;gap:8px">
-      <button class="modal-action-btn" onclick="copyWAMessage()" id="waCopyBtn">📋 Copier</button>
+      <button class="modal-action-btn" onclick="copyWAMessage()" id="waCopyBtn">Copier</button>
       <button class="bubble-modal-btn" class="modal-close-btn" onclick="document.getElementById('waModal').classList.add('hidden')">Fermer</button>
     </div>
   </div>
@@ -2182,12 +2251,12 @@ function copyRappel() {
 <!-- Call modal -->
 <div class="bubble-modal hidden" id="callModal">
   <div class="bubble-modal-card" style="text-align:center">
-    <div style="font-size:42px;margin-bottom:12px">📞</div>
+    
     <div class="bubble-modal-type" id="callModalName"></div>
     <div style="font-size:28px;font-weight:300;letter-spacing:2px;color:var(--text);margin:16px 0" id="callModalPhone"></div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px" id="callAppLinks"></div>
     <div style="display:flex;gap:8px">
-      <button class="modal-action-btn" onclick="copyPhone()" id="callCopyBtn">📋 Copier</button>
+      <button class="modal-action-btn" onclick="copyPhone()" id="callCopyBtn">Copier</button>
       <button class="bubble-modal-btn" class="modal-close-btn" onclick="document.getElementById('callModal').classList.add('hidden')">Fermer</button>
     </div>
   </div>
@@ -2196,7 +2265,7 @@ function copyRappel() {
 <!-- Maps / Itinéraire modal -->
 <div class="bubble-modal hidden" id="mapsModal">
   <div class="bubble-modal-card" style="max-height:90vh;overflow-y:auto">
-    <div style="font-size:36px;text-align:center;margin-bottom:8px">🗺️</div>
+    
     <div class="bubble-modal-type" id="mapsModalTitle">Itinéraire</div>
 
     <!-- Champs départ / arrivée -->
@@ -2207,7 +2276,7 @@ function copyRappel() {
           <input type="text" id="mapsDepart" placeholder="Ma position actuelle…"
             style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid rgba(0,212,255,0.2);background:rgba(0,212,255,0.05);font-family:inherit;font-size:13px;color:var(--text);outline:none;caret-color:var(--cyan)"/>
           <button onclick="geolocateDepart()" title="Ma position"
-            style="width:36px;height:36px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:16px;cursor:pointer;flex-shrink:0">📍</button>
+            style="width:36px;height:36px;border-radius:50%;border:1px solid var(--cyan-border);background:transparent;color:var(--cyan);font-size:16px;cursor:pointer;flex-shrink:0"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
         </div>
       </div>
       <div style="margin-bottom:12px">
@@ -2217,10 +2286,10 @@ function copyRappel() {
       </div>
       <!-- Mode transport -->
       <div style="display:flex;gap:6px;margin-bottom:12px" id="mapsMode">
-        <button class="maps-mode-btn active" data-mode="car"     onclick="setMapsMode(this)">🚗 Voiture</button>
-        <button class="maps-mode-btn"         data-mode="transit" onclick="setMapsMode(this)">🚌 Transport</button>
-        <button class="maps-mode-btn"         data-mode="walk"    onclick="setMapsMode(this)">🚶 À pied</button>
-        <button class="maps-mode-btn"         data-mode="bike"    onclick="setMapsMode(this)">🚲 Vélo</button>
+        <button class="maps-mode-btn active" data-mode="car"     onclick="setMapsMode(this)">Voiture</button>
+        <button class="maps-mode-btn"         data-mode="transit" onclick="setMapsMode(this)">Transport</button>
+        <button class="maps-mode-btn"         data-mode="walk"    onclick="setMapsMode(this)">À pied</button>
+        <button class="maps-mode-btn"         data-mode="bike"    onclick="setMapsMode(this)">Vélo</button>
       </div>
       <button onclick="lancerItineraire()" id="mapsLancerBtn"
         style="width:100%;padding:12px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">
@@ -2239,7 +2308,7 @@ function copyRappel() {
       <!-- Trajet -->
       <div id="mapsTrajet" style="background:rgba(74,127,212,0.06);border:1px solid rgba(74,127,212,0.15);border-radius:14px;padding:14px;margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:12px">
-          <div style="font-size:28px" id="mapsModeIcon">🚗</div>
+          <div style="font-size:13px;font-weight:600;color:var(--cyan)" id="mapsModeIcon"></div>
           <div style="flex:1">
             <div style="font-size:18px;font-weight:700;color:var(--text)" id="mapsDuree">—</div>
             <div style="font-size:12px;color:var(--muted)" id="mapsDistance">—</div>
@@ -2254,7 +2323,7 @@ function copyRappel() {
       <!-- Météo destination -->
       <div id="mapsMeteo" style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);border-radius:12px;padding:12px;margin-bottom:10px;display:none">
         <div style="display:flex;align-items:center;gap:10px">
-          <div style="font-size:32px" id="mapsMeteoIcon">🌤️</div>
+          <div style="font-size:22px" id="mapsMeteoIcon"></div>
           <div style="flex:1">
             <div style="font-size:16px;font-weight:700;color:var(--text)" id="mapsMeteoTemp">—</div>
             <div style="font-size:12px;color:var(--muted)" id="mapsMeteoDesc">—</div>
@@ -2280,7 +2349,7 @@ function copyRappel() {
 <!-- Réservation modal -->
 <div class="bubble-modal hidden" id="reservationModal">
   <div class="bubble-modal-card" style="max-height:90vh;overflow-y:auto">
-    <div style="font-size:36px;text-align:center;margin-bottom:8px">🎫</div>
+    
     <div class="bubble-modal-type" id="reservationModalTitle">Réservation</div>
 
     <!-- Loading -->
@@ -2308,7 +2377,7 @@ function copyRappel() {
 <!-- Analyse modal -->
 <div class="bubble-modal hidden" id="analyseModal">
   <div class="bubble-modal-card" style="max-height:90vh;overflow-y:auto">
-    <div style="font-size:36px;text-align:center;margin-bottom:8px">🧠</div>
+    
     <div class="bubble-modal-type" id="analyseModalTitle">Analyse</div>
 
     <!-- Loading -->
@@ -2330,12 +2399,12 @@ function copyRappel() {
 <!-- Rappel modal -->
 <div class="bubble-modal hidden" id="rappelModal">
   <div class="bubble-modal-card">
-    <div style="font-size:36px;text-align:center;margin-bottom:8px">🔔</div>
+    
     <div class="bubble-modal-type">Rappel</div>
     <div style="background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.15);border-radius:10px;padding:14px;margin:12px 0;font-size:13px;line-height:1.6;color:var(--text);text-align:center" id="rappelText"></div>
     <button onclick="copyRappel()" id="rappelCopyBtn"
       class="modal-action-btn">
-      📋 Copier
+      Copier
     </button>
     <button class="modal-close-btn" onclick="document.getElementById('rappelModal').classList.add('hidden')">Fermer</button>
   </div>
