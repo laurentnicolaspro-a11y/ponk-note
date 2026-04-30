@@ -20,6 +20,15 @@ const PDF_C = {
   footerbg:    [240, 240, 240],
 };
 
+
+// ── Audiowide font (OFL licence) ──
+const AUDIOWIDE_B64 =  + b64 + ;
+
+function loadAudiowide(doc) {
+  doc.addFileToVFS('Audiowide-Regular.ttf', AUDIOWIDE_B64);
+  doc.addFont('Audiowide-Regular.ttf', 'Audiowide', 'normal');
+}
+
 async function loadJsPDF() {
   if (window.jspdf) return window.jspdf.jsPDF;
   await new Promise((resolve, reject) => {
@@ -32,16 +41,30 @@ async function loadJsPDF() {
 }
 
 function pdfBandeau(doc, titre, pageW, M, C) {
-  doc.setFillColor(...C.accentDark); doc.rect(0, 0, pageW, 32, 'F');
-  doc.setFillColor(...C.accent);     doc.rect(0, 8, pageW, 24, 'F');
-  doc.setFillColor(...C.accentLight);doc.rect(0, 30, pageW, 1.2, 'F');
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(...C.white);
-  const tl = doc.splitTextToSize(titre, pageW - 40);
-  doc.text(tl, M, tl.length > 1 ? 11 : 14);
-  doc.setFillColor(...C.accentDark);
-  doc.roundedRect(pageW - M - 22, 4, 22, 7, 1.5, 1.5, 'F');
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(...C.accentLight);
-  doc.text('PONK NOTE', pageW - M - 11, 9, { align: 'center' });
+  loadAudiowide(doc);
+
+  // Barre noire
+  const barH = 24;
+  doc.setFillColor(0, 0, 0);
+  doc.rect(0, 0, pageW, barH, 'F');
+
+  // "PONK NOTE" en Audiowide blanc, ancré en bas de la barre
+  doc.setFont('Audiowide', 'normal');
+  doc.setFontSize(14);
+  doc.setTextColor(255, 255, 255);
+  doc.text('PONK NOTE', M, barH - 5);
+
+  // Ligne de séparation fine sous la barre
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.4);
+  doc.line(0, barH, pageW, barH);
+
+  // Titre du document en Inter (helvetica) sous la barre
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(13);
+  doc.setTextColor(20, 20, 20);
+  const tl = doc.splitTextToSize(titre, pageW - M * 2);
+  doc.text(tl, M, barH + 9);
 }
 
 function pdfFooter(doc, pageW, pageH, M, C, label) {
@@ -98,7 +121,7 @@ async function downloadCalendrierPDF() {
   const checkPage = (n = 10) => { if (y + n > pageH - 14) { doc.addPage(); y = M; } };
 
   pdfBandeau(doc, pdf.titre, pageW, M, C);
-  y = 40;
+  y = 38;
 
   const meta = pdf.meta || {};
   const metaItems = [
@@ -175,7 +198,7 @@ async function downloadAnalysePDF() {
   const checkPage = (n = 10) => { if (y + n > pageH - 14) { doc.addPage(); y = M; } };
 
   pdfBandeau(doc, 'Analyse : ' + data.titre, pageW, M, C);
-  y = 40;
+  y = 38;
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...C.muted);
   doc.text('Généré le ' + new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }), M, y);
   y += 10;
@@ -404,7 +427,7 @@ async function exportPDF() {
   // Titre du bandeau
   const titre = meta.title || 'Compte-rendu';
   pdfBandeau(doc, titre, pageW, M, C);
-  y = 40;
+  y = 38;
 
   // Sous-titre date + durée
   if (meta.datetime || meta.duration) {
