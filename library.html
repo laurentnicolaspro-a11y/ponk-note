@@ -293,7 +293,7 @@ const uid     = localStorage.getItem('ponk_profile');
 if (!profile) { window.location.href='/'; }
 
 const color = getColor(profile);
-['headerAvatar','profileAvatarLg'].forEach(id => {
+['profileAvatarLg'].forEach(id => {
   const el = document.getElementById(id);
   el.textContent = profile[0].toUpperCase();
 });
