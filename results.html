@@ -87,14 +87,7 @@
       transition:background 0.2s, border-color 0.2s;
     }
     .back-btn:hover, .back-btn:active { background:var(--cyan-glow); border-color:var(--cyan-border-hi); }
-    .header-avatar {
-      width:32px; height:32px; border-radius:50%;
-      display:flex; align-items:center; justify-content:center;
-      font-family:Audiowide,sans-serif;
-      font-size:12px; color:#fff;
-      border:1.5px solid rgba(0,212,255,0.4);
-      box-shadow:0 0 10px rgba(0,212,255,0.2);
-    }
+    .header-avatar { display:none; }
 
     .content { position:relative; z-index:1; max-width:430px; margin:0 auto; padding:20px 20px 0; display:flex; flex-direction:column; gap:10px; }
     .meta { font-size:12px; color:var(--muted); padding:0 4px; letter-spacing:0.3px; }
@@ -123,7 +116,7 @@
     .sec { padding-top:14px; }
     .sec + .sec { margin-top:10px; padding-top:12px; border-top:1px solid var(--cyan-border); }
     .sec-title { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:var(--cyan-dim); margin-bottom:8px; }
-    .sec p { font-size:14px; line-height:1.65; color:var(--text); }
+    .sec p { font-size:14px; line-height:1.7; color:#e8f4ff; font-style:normal; }
 
     ul.items { list-style:none; display:flex; flex-direction:column; gap:6px; padding-top:4px; }
     ul.items li {
@@ -149,7 +142,7 @@
     td:last-child { text-align:right; }
     tr:last-child td { border-bottom:none; font-weight:600; }
 
-    .transcript-text { font-size:12px; line-height:1.85; color:var(--muted); padding-top:14px; white-space:pre-wrap; font-family:monospace; }
+    .transcript-text { font-size:12px; line-height:1.85; color:rgba(180,220,255,0.7); padding-top:14px; white-space:pre-wrap; font-family:monospace; }
 
     .action-btns { padding:16px 0 0; display:flex; flex-direction:column; gap:8px; }
     .btn-action {
@@ -212,7 +205,7 @@
       font-size:20px; flex-shrink:0;
     }
     .action-ia-info { flex:1; }
-    .action-ia-titre { font-size:13px; font-weight:600; color:var(--text); margin-bottom:3px; }
+    .action-ia-titre { font-size:13px; font-weight:600; color:#e8f4ff; margin-bottom:3px; }
     .action-ia-desc { font-size:12px; color:var(--muted); }
     .action-ia-arrow {
       width:28px; height:28px; border-radius:50%;
@@ -283,8 +276,8 @@
 
     /* ── Synthèse structurée ── */
     .summary-contexte {
-      font-size:13px; color:var(--muted); line-height:1.5;
-      padding:10px 12px; background:rgba(0,212,255,0.04);
+      font-size:13px; color:rgba(180,220,255,0.75); line-height:1.6;
+      padding:10px 12px; background:rgba(0,212,255,0.06);
       border:1px solid var(--cyan-border); border-radius:10px; margin-top:14px;
     }
 
@@ -300,8 +293,8 @@
     .points-list { display:flex; flex-direction:column; gap:5px; }
     .point-item {
       display:flex; align-items:flex-start; gap:8px;
-      font-size:13px; color:var(--text); line-height:1.4;
-      padding:8px 12px; background:rgba(0,212,255,0.04);
+      font-size:13px; color:#e8f4ff; line-height:1.5;
+      padding:8px 12px; background:rgba(0,212,255,0.06);
       border:1px solid var(--cyan-border); border-radius:8px;
     }
     .point-item::before { content:'›'; color:var(--cyan); flex-shrink:0; font-size:14px; margin-top:0px; }
@@ -310,9 +303,9 @@
     .decisions-list { display:flex; flex-direction:column; gap:5px; }
     .decision-item {
       display:flex; align-items:flex-start; gap:8px;
-      font-size:13px; color:var(--text); line-height:1.4;
+      font-size:13px; color:#e8f4ff; line-height:1.5;
       padding:8px 12px;
-      background:rgba(0,229,160,0.06);
+      background:rgba(0,229,160,0.07);
       border:1px solid rgba(0,229,160,0.2);
       border-radius:8px;
     }
@@ -331,7 +324,7 @@
       border-bottom:1px solid var(--cyan-border);
     }
     .actions-table td {
-      padding:8px 8px; font-size:12px; color:var(--text);
+      padding:8px 8px; font-size:12px; color:#e8f4ff;
       border-bottom:1px solid var(--cyan-border);
       vertical-align:top; text-align:left;
     }
@@ -360,7 +353,7 @@
       border-radius:10px; margin-top:4px;
     }
     .prochaine-icon { font-size:18px; flex-shrink:0; }
-    .prochaine-text { font-size:13px; color:var(--text); line-height:1.4; }
+    .prochaine-text { font-size:13px; color:#e8f4ff; line-height:1.5; }
 
     /* Styles modals actions IA */
     .bubble-modal {
@@ -433,7 +426,7 @@
   <div class="header-inner">
     <span class="logo">Ponk <span>Note</span></span>
     <div class="header-right">
-      <button class="back-btn" onclick="window.location.href='/'">+ Nouveau</button>
+      <button class="back-btn" onclick="window.location.href='/'">← Retour</button>
       <div class="header-avatar" id="headerAvatar"></div>
     </div>
   </div>
@@ -462,13 +455,6 @@ let audioEl = null;
 let analyseCardCounter = 0;
 
 const profile = localStorage.getItem('ponk_profile');
-if (profile) {
-  const COLORS = ['#4a7fd4','#e05555','#3db87a','#e07a30','#8a55d4','#d45580','#30a8d4','#50c87a'];
-  let hash=0; for(let i=0;i<profile.length;i++) hash=profile.charCodeAt(i)+((hash<<5)-hash);
-  const av = document.getElementById('headerAvatar');
-  av.textContent = profile[0].toUpperCase();
-  av.style.background = COLORS[Math.abs(hash)%COLORS.length];
-}
 
 const rawResult = localStorage.getItem('ponk_result');
 const rawMeta   = localStorage.getItem('ponk_meta');
@@ -799,7 +785,7 @@ function buildSummaryHTML(s) {
     html += `<div class="summary-section">
       <div class="summary-section-title">📝 Résumé</div>
       ${cb('resume',
-        `<div style="font-size:14px;line-height:1.7;color:var(--text);font-style:italic;padding:10px 14px;background:rgba(255,255,255,0.4);border-radius:10px;border-left:3px solid var(--accent);cursor:pointer" onclick="editItem(this,'resume',${JSON.stringify(s).replace(/"/g,'&quot;')},null,null)">${s.resume}</div>`,
+        `<div style="font-size:14px;line-height:1.7;color:#e8f4ff;font-style:italic;padding:10px 14px;background:rgba(0,212,255,0.05);border-radius:10px;border-left:3px solid var(--cyan);cursor:pointer" onclick="editItem(this,'resume',${JSON.stringify(s).replace(/"/g,'&quot;')},null,null)">${s.resume}</div>`,
         true, `deleteItem('resume',${JSON.stringify(s).replace(/"/g,'&quot;')},null)`
       )}
     </div>`;
@@ -848,7 +834,7 @@ function buildSummaryHTML(s) {
     </div>`;
   }
 
-  return html || '<div class="sec"><p style="color:var(--muted);font-style:italic">Aucune information extraite.</p></div>';
+  return html || '<div class="sec"><p style="color:rgba(180,220,255,0.6);font-style:italic">Aucune information extraite.</p></div>';
 }
 
 function buildActionCard(a) {
@@ -957,7 +943,7 @@ async function runDeepAnalysis(id, query) {
     if (data.sections) {
       analyseData = data;
       let html = '';
-      if (data.resume) html += '<p style="font-size:13px;color:var(--muted);font-style:italic;margin-bottom:12px;">' + data.resume + '</p>';
+      if (data.resume) html += '<p style="font-size:13px;color:rgba(180,220,255,0.75);font-style:italic;margin-bottom:12px;">' + data.resume + '</p>';
       data.sections.forEach(s => {
         html += '<div style="margin-bottom:14px;">';
         html += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--accent);margin-bottom:6px;">' + s.titre + '</div>';
@@ -974,7 +960,7 @@ async function runDeepAnalysis(id, query) {
       result.innerHTML = html;
       result.classList.add('visible');
     } else {
-      result.innerHTML = '<p style="color:var(--muted);font-style:italic;">Aucun résultat.</p>';
+      result.innerHTML = '<p style="color:rgba(180,220,255,0.6);font-style:italic;">Aucun résultat.</p>';
       result.classList.add('visible');
     }
   } catch(e) {
@@ -1187,7 +1173,7 @@ async function markActionDone(actionId) {
         ).join('');
         modal.innerHTML = '<div style="background:rgba(255,255,255,0.95);border-radius:20px;padding:24px;width:100%;max-width:400px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">' +
           '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:rgba(42,42,58,0.5);margin-bottom:12px;">🧠 Analyse</div>' +
-          (sections || '<div style="color:rgba(42,42,58,0.5);font-style:italic;">Aucun résultat</div>') +
+          (sections || '<div style="color:rgba(180,220,255,0.6);font-style:italic;">Aucun résultat</div>') +
           '<button onclick="this.parentElement.parentElement.remove()" style="width:100%;padding:12px;border-radius:12px;border:none;background:transparent;color:rgba(0,220,255,0.4);font-family:Audiowide,sans-serif;font-size:11px;letter-spacing:0.8px;text-transform:uppercase;cursor:pointer;margin-top:12px;">Fermer</button>' +
           '</div>';
         modal.onclick = e => { if (e.target === modal) modal.remove(); };
