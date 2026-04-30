@@ -2621,52 +2621,122 @@ function fermerReservation(){ document.getElementById('reservationModal').classL
 function fermerRappel()     { document.getElementById('rappelModal').classList.add('hidden'); }
 </script>
 <script>
-// ── NeuroCanvas (réseau de neurones ambient) ──
+// ── NeuroCanvas (identique à library) ──
 (function(){
   const canvas = document.getElementById('neuroCanvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  let W, H, nodes;
-  const N = 55, MAX_DIST = 120, SPEED = 0.25;
-  function resize() {
-    W = canvas.width  = window.innerWidth;
-    H = canvas.height = window.innerHeight;
+  const SIDE = 0.22;
+
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function inSide(x) { return x < SIDE || x > (1 - SIDE); }
+
+  const particles = [];
+  for (let i = 0; i < 40; i++) {
+    const left = Math.random() < 0.5;
+    particles.push({
+      x: left ? Math.random() * SIDE : (1 - SIDE) + Math.random() * SIDE,
+      y: Math.random(),
+      vx: (Math.random() - 0.5) * 0.0005,
+      vy: (Math.random() - 0.5) * 0.0005,
+      size: 0.8 + Math.random() * 2,
+      opacity: 0.3 + Math.random() * 0.6,
+      pulse: Math.random() * Math.PI * 2,
+      pulseSpeed: 0.015 + Math.random() * 0.025
+    });
   }
-  function initNodes() {
-    nodes = Array.from({length:N}, () => ({
-      x: Math.random()*W, y: Math.random()*H,
-      vx:(Math.random()-0.5)*SPEED, vy:(Math.random()-0.5)*SPEED,
-      r: 1.5 + Math.random()*1.5
-    }));
+
+  const lines = [];
+  for (let i = 0; i < 14; i++) {
+    const left = Math.random() < 0.5;
+    const bx = left ? 0 : (1 - SIDE);
+    lines.push({
+      x1: bx + Math.random() * SIDE, y1: Math.random(),
+      x2: bx + Math.random() * SIDE, y2: Math.random(),
+      vx: (Math.random() - 0.5) * 0.00015,
+      vy: (Math.random() - 0.5) * 0.00015,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.002 + Math.random() * 0.003,
+      opacity: 0.05 + Math.random() * 0.08,
+      left
+    });
   }
-  function draw() {
-    ctx.clearRect(0,0,W,H);
-    for(let i=0;i<N;i++){
-      const a=nodes[i];
-      for(let j=i+1;j<N;j++){
-        const b=nodes[j];
-        const dx=a.x-b.x, dy=a.y-b.y, d=Math.sqrt(dx*dx+dy*dy);
-        if(d<MAX_DIST){
-          const alpha=0.08*(1-d/MAX_DIST);
-          ctx.strokeStyle=`rgba(0,212,255,${alpha})`;
-          ctx.lineWidth=0.6;
-          ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+
+  function clampSide(p) {
+    const bx = p.x < 0.5 ? 0 : (1 - SIDE);
+    if (p.x < bx) { p.x = bx; p.vx *= -1; }
+    if (p.x > bx + SIDE) { p.x = bx + SIDE; p.vx *= -1; }
+    if (p.y < 0) { p.y = 0; p.vy *= -1; }
+    if (p.y > 1) { p.y = 1; p.vy *= -1; }
+  }
+
+  function animate() {
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    lines.forEach(l => {
+      l.phase += l.speed;
+      l.x1 += l.vx; l.y1 += l.vy;
+      l.x2 -= l.vx; l.y2 -= l.vy;
+      const bx = l.left ? 0 : (1 - SIDE);
+      if (l.x1 < bx || l.x1 > bx + SIDE) l.vx *= -1;
+      if (l.x2 < bx || l.x2 > bx + SIDE) l.vx *= -1;
+      if (l.y1 < 0 || l.y1 > 1) l.vy *= -1;
+      if (l.y2 < 0 || l.y2 > 1) l.vy *= -1;
+      const alpha = 0.25 + 0.2 * Math.sin(l.phase);
+      ctx.beginPath();
+      ctx.moveTo(l.x1 * w, l.y1 * h);
+      ctx.lineTo(l.x2 * w, l.y2 * h);
+      ctx.strokeStyle = `rgba(0,200,255,${alpha})`;
+      ctx.lineWidth = 0.7;
+      ctx.stroke();
+    });
+
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const a = particles[i], b = particles[j];
+        const sameSide = (a.x < 0.5) === (b.x < 0.5);
+        if (!sameSide) continue;
+        const dx = (a.x - b.x) * w, dy = (a.y - b.y) * h;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const maxDist = w * SIDE * 0.9;
+        if (dist < maxDist) {
+          const alpha = 0.3 * (1 - dist / maxDist);
+          ctx.beginPath();
+          ctx.moveTo(a.x * w, a.y * h);
+          ctx.lineTo(b.x * w, b.y * h);
+          ctx.strokeStyle = `rgba(0,180,255,${alpha})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
         }
       }
     }
-    nodes.forEach(n=>{
-      ctx.beginPath();
-      ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
-      ctx.fillStyle='rgba(0,212,255,0.35)';
+
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      p.pulse += p.pulseSpeed;
+      clampSide(p);
+      const alpha = p.opacity * (0.5 + 0.5 * Math.sin(p.pulse));
+      const size = p.size * (0.8 + 0.2 * Math.sin(p.pulse));
+      const g = ctx.createRadialGradient(p.x*w, p.y*h, 0, p.x*w, p.y*h, size*4);
+      g.addColorStop(0, `rgba(255,255,255,${alpha * 0.25})`);
+      g.addColorStop(1, 'transparent');
+      ctx.beginPath(); ctx.arc(p.x*w, p.y*h, size*4, 0, Math.PI*2);
+      ctx.fillStyle = g; ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x*w, p.y*h, size, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.shadowColor = '#00dcff';
+      ctx.shadowBlur = 8;
       ctx.fill();
-      n.x+=n.vx; n.y+=n.vy;
-      if(n.x<0||n.x>W) n.vx*=-1;
-      if(n.y<0||n.y>H) n.vy*=-1;
+      ctx.shadowBlur = 0;
     });
-    requestAnimationFrame(draw);
+
+    requestAnimationFrame(animate);
   }
-  resize(); initNodes(); draw();
-  window.addEventListener('resize', ()=>{ resize(); initNodes(); });
+  animate();
 })();
 </script>
 </html>
