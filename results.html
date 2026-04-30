@@ -479,19 +479,14 @@ function render(data, meta) {
     const rawTitle = meta.title || 'Enregistrement';
     const sub = [meta.datetime, meta.duration].filter(Boolean).join(' · ');
 
-    // Contenu : titre brut modifiable + sous-titre
     const bodyHTML = `
       <div class="sec" style="padding-top:10px;">
-        <div style="display:flex;align-items:flex-start;gap:8px;">
+        <div style="display:flex;align-items:center;gap:8px;">
           <input type="checkbox" class="export-cb" id="ecb_title" checked
             data-export-label="title" data-export-content="${encodeURIComponent(rawTitle)}"
-            style="flex-shrink:0;margin-top:3px;">
-          <div style="flex:1;min-width:0;">
-            <div id="metaTitle"
-              style="font-size:14px;color:#e8f4ff;cursor:text;line-height:1.5;word-break:break-all;"
-              onclick="editMetaTitle(this)">${rawTitle}</div>
-            ${sub ? `<div style="font-size:11px;color:var(--muted);margin-top:4px;">${sub}</div>` : ''}
-          </div>
+            style="flex-shrink:0;">
+          <div id="metaTitle" style="flex:1;font-size:13px;color:#e8f4ff;cursor:text;word-break:break-all;"
+            onclick="editMetaTitle(this)">${rawTitle}</div>
           <button class="edit-btn" style="color:var(--danger);flex-shrink:0;" onclick="document.getElementById('metaCardWrap').innerHTML=''" title="Supprimer">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
