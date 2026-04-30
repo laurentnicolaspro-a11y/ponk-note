@@ -325,31 +325,6 @@ async function downloadAnalysePDF() {
 
   pdfFooter(doc, pageW, pageH, M, C, 'Généré par Ponk Note · ' + new Date().toLocaleDateString('fr-FR'));
   doc.save(('analyse-' + (data.titre || 'ponk-note')).replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '_') + '.pdf');
-        const cH = 30, n = v.valeurs.length;
-        const max = Math.max(...v.valeurs), min = Math.min(...v.valeurs), range = max - min || 1;
-        checkPage(cH + 20);
-        doc.setFillColor(242, 242, 242); doc.setDrawColor(...C.blockBdr); doc.setLineWidth(0.2);
-        doc.rect(M, y, maxW, cH, 'FD');
-        const pts = v.valeurs.map((val, i) => ({
-          x: M + (i / (n - 1)) * maxW,
-          y: y + cH - ((val - min) / range) * (cH - 4) - 2
-        }));
-        doc.setDrawColor(...C.accent); doc.setLineWidth(1);
-        for (let i = 0; i < pts.length - 1; i++) doc.line(pts[i].x, pts[i].y, pts[i+1].x, pts[i+1].y);
-        pts.forEach(pt => { doc.setFillColor(...C.accent); doc.circle(pt.x, pt.y, 1.2, 'F'); });
-        y += cH + 3;
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...C.muted);
-        v.labels.forEach((label, i) => {
-          doc.text(label, M + (i / (n - 1)) * maxW, y + 4, { align: i === 0 ? 'left' : i === n - 1 ? 'right' : 'center' });
-        });
-        y += 8;
-      }
-    }
-    y += 5;
-  }
-
-  pdfFooter(doc, pageW, pageH, M, C);
-  doc.save(data.titre.replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '_') + '.pdf');
 }
 
 async function exportPDF() {
