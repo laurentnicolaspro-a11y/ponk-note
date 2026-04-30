@@ -47,15 +47,16 @@ function pdfBandeau(doc, titre, pageW, M, C) {
   loadAudiowide(doc);
 
   // Barre noire
-  const barH = 24;
+  const fontSize = 20;
+  const barH = fontSize * 0.45 + 4;
   doc.setFillColor(0, 0, 0);
   doc.rect(0, 0, pageW, barH, 'F');
 
-  // "PONK NOTE" en Audiowide blanc, ancré en bas de la barre
+  // "PONK NOTE" en Audiowide blanc, baseline collée au bas de la barre
   doc.setFont('Audiowide', 'normal');
-  doc.setFontSize(14);
+  doc.setFontSize(fontSize);
   doc.setTextColor(255, 255, 255);
-  doc.text('PONK NOTE', M, barH - 5);
+  doc.text('PONK NOTE', M, barH - 1.5);
 
   // Ligne de séparation fine sous la barre
   doc.setDrawColor(0, 0, 0);
