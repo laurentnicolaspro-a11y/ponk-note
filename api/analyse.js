@@ -19,19 +19,38 @@ module.exports = async function handler(req, res) {
     if (!text) return res.status(400).json({ error: 'Texte requis' });
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-1.5-flash'];
 
-    async function callGemini(prompt, timeoutMs = 20000) {
-      for (const mn of MODELS) {
-        try {
-          const model = genAI.getGenerativeModel({ model: mn });
-          const timeout = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('timeout')), timeoutMs)
-          );
-          const result = await Promise.race([model.generateContent(prompt), timeout]);
-          return result.response.text().trim();
-        } catch(e) {
-          console.log('[analyse] fallback:', mn, e.message);
+    // flash-lite en premier (moins cher, suffisant pour du texte)
+    // flash en fallback seulement si lite échoue vraiment
+    const MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+    const TIMEOUT_MS = 30000;
+
+    async function callGemini(prompt) {
+      for (const modelName of MODELS) {
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const model = genAI.getGenerativeModel({ model: modelName });
+            const timeout = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('timeout')), TIMEOUT_MS)
+            );
+            const result = await Promise.race([model.generateContent(prompt), timeout]);
+            console.log(`[analyse] success: ${modelName} attempt ${attempt}`);
+            return result.response.text().trim();
+          } catch (e) {
+            const isTransient =
+              e.message.includes('503') ||
+              e.message.includes('429') ||
+              e.message.includes('timeout') ||
+              e.message.includes('UNAVAILABLE');
+
+            console.log(`[analyse] ${modelName} attempt ${attempt} failed (${isTransient ? 'transient' : 'fatal'}):`, e.message);
+
+            if (isTransient && attempt < 3) {
+              await new Promise(r => setTimeout(r, attempt * 1500)); // 1.5s puis 3s
+              continue;
+            }
+            break; // erreur fatale ou tentatives épuisées → modèle suivant
+          }
         }
       }
       throw new Error('Tous les modèles ont échoué');
@@ -115,16 +134,16 @@ Règles :
 - Tout en français, factuel et concret
 - JSON uniquement, aucun texte autour`;
 
-    const raw = await callGemini(prompt, 20000);
+    const raw = await callGemini(prompt);
     const clean = raw.replace(/```json|```/g, '').trim();
 
     try {
       return res.status(200).json(JSON.parse(clean));
-    } catch(e) {
+    } catch (e) {
       return res.status(200).json({ error: 'Erreur de parsing', raw });
     }
 
-  } catch(err) {
+  } catch (err) {
     console.error('[analyse]', err.message);
     return res.status(500).json({ error: err.message });
   }
