@@ -56,7 +56,7 @@ function pdfBandeau(doc, titre, pageW, M, C) {
   doc.setFont('Audiowide', 'normal');
   doc.setFontSize(fontSize);
   doc.setTextColor(255, 255, 255);
-  doc.text('PONK NOTE', M, barH + 0.3);
+  doc.text('PONK NOTE', M, barH + (fontSize * 0.35 * 0.5));
 
   // Ligne de séparation fine sous la barre
   doc.setDrawColor(0, 0, 0);
