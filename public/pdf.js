@@ -277,3 +277,313 @@ async function downloadAnalysePDF() {
   pdfFooter(doc, pageW, pageH, M, C);
   doc.save(data.titre.replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '_') + '.pdf');
 }
+
+async function exportPDF() {
+  const jsPDF = await loadJsPDF();
+  const C = PDF_C;
+
+  // Cases cochées
+  const checked = {};
+  document.querySelectorAll('.export-cb:checked').forEach(cb => {
+    checked[cb.dataset.exportLabel] = decodeURIComponent(cb.dataset.exportContent || '');
+  });
+
+  let data = JSON.parse(localStorage.getItem('ponk_result')||'{}');
+  const meta = JSON.parse(localStorage.getItem('ponk_meta')||'{}');
+  let s = (typeof data.summary === 'object') ? data.summary : null;
+
+  // Gemini relit avant export
+  const pdfBtn = document.querySelector('.btn-pdf');
+  if (pdfBtn) { pdfBtn.textContent = '⏳ Gemini relit…'; pdfBtn.disabled = true; }
+  console.log('[PDF] Envoi à Gemini pour relecture...');
+  console.log('[PDF] checked keys:', Object.keys(checked));
+  console.log('[PDF] prochaine:', checked['prochaine']);
+  console.log('[PDF] s.prochaine_etape:', s?.prochaine_etape);
+
+  try {
+    // Construire uniquement les éléments cochés pour Gemini
+    const summaryToSend = {};
+    if (checked['contexte']) summaryToSend.contexte = s.contexte;
+    if (checked['resume']) summaryToSend.resume = s.resume;
+    const checkedPoints = (s.points_discutes||[]).filter((p,i) => checked['point:'+i] !== undefined);
+    if (checkedPoints.length) summaryToSend.points_discutes = checkedPoints;
+    const checkedDecisions = (s.decisions||[]).filter((d,i) => checked['decision:'+i] !== undefined);
+    if (checkedDecisions.length) summaryToSend.decisions = checkedDecisions;
+    if (checked['prochaine'] && s.prochaine_etape) summaryToSend.prochaine_etape = s.prochaine_etape;
+
+    // Actions IA cochées — nettoyer les descriptions
+    const actionsIACochees = Object.entries(checked)
+      .filter(([k]) => k.startsWith('action_ia:') || k.startsWith('action_ia_done:'))
+      .map(([, v]) => decodeURIComponent(v));
+    if (actionsIACochees.length) summaryToSend.actions_ia = actionsIACochees;
+
+    // Mémo coché
+    const memoNotesCochees = checked['memo_notes'] ? decodeURIComponent(checked['memo_notes']) : '';
+    if (memoNotesCochees) summaryToSend.memo = memoNotesCochees;
+
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rewrite: true,
+        summary: summaryToSend,
+        transcript: data.transcript || ''
+      })
+    });
+
+    if (res.ok) {
+      const result = await res.json();
+      console.log('[PDF rewrite] Résultat Gemini:', JSON.stringify(result).substring(0, 500));
+      if (result && s) {
+        // Appliquer uniquement les champs cochés, sans inventer
+        if (result.contexte && checked['contexte']) s.contexte = result.contexte;
+        if (result.resume && checked['resume']) s.resume = result.resume;
+        if (result.points_discutes?.length && checkedPoints.length) {
+          // Remplacer seulement les points cochés, garder les non cochés
+          let pi = 0;
+          s.points_discutes = (s.points_discutes||[]).map((p,i) =>
+            checked['point:'+i] !== undefined ? (result.points_discutes[pi++] || p) : p
+          );
+        }
+        if (result.decisions?.length && checkedDecisions.length) {
+          let di = 0;
+          s.decisions = (s.decisions||[]).map((d,i) =>
+            checked['decision:'+i] !== undefined ? (result.decisions[di++] || d) : d
+          );
+        }
+        if (result.prochaine_etape && checked['prochaine']) s.prochaine_etape = result.prochaine_etape;
+
+        // Appliquer corrections actions IA
+        if (result.actions_ia?.length) {
+          const cards = document.querySelectorAll('.action-ia-info .action-ia-desc');
+          const checkboxes = document.querySelectorAll('.export-cb[data-export-label^="action_ia"]');
+          result.actions_ia.forEach((corrected, i) => {
+            if (cards[i]) cards[i].textContent = corrected.replace(/^[^—]+— /, '');
+            if (checkboxes[i]) checkboxes[i].dataset.exportContent = encodeURIComponent(corrected);
+          });
+        }
+
+        // Appliquer correction mémo
+        if (result.memo) {
+          const memoArea = document.getElementById('memoNotesArea');
+          const memoCb = document.getElementById('ecb_memo_notes');
+          if (memoArea) memoArea.value = result.memo;
+          if (memoCb) memoCb.dataset.exportContent = encodeURIComponent(result.memo);
+        }
+
+        saveSummary(s);
+        renderSummary(s);
+      }
+    }
+  } catch(e) { 
+    console.warn('Gemini relit échoué, export sans relecture:', e);
+  } finally {
+    if (pdfBtn) { pdfBtn.textContent = '↓ Exporter en PDF'; pdfBtn.disabled = false; }
+  }
+
+  // Reconstruire checked après relecture pour avoir les valeurs corrigées
+  document.querySelectorAll('.export-cb:checked').forEach(cb => {
+    checked[cb.dataset.exportLabel] = decodeURIComponent(cb.dataset.exportContent || '');
+  });
+  // Lire le mémo directement depuis le textarea
+  const memoAreaFinal = document.getElementById('memoNotesArea');
+  if (memoAreaFinal && memoAreaFinal.value) {
+    checked['memo_notes'] = memoAreaFinal.value;
+  }
+
+  data = JSON.parse(localStorage.getItem('ponk_result')||'{}');
+  s = (typeof data.summary === 'object') ? data.summary : null;
+
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const M = 16, maxW = pageW - M * 2;
+  let y = M;
+  const checkPage = (n = 10) => { if (y + n > pageH - 14) { doc.addPage(); y = M; } };
+
+  // Titre du bandeau
+  const titre = meta.title || 'Compte-rendu';
+  pdfBandeau(doc, titre, pageW, M, C);
+  y = 40;
+
+  // Sous-titre date + durée
+  if (meta.datetime || meta.duration) {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...C.muted);
+    doc.text((meta.datetime||'') + (meta.duration ? ' · ' + meta.duration : ''), M, y);
+    y += 8;
+  }
+
+  // ── CONTEXTE ──
+  if (s && checked['contexte'] && s.contexte) {
+    checkPage(16);
+    doc.setFillColor(...C.sectionBg); doc.setDrawColor(...C.sectionBdr); doc.setLineWidth(0.2);
+    doc.roundedRect(M, y, maxW, 12, 2.5, 2.5, 'FD');
+    doc.setFillColor(...C.accent); doc.roundedRect(M, y, 3.5, 12, 1.5, 1.5, 'F');
+    doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(...C.accentDark);
+    const ctxL = doc.splitTextToSize(s.contexte, maxW - 10);
+    doc.text(ctxL, M + 7, y + 7.5);
+    y += 18;
+  }
+
+  // ── RÉSUMÉ ──
+  if (s && checked['resume'] && s.resume) {
+    checkPage(20);
+    pdfSectionHeader(doc, 'Résumé', null, y, M, maxW, C);
+    y += 13;
+    const resumeL = doc.splitTextToSize(s.resume, maxW - 12);
+    const resumeH = resumeL.length * 5.2 + 8;
+    pdfBlock(doc, resumeL, [], y, M, maxW, resumeH, C);
+    y += resumeH + 6;
+  }
+
+  // ── POINTS DISCUTÉS ──
+  const points = s ? (s.points_discutes||[]).filter((p,i) => checked['point:'+i] !== undefined) : [];
+  if (points.length) {
+    checkPage(22);
+    pdfSectionHeader(doc, 'Points discutés', null, y, M, maxW, C);
+    y += 13;
+    for (const p of points) {
+      checkPage(12);
+      const pL = doc.splitTextToSize('— ' + p, maxW - 12);
+      const pH = pL.length * 5.2 + 6;
+      pdfBlock(doc, pL, [], y, M, maxW, pH, C);
+      y += pH + 4;
+    }
+    y += 4;
+  }
+
+  // ── DÉCISIONS ──
+  const decisions = s ? (s.decisions||[]).filter((d,i) => checked['decision:'+i] !== undefined) : [];
+  if (decisions.length) {
+    checkPage(22);
+    pdfSectionHeader(doc, 'Décisions', null, y, M, maxW, C);
+    y += 13;
+    for (const d of decisions) {
+      checkPage(12);
+      const dL = doc.splitTextToSize('✓ ' + d, maxW - 12);
+      const dH = dL.length * 5.2 + 6;
+      doc.setFillColor(225, 245, 235); doc.setDrawColor(150, 210, 180); doc.setLineWidth(0.2);
+      doc.roundedRect(M, y, maxW, dH, 2.5, 2.5, 'FD');
+      doc.setFillColor(61, 184, 122); doc.roundedRect(M, y, 3.5, dH, 1.5, 1.5, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(25, 100, 60);
+      const dLclean = dL.map(l => l.replace(/^✓ /, '+ '));
+      doc.text(dLclean, M + 7, y + 6);
+      y += dH + 4;
+    }
+    y += 4;
+  }
+
+  // ── ACTIONS ──
+  const actions = s ? (s.actions||[]).filter(a => checked['action:'+(a.qui||'?')+':'+(a.quoi||'')]) : [];
+  if (actions.length) {
+    checkPage(22);
+    pdfSectionHeader(doc, 'Actions', null, y, M, maxW, C);
+    y += 13;
+    const colQui = 40, colQuand = 32, colQuoi = maxW - colQui - colQuand;
+    doc.setFillColor(...C.accentDark); doc.rect(M, y, maxW, 7, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...C.white);
+    doc.text('QUI', M + 3, y + 4.8);
+    doc.text('QUOI', M + colQui + 3, y + 4.8);
+    doc.text('QUAND', M + colQui + colQuoi + 3, y + 4.8);
+    y += 7;
+    actions.forEach((a, i) => {
+      checkPage(10);
+      const rowH = 9;
+      doc.setFillColor(i%2===0 ? 243 : 251, i%2===0 ? 246 : 253, 255);
+      doc.setDrawColor(...C.blockBdr); doc.setLineWidth(0.15);
+      doc.rect(M, y, maxW, rowH, 'FD');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...C.accent);
+      doc.text(doc.splitTextToSize(a.qui || 'À définir', colQui - 4)[0], M + 3, y + 5.8);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(...C.dark);
+      doc.text(doc.splitTextToSize(a.quoi || '', colQuoi - 4)[0], M + colQui + 3, y + 5.8);
+      doc.setFont('helvetica', 'italic'); doc.setTextColor(...C.muted);
+      doc.text(doc.splitTextToSize(a.quand || '', colQuand - 4)[0], M + colQui + colQuoi + 3, y + 5.8);
+      y += rowH;
+    });
+    y += 8;
+  }
+
+  // ── PROCHAINE ÉTAPE ──
+  if (s && checked['prochaine'] && s.prochaine_etape) {
+    checkPage(18);
+    pdfSectionHeader(doc, 'Prochaine étape', null, y, M, maxW, C);
+    y += 13;
+    const pL = doc.splitTextToSize(s.prochaine_etape, maxW - 12);
+    const pH = pL.length * 5.2 + 8;
+    doc.setFillColor(250, 240, 220); doc.setDrawColor(220, 180, 100); doc.setLineWidth(0.2);
+    doc.roundedRect(M, y, maxW, pH, 2.5, 2.5, 'FD');
+    doc.setFillColor(234, 158, 40); doc.roundedRect(M, y, 3.5, pH, 1.5, 1.5, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(140, 80, 10);
+    doc.text(pL, M + 7, y + 6);
+    y += pH + 8;
+  }
+
+  // ── MÉMO ──
+  const memoRappels = Object.entries(checked).filter(([k]) => k === 'memo_rappel');
+  const memoNotes = checked['memo_notes'] || '';
+  if (memoRappels.length || memoNotes) {
+    checkPage(22);
+    pdfSectionHeader(doc, 'Mémo', null, y, M, maxW, C);
+    y += 13;
+    for (const [, v] of memoRappels) {
+      checkPage(12);
+      const rL = doc.splitTextToSize('• ' + v, maxW - 12);
+      const rH = rL.length * 5.2 + 6;
+      pdfBlock(doc, rL, [], y, M, maxW, rH, C);
+      y += rH + 4;
+    }
+    if (memoNotes) {
+      checkPage(16);
+      const nL = doc.splitTextToSize(memoNotes, maxW - 12);
+      doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(...C.muted);
+      nL.forEach(line => { doc.text(line, M + 4, y); y += 5; });
+      y += 4;
+    }
+    y += 4;
+  }
+
+  // ── ACTIONS IA ──
+  const actionsIA = Object.entries(checked).filter(([k]) => k.startsWith('action_ia:') && !k.startsWith('action_ia_done:'));
+  const actionsIADone = Object.entries(checked).filter(([k]) => k.startsWith('action_ia_done:'));
+  const allActionsIA = [...actionsIA, ...actionsIADone];
+
+  if (allActionsIA.length) {
+    checkPage(22);
+    pdfSectionHeader(doc, 'Actions IA', null, y, M, maxW, C);
+    y += 13;
+    for (const [k, v] of allActionsIA) {
+      checkPage(12);
+      const isDone = k.startsWith('action_ia_done:');
+      const aL = doc.splitTextToSize(v, maxW - 12);
+      const aH = aL.length * 5.2 + 6;
+      if (isDone) {
+        doc.setFillColor(225, 245, 235); doc.setDrawColor(150, 210, 180); doc.setLineWidth(0.2);
+        doc.roundedRect(M, y, maxW, aH, 2.5, 2.5, 'FD');
+        doc.setFillColor(61, 184, 122); doc.roundedRect(M, y, 3.5, aH, 1.5, 1.5, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(25, 100, 60);
+        doc.text(aL, M + 7, y + 6);
+      } else {
+        pdfBlock(doc, aL, [], y, M, maxW, aH, C);
+      }
+      y += aH + 4;
+    }
+    y += 4;
+  }
+
+  // ── TRANSCRIPTION ──
+  if (checked['transcript']) {
+    checkPage(22);
+    pdfSectionHeader(doc, 'Transcription', null, y, M, maxW, C);
+    y += 13;
+    const tL = doc.splitTextToSize(checked['transcript'], maxW - 12);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...C.muted);
+    for (const line of tL) {
+      checkPage(6);
+      doc.text(line, M + 4, y);
+      y += 5;
+    }
+  }
+
+  pdfFooter(doc, pageW, pageH, M, C, 'Généré par Ponk Note · ' + new Date().toLocaleDateString('fr-FR'));
+  doc.save((meta.title||'ponk-note').replace(/[^a-z0-9\s]/gi,'').trim().replace(/\s+/g,'_') + '-' + new Date().toISOString().slice(0,10) + '.pdf');
+}
