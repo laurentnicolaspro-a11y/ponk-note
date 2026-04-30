@@ -433,16 +433,14 @@
 </header>
 
 <div class="content">
-  <div id="metaHeader" style="display:none;align-items:center;gap:10px;padding:12px 16px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);border-radius:12px;">
+  <div id="metaHeader" class="card" style="display:none;flex-direction:row;align-items:center;gap:12px;padding:14px 16px;">
     <input type="checkbox" class="export-cb" id="ecb_title" checked data-export-label="title" data-export-content="" style="flex-shrink:0;margin-top:0;">
     <div style="flex:1;min-width:0;">
       <div id="metaTitle"
-        style="font-family:Audiowide,sans-serif;font-size:15px;color:#e8f4ff;cursor:text;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-        title="Cliquer pour modifier"
+        style="font-family:Audiowide,sans-serif;font-size:13px;color:#e8f4ff;cursor:text;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
         onclick="editMetaTitle(this)"></div>
-      <div id="metaSub" style="font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:0.3px;"></div>
+      <div id="metaSub" style="font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:0.3px;"></div>
     </div>
-    <span style="font-size:10px;color:var(--cyan-dim);opacity:0.5;cursor:pointer;flex-shrink:0;" onclick="editMetaTitle(document.getElementById('metaTitle'))" title="Modifier">modifier</span>
   </div>
   <div id="meta" class="meta" style="display:none"></div>
   <div id="cards"></div>
@@ -486,25 +484,17 @@ function render(data, meta) {
   const c = document.getElementById('cards');
 
   if (meta && (meta.title || meta.datetime || meta.duration)) {
-    // Nettoyer le titre : retirer le timestamp ISO du début
-    const rawTitle = meta.title || '';
-    const cleaned = rawTitle
-      .replace(/^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-?/i, '')
-      .replace(/-/g, ' ')
-      .trim() || 'Enregistrement';
-    const displayTitle = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
-
-    // Sous-titre : date + durée
-    const sub = [meta.datetime, meta.duration ? '· ' + meta.duration : ''].filter(Boolean).join(' ');
+    const rawTitle = meta.title || 'Enregistrement';
+    const sub = [meta.datetime, meta.duration ? meta.duration : ''].filter(Boolean).join(' · ');
 
     const titleEl = document.getElementById('metaTitle');
     const subEl   = document.getElementById('metaSub');
     const cb      = document.getElementById('ecb_title');
     const header  = document.getElementById('metaHeader');
 
-    titleEl.textContent = displayTitle;
+    titleEl.textContent = rawTitle;
     if (subEl) subEl.textContent = sub;
-    if (cb) cb.dataset.exportContent = encodeURIComponent(displayTitle);
+    if (cb) cb.dataset.exportContent = encodeURIComponent(rawTitle);
     if (header) header.style.display = 'flex';
   }
 
