@@ -5,242 +5,294 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Ponk Note — Résultats</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="/public/pdf.js"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+    ::-webkit-scrollbar { width:5px; height:5px; }
+    ::-webkit-scrollbar-track { background:rgba(0,0,0,0.2); border-radius:10px; }
+    ::-webkit-scrollbar-thumb { background:rgba(0,212,255,0.25); border-radius:10px; }
+    ::-webkit-scrollbar-thumb:hover { background:rgba(0,212,255,0.45); }
+
     :root {
-      --grad: linear-gradient(145deg, #d8f0e8 0%, #c8e8f0 40%, #d8eef8 100%);
-      --glass: rgba(255,255,255,0.5);
-      --glass-border: rgba(255,255,255,0.75);
-      --text: #2a2a3a;
-      --muted: rgba(42,42,58,0.5);
-      --accent: #4a7fd4;
-      --danger: #e05555;
-      --green: #3db87a;
-      --surface: rgba(255,255,255,0.55);
+      --bg-deep:        #050c1a;
+      --bg-mid:         #080f20;
+      --bg-card:        rgba(4,10,30,0.7);
+      --bg-card2:       rgba(4,10,30,0.85);
+      --cyan:           #00d4ff;
+      --cyan-dim:       rgba(0,212,255,0.55);
+      --cyan-glow:      rgba(0,212,255,0.18);
+      --cyan-border:    rgba(0,212,255,0.25);
+      --cyan-border-hi: rgba(0,212,255,0.55);
+      --text:           #e8f4ff;
+      --muted:          rgba(180,220,255,0.45);
+      --accent:         #00d4ff;
+      --danger:         #ff4466;
+      --green:          #00e5a0;
+      --surface:        rgba(4,10,30,0.95);
     }
+
     html, body { min-height:100%; font-family:'Inter',-apple-system,sans-serif; color:var(--text); }
-    body { background:var(--grad); padding-bottom:40px; }
-    body::before { content:''; position:fixed; inset:0; z-index:-1; background:var(--grad); }
+    body {
+      background: radial-gradient(ellipse at 20% 30%, #1a3060 0%, #101e40 40%, #080f28 100%);
+      padding-bottom:40px;
+    }
+    body::before {
+      content:''; position:fixed; inset:0; z-index:-1;
+      background: radial-gradient(ellipse at 20% 30%, #1a3060 0%, #101e40 40%, #080f28 100%);
+    }
+
+    /* Scanline */
+    body::after {
+      content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+      background:linear-gradient(transparent 50%, rgba(0,212,255,0.015) 50%);
+      background-size:100% 4px;
+    }
 
     @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
     @keyframes spin { to { transform:rotate(360deg); } }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    @keyframes cardIn { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
 
     /* Header */
     header {
       position:sticky; top:0; z-index:10;
-      backdrop-filter:blur(24px) saturate(180%);
-      -webkit-backdrop-filter:blur(24px) saturate(180%);
-      background:rgba(200,235,220,0.7);
-      border-bottom:1px solid var(--glass-border);
+      background:rgba(5,12,26,0.85);
+      backdrop-filter:blur(20px);
+      border-bottom:1px solid var(--cyan-border);
       padding:env(safe-area-inset-top,0px) 20px 0;
     }
     .header-inner {
       display:flex; align-items:center; justify-content:space-between;
       padding:14px 0; max-width:430px; margin:0 auto;
     }
-    .logo { font-size:17px; font-weight:700; letter-spacing:-0.3px; color:var(--text); }
-    .logo span { color:var(--muted); font-weight:400; }
+    .logo {
+      font-family:'Audiowide', sans-serif;
+      font-size:17px; letter-spacing:0.5px;
+      color:var(--cyan);
+      text-shadow:0 0 12px var(--cyan-dim), 0 0 24px rgba(0,212,255,0.25);
+    }
+    .logo span {
+      color:var(--text);
+      text-shadow:0 0 10px rgba(232,244,255,0.5);
+    }
     .header-right { display:flex; align-items:center; gap:10px; }
     .back-btn {
-      background:var(--glass); border:1.5px solid var(--glass-border);
-      backdrop-filter:blur(12px); color:var(--accent); padding:6px 14px;
-      border-radius:100px; font-family:inherit; font-size:13px; font-weight:500;
+      background:transparent; border:1px solid var(--cyan-border);
+      color:var(--cyan); padding:6px 14px;
+      border-radius:6px; font-family:'Audiowide',sans-serif; font-size:10px;
+      letter-spacing:0.5px; font-weight:400;
       cursor:pointer; -webkit-tap-highlight-color:transparent;
+      transition:background 0.2s, border-color 0.2s;
     }
-    .back-btn:active { background:rgba(255,255,255,0.7); }
+    .back-btn:hover, .back-btn:active { background:var(--cyan-glow); border-color:var(--cyan-border-hi); }
     .header-avatar {
       width:32px; height:32px; border-radius:50%;
       display:flex; align-items:center; justify-content:center;
-      font-size:13px; font-weight:600; color:#fff;
-      box-shadow:0 2px 8px rgba(0,0,0,0.15);
+      font-family:'Audiowide',sans-serif;
+      font-size:12px; color:#fff;
+      border:1.5px solid rgba(0,212,255,0.4);
+      box-shadow:0 0 10px rgba(0,212,255,0.2);
     }
 
-    .content { max-width:430px; margin:0 auto; padding:20px 20px 0; display:flex; flex-direction:column; gap:10px; }
-    .meta { font-size:13px; color:var(--muted); padding:0 4px; }
+    .content { position:relative; z-index:1; max-width:430px; margin:0 auto; padding:20px 20px 0; display:flex; flex-direction:column; gap:10px; }
+    .meta { font-size:12px; color:var(--muted); padding:0 4px; letter-spacing:0.3px; }
 
     /* Cards */
     .card {
-      background:var(--glass); border:1.5px solid var(--glass-border);
-      backdrop-filter:blur(20px); border-radius:18px; overflow:hidden;
+      background:var(--bg-card); border:1px solid var(--cyan-border);
+      border-radius:12px; overflow:hidden;
+      animation:cardIn 0.35s ease both;
+      transition:border-color 0.2s, background 0.2s;
     }
+    .card:hover { border-color:var(--cyan-border-hi); background:var(--bg-card2); }
     .card-hd {
       display:flex; align-items:center; justify-content:space-between;
       padding:14px 16px; cursor:pointer;
       -webkit-tap-highlight-color:transparent; user-select:none;
     }
-    .card-hd:active { background:rgba(255,255,255,0.3); }
-    .card-lbl { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); }
+    .card-hd:active { background:var(--cyan-glow); }
+    .card-lbl { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:var(--cyan); }
     .card-controls { display:flex; align-items:center; gap:8px; }
-    .chevron { color:var(--muted); font-size:11px; transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1); }
+    .chevron { color:var(--cyan-dim); font-size:11px; transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1); }
     .chevron.closed { transform:rotate(-90deg); }
-    .card-bd { border-top:1px solid rgba(255,255,255,0.5); padding:0 16px 16px; }
+    .card-bd { border-top:1px solid var(--cyan-border); padding:0 16px 16px; }
     .card-bd.hidden { display:none; }
 
     .sec { padding-top:14px; }
-    .sec + .sec { margin-top:10px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.4); }
-    .sec-title { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); margin-bottom:8px; }
-    .sec p { font-size:15px; line-height:1.65; color:var(--text); }
+    .sec + .sec { margin-top:10px; padding-top:12px; border-top:1px solid var(--cyan-border); }
+    .sec-title { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:var(--cyan-dim); margin-bottom:8px; }
+    .sec p { font-size:14px; line-height:1.65; color:var(--text); }
 
     ul.items { list-style:none; display:flex; flex-direction:column; gap:6px; padding-top:4px; }
     ul.items li {
-      padding:10px 14px; background:rgba(255,255,255,0.4); border:1px solid rgba(255,255,255,0.6);
-      border-radius:10px; font-size:14px; line-height:1.5;
+      padding:10px 14px; background:rgba(0,212,255,0.04); border:1px solid var(--cyan-border);
+      border-radius:10px; font-size:13px; line-height:1.5;
       display:flex; gap:10px; color:var(--text);
     }
-    ul.items li::before { content:'—'; color:var(--muted); flex-shrink:0; }
+    ul.items li::before { content:'›'; color:var(--cyan); flex-shrink:0; }
 
     ul.checks { list-style:none; display:flex; flex-direction:column; gap:6px; padding-top:4px; }
     ul.checks li {
-      padding:10px 14px; background:rgba(255,255,255,0.4); border:1px solid rgba(255,255,255,0.6);
-      border-radius:10px; font-size:14px;
+      padding:10px 14px; background:rgba(0,212,255,0.04); border:1px solid var(--cyan-border);
+      border-radius:10px; font-size:13px;
       display:flex; align-items:center; gap:12px;
       cursor:pointer; -webkit-tap-highlight-color:transparent; transition:opacity 0.2s;
     }
     ul.checks li.done { opacity:.4; text-decoration:line-through; }
-    .cb { width:20px; height:20px; border-radius:50%; flex-shrink:0; border:1.5px solid rgba(255,255,255,0.8); background:rgba(255,255,255,0.5); display:flex; align-items:center; justify-content:center; font-size:11px; transition:all 0.15s; }
+    .cb { width:20px; height:20px; border-radius:50%; flex-shrink:0; border:1.5px solid var(--cyan-border); background:transparent; display:flex; align-items:center; justify-content:center; font-size:11px; transition:all 0.15s; }
     ul.checks li.done .cb { background:var(--green); border-color:var(--green); color:#fff; }
 
     table { width:100%; margin-top:8px; border-collapse:collapse; }
-    td { padding:9px 0; font-size:14px; border-bottom:1px solid rgba(255,255,255,0.4); }
+    td { padding:9px 0; font-size:13px; border-bottom:1px solid var(--cyan-border); color:var(--text); }
     td:last-child { text-align:right; }
     tr:last-child td { border-bottom:none; font-weight:600; }
 
-    .transcript-text { font-size:13px; line-height:1.85; color:var(--muted); padding-top:14px; white-space:pre-wrap; font-family:monospace; }
+    .transcript-text { font-size:12px; line-height:1.85; color:var(--muted); padding-top:14px; white-space:pre-wrap; font-family:monospace; }
 
     .action-btns { padding:16px 0 0; display:flex; flex-direction:column; gap:8px; }
     .btn-action {
-      width:100%; padding:15px; border-radius:14px; border:none;
-      font-family:inherit; font-size:16px; font-weight:600;
+      width:100%; padding:15px; border-radius:10px; border:none;
+      font-family:'Audiowide',sans-serif; font-size:13px; font-weight:400;
+      letter-spacing:0.5px;
       cursor:pointer; -webkit-tap-highlight-color:transparent;
-      transition:opacity 0.15s, transform 0.1s;
+      transition:opacity 0.15s, transform 0.1s, box-shadow 0.2s;
     }
     .btn-action:active { opacity:0.85; transform:scale(0.98); }
-    .btn-action:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
-    .btn-email { background:var(--accent); color:#fff; box-shadow:0 4px 16px rgba(74,127,212,0.3); }
-    .btn-pdf { background:var(--glass); color:var(--text); border:1.5px solid var(--glass-border); }
+    .btn-action:disabled { opacity:0.35; cursor:not-allowed; transform:none; }
+    .btn-email {
+      background:linear-gradient(135deg, rgba(0,100,200,0.9), rgba(0,180,255,0.8));
+      color:#fff; border:1px solid rgba(0,212,255,0.4);
+      box-shadow:0 0 16px rgba(0,180,255,0.2);
+    }
+    .btn-pdf {
+      background:transparent; color:var(--cyan);
+      border:1px solid var(--cyan-border);
+    }
+    .btn-pdf:hover { background:var(--cyan-glow); border-color:var(--cyan-border-hi); }
 
     /* Audio player */
     .audio-player { padding-top:14px; display:flex; flex-direction:column; gap:10px; }
     .player-controls { display:flex; align-items:center; gap:12px; }
     .play-btn {
       width:40px; height:40px; border-radius:50%; flex-shrink:0;
-      background:var(--accent); border:none; cursor:pointer;
+      background:transparent; border:1.5px solid var(--cyan); cursor:pointer;
       display:flex; align-items:center; justify-content:center;
-      box-shadow:0 4px 12px rgba(74,127,212,0.3);
-      transition:transform 0.1s; -webkit-tap-highlight-color:transparent;
+      box-shadow:0 0 10px var(--cyan-glow);
+      transition:background 0.2s, box-shadow 0.2s; -webkit-tap-highlight-color:transparent;
     }
-    .play-btn:active { transform:scale(0.93); }
-    .play-btn svg { fill:white; }
+    .play-btn:active, .play-btn:hover { background:var(--cyan-glow); box-shadow:0 0 16px var(--cyan-dim); }
+    .play-btn svg { fill:var(--cyan); }
     .progress-wrap { flex:1; display:flex; flex-direction:column; gap:4px; }
     .progress-bar {
-      width:100%; height:4px; border-radius:2px;
-      background:rgba(255,255,255,0.4); cursor:pointer; position:relative; overflow:hidden;
+      width:100%; height:3px; border-radius:2px;
+      background:rgba(0,212,255,0.12); cursor:pointer; position:relative; overflow:hidden;
     }
-    .progress-fill { height:100%; border-radius:2px; background:var(--accent); width:0%; transition:width 0.1s linear; pointer-events:none; }
-    .progress-times { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums; }
+    .progress-fill { height:100%; border-radius:2px; background:var(--cyan); width:0%; transition:width 0.1s linear; pointer-events:none; box-shadow:0 0 6px var(--cyan-dim); }
+    .progress-times { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); font-variant-numeric:tabular-nums; }
 
     /* Actions IA */
     .actions-ia-wrap { display:flex; flex-direction:column; gap:8px; }
     .action-ia-card {
       display:flex; align-items:center; gap:14px;
-      background:var(--glass); border:1.5px solid var(--glass-border);
-      backdrop-filter:blur(20px); border-radius:16px;
+      background:rgba(0,212,255,0.04); border:1px solid var(--cyan-border);
+      border-radius:12px;
       padding:14px 16px; cursor:pointer;
-      -webkit-tap-highlight-color:transparent; transition:background 0.15s;
+      -webkit-tap-highlight-color:transparent;
+      transition:background 0.15s, border-color 0.15s;
       text-decoration:none; color:var(--text);
     }
-    .action-ia-card:active { background:rgba(255,255,255,0.7); }
+    .action-ia-card:hover { background:var(--cyan-glow); border-color:var(--cyan-border-hi); }
+    .action-ia-card:active { background:rgba(0,212,255,0.12); }
     .action-ia-icon {
-      width:42px; height:42px; border-radius:12px;
-      background:rgba(255,255,255,0.6); border:1px solid rgba(255,255,255,0.8);
+      width:42px; height:42px; border-radius:10px;
+      background:rgba(0,212,255,0.08); border:1px solid var(--cyan-border);
       display:flex; align-items:center; justify-content:center;
       font-size:20px; flex-shrink:0;
     }
     .action-ia-info { flex:1; }
-    .action-ia-titre { font-size:14px; font-weight:600; color:var(--text); margin-bottom:3px; }
+    .action-ia-titre { font-size:13px; font-weight:600; color:var(--text); margin-bottom:3px; }
     .action-ia-desc { font-size:12px; color:var(--muted); }
     .action-ia-arrow {
       width:28px; height:28px; border-radius:50%;
-      background:var(--accent); display:flex; align-items:center; justify-content:center;
-      flex-shrink:0; box-shadow:0 2px 8px rgba(74,127,212,0.3);
+      background:rgba(0,180,255,0.8); display:flex; align-items:center; justify-content:center;
+      flex-shrink:0; box-shadow:0 0 10px rgba(0,180,255,0.3);
     }
     .action-ia-arrow svg { fill:white; }
 
     /* Deep analysis */
     .analysis-result {
       margin-top:12px; padding:14px;
-      background:rgba(255,255,255,0.4); border-radius:12px;
-      border:1px solid rgba(255,255,255,0.6);
+      background:rgba(0,212,255,0.04); border-radius:10px;
+      border:1px solid var(--cyan-border);
       font-size:13px; line-height:1.7; color:var(--text); display:none;
     }
     .analysis-result.visible { display:block; animation:fadeUp 0.3s ease; }
     .analysis-loading { display:none; align-items:center; gap:8px; margin-top:10px; font-size:12px; color:var(--muted); }
     .analysis-loading.visible { display:flex; }
-    .analysis-spinner { width:14px; height:14px; border-radius:50%; border:2px solid rgba(74,127,212,0.2); border-top-color:var(--accent); animation:spin 0.8s linear infinite; }
+    .analysis-spinner { width:14px; height:14px; border-radius:50%; border:2px solid rgba(0,212,255,0.15); border-top-color:var(--cyan); animation:spin 0.8s linear infinite; }
 
     .copy-btn {
-      background:rgba(255,255,255,0.4); border:1px solid rgba(255,255,255,0.6);
-      color:var(--muted); padding:5px 12px; border-radius:100px;
-      font-size:12px; font-family:inherit; cursor:pointer;
+      background:transparent; border:1px solid var(--cyan-border);
+      color:var(--cyan); padding:4px 12px; border-radius:6px;
+      font-size:11px; font-family:'Audiowide',sans-serif; letter-spacing:0.3px; cursor:pointer;
+      transition:background 0.15s;
     }
-    .copy-btn:active { background:rgba(255,255,255,0.7); }
+    .copy-btn:active, .copy-btn:hover { background:var(--cyan-glow); }
 
     .export-cb {
-      width:16px; height:16px; border-radius:4px; flex-shrink:0;
-      border:1.5px solid rgba(74,127,212,0.4); background:rgba(255,255,255,0.6);
+      width:16px; height:16px; border-radius:3px; flex-shrink:0;
+      border:1.5px solid rgba(0,212,255,0.35); background:transparent;
       cursor:pointer; appearance:none; -webkit-appearance:none;
       display:flex; align-items:center; justify-content:center;
       transition:all 0.15s; margin-top:2px;
     }
     .export-cb:checked {
-      background:var(--accent); border-color:var(--accent);
+      background:var(--cyan); border-color:var(--cyan);
+      box-shadow:0 0 6px var(--cyan-dim);
     }
     .export-cb:checked::after {
-      content:'✓'; color:#fff; font-size:10px; font-weight:700;
+      content:'✓'; color:#050c1a; font-size:10px; font-weight:700;
       display:block; text-align:center; line-height:1;
     }
-    .export-row {
-      display:flex; align-items:flex-start; gap:8px;
-    }
+    .export-row { display:flex; align-items:flex-start; gap:8px; }
     .export-row .export-cb { margin-top:3px; }
 
     .edit-btn {
       background:none; border:none; cursor:pointer;
       color:var(--muted); font-size:12px; padding:2px 6px;
-      border-radius:6px; flex-shrink:0; opacity:0.6;
+      border-radius:4px; flex-shrink:0; opacity:0.6;
       transition:opacity 0.15s;
     }
-    .edit-btn:hover { opacity:1; background:rgba(255,255,255,0.5); }
+    .edit-btn:hover { opacity:1; background:rgba(0,212,255,0.08); }
     .edit-input {
-      flex:1; background:rgba(255,255,255,0.7);
-      border:1.5px solid var(--accent); border-radius:8px;
+      flex:1; background:rgba(0,212,255,0.06);
+      border:1.5px solid var(--cyan); border-radius:6px;
       padding:6px 10px; font-family:inherit; font-size:13px;
       color:var(--text); outline:none;
     }
     .add-btn {
       display:flex; align-items:center; gap:5px;
-      background:none; border:1.5px dashed rgba(74,127,212,0.3);
+      background:none; border:1px dashed rgba(0,212,255,0.25);
       border-radius:8px; padding:6px 12px; width:100%;
-      font-family:inherit; font-size:12px; color:var(--accent);
+      font-family:inherit; font-size:12px; color:var(--cyan);
       cursor:pointer; margin-top:6px; transition:all 0.15s;
     }
-    .add-btn:hover { background:rgba(74,127,212,0.06); border-color:var(--accent); }
+    .add-btn:hover { background:var(--cyan-glow); border-color:var(--cyan); }
 
     /* ── Synthèse structurée ── */
     .summary-contexte {
       font-size:13px; color:var(--muted); line-height:1.5;
-      padding:10px 12px; background:rgba(255,255,255,0.35);
-      border-radius:10px; margin-top:14px;
+      padding:10px 12px; background:rgba(0,212,255,0.04);
+      border:1px solid var(--cyan-border); border-radius:10px; margin-top:14px;
     }
 
     .summary-section { padding-top:14px; }
-    .summary-section + .summary-section { margin-top:8px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.4); }
+    .summary-section + .summary-section { margin-top:8px; padding-top:12px; border-top:1px solid var(--cyan-border); }
     .summary-section-title {
       font-size:10px; font-weight:700; text-transform:uppercase;
-      letter-spacing:0.8px; color:var(--muted); margin-bottom:8px;
+      letter-spacing:1px; color:var(--cyan-dim); margin-bottom:8px;
       display:flex; align-items:center; gap:5px;
     }
 
@@ -248,50 +300,53 @@
     .points-list { display:flex; flex-direction:column; gap:5px; }
     .point-item {
       display:flex; align-items:flex-start; gap:8px;
-      font-size:14px; color:var(--text); line-height:1.4;
-      padding:8px 12px; background:rgba(255,255,255,0.35);
-      border-radius:8px;
+      font-size:13px; color:var(--text); line-height:1.4;
+      padding:8px 12px; background:rgba(0,212,255,0.04);
+      border:1px solid var(--cyan-border); border-radius:8px;
     }
-    .point-item::before { content:'—'; color:var(--muted); flex-shrink:0; font-size:12px; margin-top:1px; }
+    .point-item::before { content:'›'; color:var(--cyan); flex-shrink:0; font-size:14px; margin-top:0px; }
 
     /* Décisions */
     .decisions-list { display:flex; flex-direction:column; gap:5px; }
     .decision-item {
       display:flex; align-items:flex-start; gap:8px;
-      font-size:14px; color:var(--text); line-height:1.4;
+      font-size:13px; color:var(--text); line-height:1.4;
       padding:8px 12px;
-      background:rgba(61,184,122,0.08);
-      border:1px solid rgba(61,184,122,0.2);
+      background:rgba(0,229,160,0.06);
+      border:1px solid rgba(0,229,160,0.2);
       border-radius:8px;
     }
     .decision-dot {
       width:8px; height:8px; border-radius:50%;
-      background:var(--green); flex-shrink:0; margin-top:4px;
+      background:var(--green); box-shadow:0 0 6px rgba(0,229,160,0.5);
+      flex-shrink:0; margin-top:4px;
     }
 
     /* Actions tableau */
     .actions-table { width:100%; border-collapse:collapse; margin-top:4px; }
     .actions-table th {
       font-size:10px; font-weight:700; text-transform:uppercase;
-      letter-spacing:0.6px; color:var(--muted);
+      letter-spacing:0.8px; color:var(--cyan-dim);
       padding:6px 8px; text-align:left;
-      border-bottom:1px solid rgba(255,255,255,0.5);
+      border-bottom:1px solid var(--cyan-border);
     }
     .actions-table td {
-      padding:8px 8px; font-size:13px; color:var(--text);
-      border-bottom:1px solid rgba(255,255,255,0.3);
+      padding:8px 8px; font-size:12px; color:var(--text);
+      border-bottom:1px solid var(--cyan-border);
       vertical-align:top; text-align:left;
     }
     .actions-table tr:last-child td { border-bottom:none; }
-    .actions-table tr:nth-child(even) td { background:rgba(255,255,255,0.2); }
+    .actions-table tr:nth-child(even) td { background:rgba(0,212,255,0.03); }
     .qui-badge {
-      display:inline-block; padding:2px 8px; border-radius:100px;
-      background:rgba(74,127,212,0.12); color:var(--accent);
-      font-size:12px; font-weight:600; white-space:nowrap;
+      display:inline-block; padding:2px 8px; border-radius:4px;
+      background:rgba(0,212,255,0.1); color:var(--cyan);
+      border:1px solid rgba(0,212,255,0.2);
+      font-size:11px; font-weight:600; white-space:nowrap;
     }
     .quand-badge {
-      display:inline-block; padding:2px 8px; border-radius:100px;
-      background:rgba(224,122,48,0.1); color:#c06020;
+      display:inline-block; padding:2px 8px; border-radius:4px;
+      background:rgba(0,229,160,0.08); color:var(--green);
+      border:1px solid rgba(0,229,160,0.2);
       font-size:11px; font-weight:500; white-space:nowrap;
     }
     .indefini { color:var(--muted); font-size:12px; font-style:italic; }
@@ -300,47 +355,80 @@
     .prochaine-wrap {
       display:flex; align-items:center; gap:10px;
       padding:10px 14px;
-      background:rgba(74,127,212,0.08);
-      border:1px solid rgba(74,127,212,0.2);
+      background:rgba(0,212,255,0.06);
+      border:1px solid var(--cyan-border);
       border-radius:10px; margin-top:4px;
     }
     .prochaine-icon { font-size:18px; flex-shrink:0; }
-    .prochaine-text { font-size:14px; color:var(--text); line-height:1.4; }
-  
+    .prochaine-text { font-size:13px; color:var(--text); line-height:1.4; }
+
     /* Styles modals actions IA */
     .bubble-modal {
       position:fixed; inset:0; z-index:500;
       display:flex; align-items:center; justify-content:center;
       padding:20px;
-      background:rgba(0,0,0,0.3);
-      backdrop-filter:blur(8px);
+      background:rgba(0,0,0,0.6);
+      backdrop-filter:blur(12px);
       animation:fadeIn 0.2s ease;
     }
     .bubble-modal.hidden { display:none; }
     .bubble-modal-card {
-      background:var(--surface,rgba(255,255,255,0.95)); border-radius:20px;
+      background:rgba(5,12,26,0.97);
+      border:1px solid var(--cyan-border);
+      border-radius:16px;
       padding:24px; width:100%; max-width:360px;
-      box-shadow:0 20px 60px rgba(0,0,0,0.2);
+      box-shadow:0 0 40px rgba(0,0,0,0.6), 0 0 20px rgba(0,212,255,0.08);
     }
-    .bubble-modal-type { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); text-align:center; margin-bottom:8px; }
+    .bubble-modal-type { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:1.2px; color:var(--cyan-dim); text-align:center; margin-bottom:8px; }
     .bubble-modal-btn {
-      flex:1; padding:13px; border-radius:12px; border:none;
-      font-family:inherit; font-size:15px; font-weight:600;
+      flex:1; padding:13px; border-radius:10px; border:none;
+      font-family:'Audiowide',sans-serif; font-size:12px; font-weight:400;
+      letter-spacing:0.5px;
       cursor:pointer; transition:opacity 0.15s;
     }
     .maps-mode-btn {
-      flex:1; padding:7px 4px; border-radius:10px;
-      border:1.5px solid rgba(74,127,212,0.2);
-      background:rgba(255,255,255,0.6);
+      flex:1; padding:7px 4px; border-radius:8px;
+      border:1px solid var(--cyan-border);
+      background:transparent;
       font-family:inherit; font-size:11px; font-weight:500;
-      color:var(--muted,#888); cursor:pointer; transition:all 0.15s;
+      color:var(--muted); cursor:pointer; transition:all 0.15s;
     }
-    .maps-mode-btn.active { background:var(--accent,#4a7fd4); border-color:var(--accent,#4a7fd4); color:#fff; font-weight:600; }
-    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-    @keyframes spin { to{transform:rotate(360deg)} }
+    .maps-mode-btn.active { background:rgba(0,180,255,0.8); border-color:rgba(0,212,255,0.6); color:#fff; font-weight:600; }
+    .modal-action-btn {
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      width:100%; padding:13px; border-radius:10px; border:none;
+      font-family:'Inter',sans-serif; font-size:14px; font-weight:600;
+      cursor:pointer; text-decoration:none; color:#fff;
+      background:linear-gradient(135deg, rgba(0,100,200,0.9), rgba(0,180,255,0.8));
+      border:1px solid rgba(0,220,255,0.4);
+      box-shadow:0 0 16px rgba(0,180,255,0.2);
+      margin-bottom:8px; transition:opacity 0.15s;
+    }
+    .modal-action-btn:active { opacity:0.85; }
+    .modal-action-btn.secondary {
+      background:rgba(255,255,255,0.04);
+      border:1px solid rgba(0,220,255,0.15);
+      color:rgba(200,220,255,0.7);
+      box-shadow:none;
+    }
+    .modal-close-btn {
+      width:100%; padding:12px; border-radius:10px; border:none;
+      background:transparent; color:rgba(0,220,255,0.4);
+      font-family:'Audiowide',sans-serif; font-size:11px;
+      letter-spacing:0.8px; text-transform:uppercase;
+      cursor:pointer; margin-top:8px; transition:color 0.2s;
+    }
+    .modal-close-btn:hover { color:rgba(0,220,255,0.7); }
+    .modal-tag {
+      font-size:11px; background:rgba(0,220,255,0.1);
+      color:#00dcff; padding:3px 10px;
+      border-radius:100px; font-weight:500;
+      border:1px solid rgba(0,220,255,0.2);
+    }
 </style>
 </head>
 <body>
+<canvas id="neuroCanvas" style="position:fixed;inset:0;z-index:0;pointer-events:none;"></canvas>
 <header>
   <div class="header-inner">
     <span class="logo">Ponk <span>Note</span></span>
@@ -457,7 +545,7 @@ function render(data, meta) {
     let memoHTML = '<div style="display:flex;flex-direction:column;gap:8px;">';
     memoHTML += '<div class="export-row" style="align-items:flex-start;">' +
       '<input type="checkbox" class="export-cb" id="ecb_memo_notes" checked data-export-label="memo_notes" data-export-content="" style="margin-top:10px;">' +
-      '<textarea id="memoNotesArea" placeholder="Vos notes…" onblur="saveMemoField(this)" style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.7);background:rgba(255,255,255,0.5);font-family:inherit;font-size:13px;color:var(--text);outline:none;resize:none;min-height:100px;"></textarea>' +
+      '<textarea id="memoNotesArea" placeholder="Vos notes…" onblur="saveMemoField(this)" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--cyan-border);background:rgba(0,212,255,0.04);font-family:inherit;font-size:13px;color:var(--text);outline:none;resize:none;min-height:100px;caret-color:var(--cyan)"></textarea>' +
       '</div>';
     memoHTML += '</div>';
     c.appendChild(makeCard('📝 Mémo', memoHTML, true));
@@ -500,7 +588,7 @@ function render(data, meta) {
     // Bouton téléchargement
     const downloadBtn = driveFile.fileName ? `
       <a href="${`${location.origin}/api/audio-proxy?path=${encodeURIComponent(driveFile.fileName)}`}" download="ponk-note.webm"
-        style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:100px;background:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.7);font-size:12px;font-weight:500;color:var(--accent);text-decoration:none;cursor:pointer;">
+        style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:100px;background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.3);font-size:12px;font-weight:500;color:var(--cyan);text-decoration:none;cursor:pointer;">
         ↓ Télécharger
       </a>` : '';
 
@@ -516,7 +604,7 @@ function render(data, meta) {
       <input type="checkbox" class="export-cb" id="ecb_transcript" data-export-label="transcript" data-export-content="${encodeURIComponent(data.transcript)}" style="margin-top:4px">
       <div class="transcript-text" style="flex:1">${data.transcript}</div>
     </div>`;
-    const genActionsBtn = `<button onclick="generateActionsIA()" style="background:rgba(74,127,212,0.12);border:1px solid rgba(74,127,212,0.3);color:var(--accent);padding:4px 10px;border-radius:100px;font-size:11px;font-weight:500;font-family:inherit;cursor:pointer;" id="genActionsBtn">✨ Générer actions</button>`;
+    const genActionsBtn = `<button onclick="generateActionsIA()" style="background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.25);color:var(--cyan);padding:4px 10px;border-radius:6px;font-size:10px;font-family:'Audiowide',sans-serif;letter-spacing:0.3px;cursor:pointer;" id="genActionsBtn">✨ Générer actions</button>`;
     const tCard = makeCard('📄 Transcription', transcriptHTML, true, genActionsBtn);
     tCard.querySelector('.card-bd').classList.add('hidden');
     tCard.querySelector('.chevron').classList.add('closed');
@@ -930,15 +1018,15 @@ function openAddActionIA() {
   menu.style.cssText = 'position:fixed;inset:0;z-index:400;display:flex;align-items:flex-end;justify-content:center;padding:0 20px 20px;background:rgba(0,0,0,0.25);backdrop-filter:blur(6px);animation:fadeIn 0.2s ease;';
   menu.innerHTML = `
     <div style="background:var(--surface,rgba(255,255,255,0.95));border-radius:20px;padding:20px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-      <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:14px;text-align:center;">Ajouter une action</div>
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--cyan-dim);margin-bottom:14px;text-align:center;">Ajouter une action</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
         ${Object.entries(ACTION_TYPES_IA).map(([type, cfg]) => `
-          <div onclick="selectAddActionIA('${type}','${cfg.icon}','${cfg.label}')" style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 6px;border-radius:12px;background:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.7);cursor:pointer;">
+          <div onclick="selectAddActionIA('${type}','${cfg.icon}','${cfg.label}')" style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 6px;border-radius:12px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);cursor:pointer;">
             <span style="font-size:22px;">${cfg.icon}</span>
             <span style="font-size:9px;font-weight:500;color:var(--muted,#888);text-align:center;">${cfg.label}</span>
           </div>`).join('')}
       </div>
-      <button onclick="document.getElementById('addIAMenu').remove()" style="width:100%;padding:12px;border-radius:12px;border:none;background:rgba(0,0,0,0.06);color:var(--muted,#888);font-family:inherit;font-size:14px;cursor:pointer;">Annuler</button>
+      <button onclick="document.getElementById('addIAMenu').remove()" style="width:100%;padding:12px;border-radius:12px;border:none;background:transparent;color:rgba(0,220,255,0.4);font-family:'Audiowide',sans-serif;font-size:11px;letter-spacing:0.8px;text-transform:uppercase;cursor:pointer;">Annuler</button>
     </div>`;
   menu.onclick = e => { if (e.target === menu) menu.remove(); };
   document.body.appendChild(menu);
@@ -958,9 +1046,9 @@ function selectAddActionIA(type, icon, label) {
     <div style="background:var(--surface,rgba(255,255,255,0.95));border-radius:20px;padding:24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
       <div style="font-size:36px;text-align:center;margin-bottom:8px;">${icon}</div>
       <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted,#888);text-align:center;margin-bottom:12px;">${label}</div>
-      <textarea id="addIAText" placeholder="Décris ton action ${label.toLowerCase()}…" style="width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid rgba(74,127,212,0.3);background:rgba(255,255,255,0.5);font-family:inherit;font-size:14px;outline:none;resize:none;min-height:80px;margin-bottom:16px;"></textarea>
+      <textarea id="addIAText" placeholder="Décris ton action ${label.toLowerCase()}…" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(0,212,255,0.3);background:rgba(0,212,255,0.04);font-family:inherit;font-size:13px;color:var(--text);outline:none;resize:none;min-height:80px;margin-bottom:16px;caret-color:var(--cyan)"></textarea>
       <div style="display:flex;gap:10px;">
-        <button onclick="document.getElementById('addIAModal').remove()" style="flex:1;padding:13px;border-radius:12px;border:none;background:rgba(0,0,0,0.06);color:var(--muted,#888);font-family:inherit;font-size:15px;cursor:pointer;">Annuler</button>
+        <button onclick="document.getElementById('addIAModal').remove()" style="flex:1;padding:13px;border-radius:12px;border:none;background:transparent;color:rgba(0,220,255,0.4);font-family:'Audiowide',sans-serif;font-size:11px;letter-spacing:0.8px;text-transform:uppercase;cursor:pointer;">Annuler</button>
         <button onclick="confirmAddActionIA('${type}','${icon}','${label}')" style="flex:1;padding:13px;border-radius:12px;border:none;background:#4a7fd4;color:#fff;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;">Ajouter</button>
       </div>
     </div>`;
@@ -1092,7 +1180,7 @@ async function markActionDone(actionId) {
         const modal = document.createElement('div');
         modal.style.cssText = 'position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,0.3);backdrop-filter:blur(8px);';
         const sections = (data.sections||[]).map(s =>
-          '<div style="margin-bottom:12px;padding:12px;background:rgba(255,255,255,0.5);border-radius:10px;border-left:3px solid #4a7fd4;">' +
+          '<div style="margin-bottom:12px;padding:12px;background:rgba(0,212,255,0.04);border-radius:10px;border-left:3px solid var(--cyan);border:1px solid rgba(0,212,255,0.15);">' +
           '<div style="font-size:11px;font-weight:700;color:#4a7fd4;text-transform:uppercase;margin-bottom:6px;">' + s.titre + '</div>' +
           (s.points||[]).map(p => '<div style="font-size:13px;color:#2a2a3a;margin-bottom:4px;"><strong>' + p.titre + '</strong><br><span style="color:rgba(42,42,58,0.6)">' + p.detail + '</span></div>').join('') +
           '</div>'
@@ -1100,7 +1188,7 @@ async function markActionDone(actionId) {
         modal.innerHTML = '<div style="background:rgba(255,255,255,0.95);border-radius:20px;padding:24px;width:100%;max-width:400px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">' +
           '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:rgba(42,42,58,0.5);margin-bottom:12px;">🧠 Analyse</div>' +
           (sections || '<div style="color:rgba(42,42,58,0.5);font-style:italic;">Aucun résultat</div>') +
-          '<button onclick="this.parentElement.parentElement.remove()" style="width:100%;padding:12px;border-radius:12px;border:none;background:rgba(0,0,0,0.06);font-family:inherit;font-size:14px;cursor:pointer;margin-top:12px;">Fermer</button>' +
+          '<button onclick="this.parentElement.parentElement.remove()" style="width:100%;padding:12px;border-radius:12px;border:none;background:transparent;color:rgba(0,220,255,0.4);font-family:'Audiowide',sans-serif;font-size:11px;letter-spacing:0.8px;text-transform:uppercase;cursor:pointer;margin-top:12px;">Fermer</button>' +
           '</div>';
         modal.onclick = e => { if (e.target === modal) modal.remove(); };
         document.body.appendChild(modal);
@@ -1119,29 +1207,79 @@ async function markActionDone(actionId) {
     return;
   }
 
-  // Pour EMAIL et WHATSAPP → générer le contenu avec l'IA
-  if (action && (action.type === 'EMAIL' || action.type === 'WHATSAPP')) {
+  // Pour RECHERCHE → appel /api/shopping + moteur préféré
+  if (action && action.type === 'RECHERCHE') {
+    const prefMoteur = localStorage.getItem('ponk_pref_moteur') || 'google';
+    const MOTEURS = {
+      google: q => `https://www.google.com/search?q=${encodeURIComponent(q)}`,
+      bing:   q => `https://www.bing.com/search?q=${encodeURIComponent(q)}`,
+      duck:   q => `https://duckduckgo.com/?q=${encodeURIComponent(q)}`,
+      yahoo:  q => `https://search.yahoo.com/search?p=${encodeURIComponent(q)}`,
+    };
+    try {
+      const res = await fetch('/api/shopping', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: action.description || action.titre, action: 'recherche' })
+      });
+      const data = await res.json();
+      const query = data.query || action.description || action.titre;
+      window.open((MOTEURS[prefMoteur] || MOTEURS.google)(query), '_blank');
+    } catch(e) {
+      window.open(`https://www.google.com/search?q=${encodeURIComponent(action.description || action.titre)}`, '_blank');
+    }
+    localStorage.setItem('ponk_done_' + actionId, '1');
+    if (el) {
+      el.style.opacity = '0.75'; el.style.cursor = 'default';
+      const spinner = document.getElementById('spinner_' + actionId);
+      if (spinner) spinner.outerHTML = `<div style="width:28px;height:28px;border-radius:50%;background:rgba(61,184,122,0.15);border:1.5px solid rgba(61,184,122,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="color:#3db87a;font-size:14px;font-weight:700">✓</span></div>`;
+    }
+    return;
+  }
+
+  // Pour WHATSAPP → contact lookup + showWhatsAppModal (même logique que index doNow)
+  if (action && action.type === 'WHATSAPP') {
+    const contactsWA = (() => { try { return JSON.parse(localStorage.getItem('ponk_contacts') || '[]'); } catch(e) { return []; } })();
+    const lowerWA = (action.description || action.titre || '').toLowerCase();
+    const contactWA = contactsWA.find(c => c.name && lowerWA.includes(c.name.toLowerCase().split(' ')[0].toLowerCase()));
+    try {
+      const res = await fetch('/api/generateaction', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'WHATSAPP', text: action.description || action.titre, profile: localStorage.getItem('ponk_profile'), contacts: contactsWA })
+      });
+      const data = await res.json();
+      const phone = (contactWA?.phone || data.phone || '').replace(/[^0-9+]/g, '');
+      const msg = data.message || action.description || action.titre || '';
+      markDoneVisual(actionId, el);
+      localStorage.setItem('ponk_done_' + actionId, '1');
+      showWhatsAppModal(phone, msg);
+    } catch(e) {
+      const phone = (contactWA?.phone || '').replace(/[^0-9+]/g, '');
+      markDoneVisual(actionId, el);
+      localStorage.setItem('ponk_done_' + actionId, '1');
+      showWhatsAppModal(phone, action.description || action.titre || '');
+    }
+    return;
+  }
+
+  // Pour EMAIL → générer le contenu avec l'IA
+  if (action && action.type === 'EMAIL') {
     try {
       const profile = localStorage.getItem('ponk_profile') || '';
       const contacts = (() => { try { return JSON.parse(localStorage.getItem('ponk_contacts') || '[]'); } catch(e) { return []; } })();
       const res = await fetch('/api/generateaction', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ type: action.type, text: action.description || action.titre, profile, contacts })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'EMAIL', text: action.description || action.titre, profile, contacts })
       });
       if (res.ok) {
         const data = await res.json();
         const prefMail = localStorage.getItem('ponk_pref_mail') || 'gmail';
-        if (action.type === 'EMAIL') {
-          const sujet = encodeURIComponent(data.sujet || action.titre || '');
-          const corps = encodeURIComponent(data.corps || action.description || '');
-          const to    = encodeURIComponent(data.destinataire || action.destinataire || '');
-          if (prefMail === 'gmail')   url = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${sujet}&body=${corps}`;
-          if (prefMail === 'outlook') url = `https://outlook.live.com/mail/0/deeplink/compose?to=${to}&subject=${sujet}&body=${corps}`;
-          if (prefMail === 'yahoo')   url = `https://compose.mail.yahoo.com/?to=${to}&subject=${sujet}&body=${corps}`;
-        } else if (action.type === 'WHATSAPP') {
-          url = `https://wa.me/?text=${encodeURIComponent(data.message || action.description || '')}`;
-        }
+        const sujet = encodeURIComponent(data.sujet || action.titre || '');
+        const corps = encodeURIComponent(data.corps || action.description || '');
+        const to    = encodeURIComponent(data.destinataire || action.destinataire || '');
+        if (prefMail === 'gmail')   url = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${sujet}&body=${corps}`;
+        if (prefMail === 'outlook') url = `https://outlook.live.com/mail/0/deeplink/compose?to=${to}&subject=${sujet}&body=${corps}`;
+        if (prefMail === 'yahoo')   url = `https://compose.mail.yahoo.com/?to=${to}&subject=${sujet}&body=${corps}`;
       }
     } catch(e) { console.warn('generateaction failed:', e); }
   }
@@ -1232,323 +1370,6 @@ function copyCard(btn) {
   navigator.clipboard.writeText(bd.innerText||bd.textContent).then(()=>{btn.textContent='✓';setTimeout(()=>btn.textContent='Copier',2000);});
 }
 
-async function exportPDF() {
-  const jsPDF = await loadJsPDF();
-  const C = PDF_C;
-
-  // Cases cochées
-  const checked = {};
-  document.querySelectorAll('.export-cb:checked').forEach(cb => {
-    checked[cb.dataset.exportLabel] = decodeURIComponent(cb.dataset.exportContent || '');
-  });
-
-  let data = JSON.parse(localStorage.getItem('ponk_result')||'{}');
-  const meta = JSON.parse(localStorage.getItem('ponk_meta')||'{}');
-  let s = (typeof data.summary === 'object') ? data.summary : null;
-
-  // Gemini relit avant export
-  const pdfBtn = document.querySelector('.btn-pdf');
-  if (pdfBtn) { pdfBtn.textContent = '⏳ Gemini relit…'; pdfBtn.disabled = true; }
-  console.log('[PDF] Envoi à Gemini pour relecture...');
-  console.log('[PDF] checked keys:', Object.keys(checked));
-  console.log('[PDF] prochaine:', checked['prochaine']);
-  console.log('[PDF] s.prochaine_etape:', s?.prochaine_etape);
-
-  try {
-    // Construire uniquement les éléments cochés pour Gemini
-    const summaryToSend = {};
-    if (checked['contexte']) summaryToSend.contexte = s.contexte;
-    if (checked['resume']) summaryToSend.resume = s.resume;
-    const checkedPoints = (s.points_discutes||[]).filter((p,i) => checked['point:'+i] !== undefined);
-    if (checkedPoints.length) summaryToSend.points_discutes = checkedPoints;
-    const checkedDecisions = (s.decisions||[]).filter((d,i) => checked['decision:'+i] !== undefined);
-    if (checkedDecisions.length) summaryToSend.decisions = checkedDecisions;
-    if (checked['prochaine'] && s.prochaine_etape) summaryToSend.prochaine_etape = s.prochaine_etape;
-
-    // Actions IA cochées — nettoyer les descriptions
-    const actionsIACochees = Object.entries(checked)
-      .filter(([k]) => k.startsWith('action_ia:') || k.startsWith('action_ia_done:'))
-      .map(([, v]) => decodeURIComponent(v));
-    if (actionsIACochees.length) summaryToSend.actions_ia = actionsIACochees;
-
-    // Mémo coché
-    const memoNotesCochees = checked['memo_notes'] ? decodeURIComponent(checked['memo_notes']) : '';
-    if (memoNotesCochees) summaryToSend.memo = memoNotesCochees;
-
-    const res = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        rewrite: true,
-        summary: summaryToSend,
-        transcript: data.transcript || ''
-      })
-    });
-
-    if (res.ok) {
-      const result = await res.json();
-      console.log('[PDF rewrite] Résultat Gemini:', JSON.stringify(result).substring(0, 500));
-      if (result && s) {
-        // Appliquer uniquement les champs cochés, sans inventer
-        if (result.contexte && checked['contexte']) s.contexte = result.contexte;
-        if (result.resume && checked['resume']) s.resume = result.resume;
-        if (result.points_discutes?.length && checkedPoints.length) {
-          // Remplacer seulement les points cochés, garder les non cochés
-          let pi = 0;
-          s.points_discutes = (s.points_discutes||[]).map((p,i) =>
-            checked['point:'+i] !== undefined ? (result.points_discutes[pi++] || p) : p
-          );
-        }
-        if (result.decisions?.length && checkedDecisions.length) {
-          let di = 0;
-          s.decisions = (s.decisions||[]).map((d,i) =>
-            checked['decision:'+i] !== undefined ? (result.decisions[di++] || d) : d
-          );
-        }
-        if (result.prochaine_etape && checked['prochaine']) s.prochaine_etape = result.prochaine_etape;
-
-        // Appliquer corrections actions IA
-        if (result.actions_ia?.length) {
-          const cards = document.querySelectorAll('.action-ia-info .action-ia-desc');
-          const checkboxes = document.querySelectorAll('.export-cb[data-export-label^="action_ia"]');
-          result.actions_ia.forEach((corrected, i) => {
-            if (cards[i]) cards[i].textContent = corrected.replace(/^[^—]+— /, '');
-            if (checkboxes[i]) checkboxes[i].dataset.exportContent = encodeURIComponent(corrected);
-          });
-        }
-
-        // Appliquer correction mémo
-        if (result.memo) {
-          const memoArea = document.getElementById('memoNotesArea');
-          const memoCb = document.getElementById('ecb_memo_notes');
-          if (memoArea) memoArea.value = result.memo;
-          if (memoCb) memoCb.dataset.exportContent = encodeURIComponent(result.memo);
-        }
-
-        saveSummary(s);
-        renderSummary(s);
-      }
-    }
-  } catch(e) { 
-    console.warn('Gemini relit échoué, export sans relecture:', e);
-  } finally {
-    if (pdfBtn) { pdfBtn.textContent = '↓ Exporter en PDF'; pdfBtn.disabled = false; }
-  }
-
-  // Reconstruire checked après relecture pour avoir les valeurs corrigées
-  document.querySelectorAll('.export-cb:checked').forEach(cb => {
-    checked[cb.dataset.exportLabel] = decodeURIComponent(cb.dataset.exportContent || '');
-  });
-  // Lire le mémo directement depuis le textarea
-  const memoAreaFinal = document.getElementById('memoNotesArea');
-  if (memoAreaFinal && memoAreaFinal.value) {
-    checked['memo_notes'] = memoAreaFinal.value;
-  }
-
-  data = JSON.parse(localStorage.getItem('ponk_result')||'{}');
-  s = (typeof data.summary === 'object') ? data.summary : null;
-
-
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  const M = 16, maxW = pageW - M * 2;
-  let y = M;
-  const checkPage = (n = 10) => { if (y + n > pageH - 14) { doc.addPage(); y = M; } };
-
-  // Titre du bandeau
-  const titre = meta.title || 'Compte-rendu';
-  pdfBandeau(doc, titre, pageW, M, C);
-  y = 40;
-
-  // Sous-titre date + durée
-  if (meta.datetime || meta.duration) {
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...C.muted);
-    doc.text((meta.datetime||'') + (meta.duration ? ' · ' + meta.duration : ''), M, y);
-    y += 8;
-  }
-
-  // ── CONTEXTE ──
-  if (s && checked['contexte'] && s.contexte) {
-    checkPage(16);
-    doc.setFillColor(...C.sectionBg); doc.setDrawColor(...C.sectionBdr); doc.setLineWidth(0.2);
-    doc.roundedRect(M, y, maxW, 12, 2.5, 2.5, 'FD');
-    doc.setFillColor(...C.accent); doc.roundedRect(M, y, 3.5, 12, 1.5, 1.5, 'F');
-    doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(...C.accentDark);
-    const ctxL = doc.splitTextToSize(s.contexte, maxW - 10);
-    doc.text(ctxL, M + 7, y + 7.5);
-    y += 18;
-  }
-
-  // ── RÉSUMÉ ──
-  if (s && checked['resume'] && s.resume) {
-    checkPage(20);
-    pdfSectionHeader(doc, 'Résumé', null, y, M, maxW, C);
-    y += 13;
-    const resumeL = doc.splitTextToSize(s.resume, maxW - 12);
-    const resumeH = resumeL.length * 5.2 + 8;
-    pdfBlock(doc, resumeL, [], y, M, maxW, resumeH, C);
-    y += resumeH + 6;
-  }
-
-  // ── POINTS DISCUTÉS ──
-  const points = s ? (s.points_discutes||[]).filter((p,i) => checked['point:'+i] !== undefined) : [];
-  if (points.length) {
-    checkPage(22);
-    pdfSectionHeader(doc, 'Points discutés', null, y, M, maxW, C);
-    y += 13;
-    for (const p of points) {
-      checkPage(12);
-      const pL = doc.splitTextToSize('— ' + p, maxW - 12);
-      const pH = pL.length * 5.2 + 6;
-      pdfBlock(doc, pL, [], y, M, maxW, pH, C);
-      y += pH + 4;
-    }
-    y += 4;
-  }
-
-  // ── DÉCISIONS ──
-  const decisions = s ? (s.decisions||[]).filter((d,i) => checked['decision:'+i] !== undefined) : [];
-  if (decisions.length) {
-    checkPage(22);
-    pdfSectionHeader(doc, 'Décisions', null, y, M, maxW, C);
-    y += 13;
-    for (const d of decisions) {
-      checkPage(12);
-      const dL = doc.splitTextToSize('✓ ' + d, maxW - 12);
-      const dH = dL.length * 5.2 + 6;
-      doc.setFillColor(225, 245, 235); doc.setDrawColor(150, 210, 180); doc.setLineWidth(0.2);
-      doc.roundedRect(M, y, maxW, dH, 2.5, 2.5, 'FD');
-      doc.setFillColor(61, 184, 122); doc.roundedRect(M, y, 3.5, dH, 1.5, 1.5, 'F');
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(25, 100, 60);
-      const dLclean = dL.map(l => l.replace(/^✓ /, '+ '));
-      doc.text(dLclean, M + 7, y + 6);
-      y += dH + 4;
-    }
-    y += 4;
-  }
-
-  // ── ACTIONS ──
-  const actions = s ? (s.actions||[]).filter(a => checked['action:'+(a.qui||'?')+':'+(a.quoi||'')]) : [];
-  if (actions.length) {
-    checkPage(22);
-    pdfSectionHeader(doc, 'Actions', null, y, M, maxW, C);
-    y += 13;
-    // En-tête tableau
-    const colQui = 40, colQuand = 32, colQuoi = maxW - colQui - colQuand;
-    doc.setFillColor(...C.accentDark); doc.rect(M, y, maxW, 7, 'F');
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...C.white);
-    doc.text('QUI', M + 3, y + 4.8);
-    doc.text('QUOI', M + colQui + 3, y + 4.8);
-    doc.text('QUAND', M + colQui + colQuoi + 3, y + 4.8);
-    y += 7;
-    actions.forEach((a, i) => {
-      checkPage(10);
-      const rowH = 9;
-      doc.setFillColor(i%2===0 ? 243 : 251, i%2===0 ? 246 : 253, 255);
-      doc.setDrawColor(...C.blockBdr); doc.setLineWidth(0.15);
-      doc.rect(M, y, maxW, rowH, 'FD');
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...C.accent);
-      doc.text(doc.splitTextToSize(a.qui || 'À définir', colQui - 4)[0], M + 3, y + 5.8);
-      doc.setFont('helvetica', 'normal'); doc.setTextColor(...C.dark);
-      doc.text(doc.splitTextToSize(a.quoi || '', colQuoi - 4)[0], M + colQui + 3, y + 5.8);
-      doc.setFont('helvetica', 'italic'); doc.setTextColor(...C.muted);
-      doc.text(doc.splitTextToSize(a.quand || '', colQuand - 4)[0], M + colQui + colQuoi + 3, y + 5.8);
-      y += rowH;
-    });
-    y += 8;
-  }
-
-  // ── PROCHAINE ÉTAPE ──
-  if (s && checked['prochaine'] && s.prochaine_etape) {
-    checkPage(18);
-    pdfSectionHeader(doc, 'Prochaine étape', null, y, M, maxW, C);
-    y += 13;
-    const pL = doc.splitTextToSize(s.prochaine_etape, maxW - 12);
-    const pH = pL.length * 5.2 + 8;
-    doc.setFillColor(250, 240, 220); doc.setDrawColor(220, 180, 100); doc.setLineWidth(0.2);
-    doc.roundedRect(M, y, maxW, pH, 2.5, 2.5, 'FD');
-    doc.setFillColor(234, 158, 40); doc.roundedRect(M, y, 3.5, pH, 1.5, 1.5, 'F');
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(140, 80, 10);
-    doc.text(pL, M + 7, y + 6);
-    y += pH + 8;
-  }
-
-  // ── MÉMO ──
-  const memoRappels = Object.entries(checked).filter(([k]) => k === 'memo_rappel');
-  const memoNotes = checked['memo_notes'] || '';
-  if (memoRappels.length || memoNotes) {
-    checkPage(22);
-    pdfSectionHeader(doc, 'Mémo', null, y, M, maxW, C);
-    y += 13;
-    for (const [, v] of memoRappels) {
-      checkPage(12);
-      const rL = doc.splitTextToSize('• ' + v, maxW - 12);
-      const rH = rL.length * 5.2 + 6;
-      pdfBlock(doc, rL, [], y, M, maxW, rH, C);
-      y += rH + 4;
-    }
-    if (memoNotes) {
-      checkPage(16);
-      const nL = doc.splitTextToSize(memoNotes, maxW - 12);
-      doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(...C.muted);
-      nL.forEach(line => { doc.text(line, M + 4, y); y += 5; });
-      y += 4;
-    }
-    y += 4;
-  }
-
-  // ── ACTIONS IA ──
-  // Décoder les contenus actions IA
-  const actionsIA = Object.entries(checked).filter(([k]) => k.startsWith('action_ia:') && !k.startsWith('action_ia_done:'));
-  const actionsIADone = Object.entries(checked).filter(([k]) => k.startsWith('action_ia_done:'));
-  const allActionsIA = [...actionsIA, ...actionsIADone];
-
-  if (allActionsIA.length) {
-    checkPage(22);
-    pdfSectionHeader(doc, 'Actions IA', null, y, M, maxW, C);
-    y += 13;
-    for (const [k, v] of allActionsIA) {
-      checkPage(12);
-      const isDone = k.startsWith('action_ia_done:');
-      const aL = doc.splitTextToSize(v, maxW - 12);
-      const aH = aL.length * 5.2 + 6;
-      if (isDone) {
-        // Bloc vert pour les actions faites
-        doc.setFillColor(225, 245, 235); doc.setDrawColor(150, 210, 180); doc.setLineWidth(0.2);
-        doc.roundedRect(M, y, maxW, aH, 2.5, 2.5, 'FD');
-        doc.setFillColor(61, 184, 122); doc.roundedRect(M, y, 3.5, aH, 1.5, 1.5, 'F');
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(25, 100, 60);
-        doc.text(aL, M + 7, y + 6);
-      } else {
-        pdfBlock(doc, aL, [], y, M, maxW, aH, C);
-      }
-      y += aH + 4;
-    }
-    y += 4;
-  }
-
-  // ── TRANSCRIPTION ──
-  if (checked['transcript']) {
-    checkPage(22);
-    pdfSectionHeader(doc, 'Transcription', null, y, M, maxW, C);
-    y += 13;
-    const tL = doc.splitTextToSize(checked['transcript'], maxW - 12);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...C.muted);
-    for (const line of tL) {
-      checkPage(6);
-      doc.text(line, M + 4, y);
-      y += 5;
-    }
-  }
-
-  pdfFooter(doc, pageW, pageH, M, C, 'Généré par Ponk Note · ' + new Date().toLocaleDateString('fr-FR'));
-  doc.save((meta.title||'ponk-note').replace(/[^a-z0-9\s]/gi,'').trim().replace(/\s+/g,'_') + '-' + new Date().toISOString().slice(0,10) + '.pdf');
-}
-
-
-
-
 </script>
 <script>
 function normalizePhone(phone) {
@@ -1612,22 +1433,22 @@ async function showCalendrierModal(text) {
 
       document.getElementById('calendrierCalBtn').innerHTML = `
         <div style="background:rgba(74,127,212,0.06);border:1px solid rgba(74,127,212,0.15);border-radius:12px;padding:12px;margin-bottom:8px">
-          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:10px">Détails de l'événement</div>
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:var(--cyan-dim);margin-bottom:10px">Détails de l'événement</div>
           <div style="margin-bottom:8px">
-            <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px">DATE</div>
+            <div style="font-size:10px;font-weight:600;color:var(--cyan-dim);margin-bottom:4px">DATE</div>
             <input type="date" id="calDateInput" value="${(() => { const m = (data.date||'').match(/[0-9]{4}-[0-9]{2}-[0-9]{2}/); return m ? m[0] : ''; })()}"
-              style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:14px;color:var(--text);outline:none"/>
+              style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(0,212,255,0.06);font-family:inherit;font-size:13px;color:var(--text);outline:none;color-scheme:dark"/>
           </div>
           <div style="display:flex;gap:8px;margin-bottom:8px">
             <div style="flex:1">
-              <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px">HEURE</div>
+              <div style="font-size:10px;font-weight:600;color:var(--cyan-dim);margin-bottom:4px">HEURE</div>
               <input type="time" id="calHeureInput" value="${heureDefault}"
-                style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:14px;color:var(--text);outline:none"/>
+                style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(0,212,255,0.06);font-family:inherit;font-size:13px;color:var(--text);outline:none;color-scheme:dark"/>
             </div>
             <div style="flex:1">
-              <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px">DURÉE</div>
+              <div style="font-size:10px;font-weight:600;color:var(--cyan-dim);margin-bottom:4px">DURÉE</div>
               <select id="calDureeInput"
-                style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:14px;color:var(--text);outline:none;cursor:pointer">
+                style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(4,10,30,0.9);font-family:inherit;font-size:13px;color:var(--text);outline:none;cursor:pointer">
                 <option value="30" ${dureeDefault==='30' ? 'selected' : ''}>30 min</option>
                 <option value="60" ${dureeDefault==='60' ? 'selected' : ''}>1h</option>
                 <option value="90" ${dureeDefault==='90' ? 'selected' : ''}>1h30</option>
@@ -1638,7 +1459,7 @@ async function showCalendrierModal(text) {
               </select>
             </div>
           </div>
-          <button onclick="openCalendrierUrl()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:11px 14px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">
+          <button onclick="openCalendrierUrl()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:11px 14px;border-radius:10px;border:none;background:linear-gradient(135deg,rgba(0,100,200,0.9),rgba(0,180,255,0.8));color:#fff;border:1px solid rgba(0,212,255,0.4);font-family:'Audiowide',sans-serif;font-size:11px;cursor:pointer">
             <span>📅</span>
             <span>Ajouter à ${calNames[prefCal]}</span>
           </button>
@@ -1647,7 +1468,9 @@ async function showCalendrierModal(text) {
       document.getElementById('calendrierOrganiseBtn').style.display = 'block';
     }
   } catch(e) {
-    document.getElementById('calendrierLoading').textContent = 'Service indisponible';
+    document.getElementById('calendrierLoading').style.display = 'block';
+    const lt = document.getElementById('calendrierLoadingText');
+    if (lt) lt.textContent = 'Service indisponible';
   }
 }
 
@@ -1756,7 +1579,7 @@ function startCalendrierOrganise() {
   document.getElementById('calendrierQuestions').innerHTML = questions.map(q => `
     <div style="margin-bottom:12px">
       <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px">🤖 ${q.question}</div>
-      <textarea data-qid="${q.id}" data-question="${q.question.replace(/"/g,'&quot;')}" placeholder="Votre réponse..." style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.7);background:rgba(255,255,255,0.5);font-family:inherit;font-size:13px;color:var(--text);outline:none;resize:none;min-height:60px;"></textarea>
+      <textarea data-qid="${q.id}" data-question="${q.question.replace(/"/g,'&quot;')}" placeholder="Votre réponse..." style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(0,212,255,0.2);background:rgba(0,212,255,0.04);font-family:inherit;font-size:13px;color:var(--text);outline:none;resize:none;min-height:60px;caret-color:var(--cyan)"></textarea>
     </div>
   `).join('');
 }
@@ -1794,11 +1617,11 @@ async function submitCalendrierAnswers() {
     const prep = data.preparation;
     if (prep) {
       document.getElementById('calendrierPrepContent').innerHTML = `
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:10px">✨ ${prep.titre}</div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--cyan-dim);margin-bottom:10px">✨ ${prep.titre}</div>
         ${(prep.sections || []).map(s => `
-          <div style="background:rgba(255,255,255,0.5);border-radius:12px;padding:12px;margin-bottom:8px">
+          <div style="background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.12);border-radius:10px;padding:12px;margin-bottom:8px">
             <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">${s.emoji} ${s.titre}</div>
-            ${(s.items || []).map(i => `<div style="font-size:12px;color:var(--muted);padding:2px 0">→ ${i}</div>`).join('')}
+            ${(s.items || []).map(i => `<div style="font-size:12px;color:var(--muted);padding:3px 0;border-bottom:1px solid rgba(0,212,255,0.06)">› ${i}</div>`).join('')}
           </div>
         `).join('')}
       `;
@@ -1817,18 +1640,20 @@ async function submitCalendrierAnswers() {
         'yahoo': `https://compose.mail.yahoo.com/?subject=${sujet}&body=${corps}`,
         'default': `mailto:?subject=${sujet}&body=${corps}`
       };
-      btnsHtml += `<a href="${emailUrls[prefMail]}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:var(--accent);color:#fff;text-decoration:none;font-size:14px;font-weight:600">📧 Envoyer aux participants</a>`;
+      btnsHtml += `<a href="${emailUrls[prefMail]}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:linear-gradient(135deg,rgba(0,100,200,0.9),rgba(0,180,255,0.8));color:#fff;text-decoration:none;font-size:13px;font-weight:600;border:1px solid rgba(0,220,255,0.4)">📧 Envoyer aux participants</a>`;
     }
 
     if (data.pdf) {
-      btnsHtml += `<button onclick="downloadCalendrierPDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.8);background:rgba(255,255,255,0.6);color:var(--text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;width:100%">📄 Exporter en PDF</button>`;
+      btnsHtml += `<button onclick="downloadCalendrierPDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(0,212,255,0.3);background:rgba(0,212,255,0.08);color:var(--cyan);font-family:'Audiowide',sans-serif;font-size:11px;letter-spacing:0.3px;cursor:pointer;width:100%">📄 Exporter en PDF</button>`;
       window._calendrierPDF = data.pdf;
     }
 
     btns.innerHTML = btnsHtml;
 
   } catch(e) {
-    document.getElementById('calendrierLoading').textContent = 'Erreur lors de la préparation';
+    document.getElementById('calendrierLoading').style.display = 'block';
+    const lt2 = document.getElementById('calendrierLoadingText');
+    if (lt2) lt2.textContent = 'Erreur lors de la préparation';
   }
 }
 
@@ -1849,10 +1674,10 @@ async function showCommandeModal(text) {
     if (data.produit) {
       document.getElementById('commandePrix').textContent = data.fourchette_prix || '';
       document.getElementById('commandePrixNote').textContent = data.fourchette_note || '';
-      document.getElementById('commandeVerifier').innerHTML = (data.verifier || []).map(v => `<div>→ ${v}</div>`).join('');
-      document.getElementById('commandeAttention').innerHTML = (data.attention || []).map(a => `<div>→ ${a}</div>`).join('');
+      document.getElementById('commandeVerifier').innerHTML = (data.verifier || []).map(v => `<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid rgba(74,127,212,0.08)"><span style="color:var(--accent);flex-shrink:0">›</span><span>${v}</span></div>`).join('');
+      document.getElementById('commandeAttention').innerHTML = (data.attention || []).map(a => `<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid rgba(74,127,212,0.08)"><span style="color:var(--accent);flex-shrink:0">›</span><span>${a}</span></div>`).join('');
       document.getElementById('commandeSites').innerHTML = (data.sites || []).map(s =>
-        `<a href="${s.url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);text-decoration:none;color:var(--text)">
+        `<a href="${s.url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);text-decoration:none;color:var(--text)">
           <span style="font-size:20px">${s.icon}</span>
           <div style="flex:1"><div style="font-size:13px;font-weight:600">${s.nom}</div><div style="font-size:11px;color:var(--muted)">${s.desc}</div></div>
           <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="12" height="12" fill="white"><path d="M8 5v14l11-7z"/></svg></div>
@@ -1899,9 +1724,9 @@ function showCallModal(phone, name) {
   if (linksEl && phone) {
     const enc = encodeURIComponent(phone);
     linksEl.innerHTML = `
-      <a href="tel:${phone}" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.5);color:var(--text);text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,0.7);text-align:center">📱 Phone Link</a>
-      <a href="skype:${phone}?call" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.5);color:var(--text);text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,0.7);text-align:center">💙 Skype</a>
-      <a href="msteams://call?phone=${enc}" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.5);color:var(--text);text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,0.7);text-align:center">💼 Teams</a>
+      <a href="tel:${phone}" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(0,212,255,0.06);color:var(--text);text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(0,212,255,0.2);text-align:center">📱 Phone Link</a>
+      <a href="skype:${phone}?call" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(0,212,255,0.06);color:var(--text);text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(0,212,255,0.2);text-align:center">💙 Skype</a>
+      <a href="msteams://call?phone=${enc}" style="display:block;padding:10px 14px;border-radius:10px;background:rgba(0,212,255,0.06);color:var(--text);text-decoration:none;font-size:13px;font-weight:500;border:1px solid rgba(0,212,255,0.2);text-align:center">💼 Teams</a>
     `;
   }
   document.getElementById('callModal').classList.remove('hidden');
@@ -1918,9 +1743,20 @@ function copyPhone() {
 let mapsState = { mode: 'car', departLat: null, departLon: null, arriveeLat: null, arriveeLon: null };
 
 function showMapsModal(text) {
-  document.getElementById('mapsModalTitle').textContent = text ? text.substring(0, 40) : 'Itinéraire';
+  const cleanDest = (text || '')
+    .replace(/afficher l'itinéraire pour\s*/i, '')
+    .replace(/afficher l.itin[eé]raire pour\s*/i, '')
+    .replace(/aller [àa]\s*/i, '')
+    .replace(/va chez\s*/i, '')
+    .replace(/se rendre [àa]\s*/i, '')
+    .replace(/trajet (vers|pour|jusqu'[àa])\s*/i, '')
+    .replace(/itinéraire (vers|pour|jusqu'[àa])\s*/i, '')
+    .replace(/navigation (vers|pour)\s*/i, '')
+    .replace(/chemin pour\s*/i, '')
+    .trim();
+  document.getElementById('mapsModalTitle').textContent = cleanDest ? cleanDest.substring(0, 40) : 'Itinéraire';
   document.getElementById('mapsDepart').value = '';
-  document.getElementById('mapsArrivee').value = text || '';
+  document.getElementById('mapsArrivee').value = cleanDest || text || '';
   document.getElementById('mapsResult').style.display = 'none';
   document.getElementById('mapsLoading').style.display = 'none';
   document.getElementById('mapsMeteo').style.display = 'none';
@@ -2036,7 +1872,7 @@ async function lancerItineraire() {
       const city = (weather && weather.city) ? weather.city : '';
       document.getElementById('mapsPOIList').innerHTML = poi.pois.map(p => {
         const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(p.name + (city ? ' ' + city : ''))}`;
-        return `<a href="${searchUrl}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);text-decoration:none;-webkit-tap-highlight-color:transparent" onmouseover="this.style.background='rgba(255,255,255,0.95)'" onmouseout="this.style.background='rgba(255,255,255,0.6)'">
+        return `<a href="${searchUrl}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);text-decoration:none;-webkit-tap-highlight-color:transparent" onmouseover="this.style.background='rgba(0,212,255,0.12)';this.style.borderColor='rgba(0,212,255,0.45)'" onmouseout="this.style.background='rgba(0,212,255,0.05)';this.style.borderColor='rgba(0,212,255,0.2)'">
           <span style="font-size:20px">${p.emoji}</span>
           <div style="flex:1">
             <div style="font-size:13px;font-weight:600;color:var(--text)">${p.name}</div>
@@ -2106,8 +1942,8 @@ async function showReservationModal(text) {
       `<span style="font-size:11px;background:rgba(74,127,212,0.1);color:var(--accent);padding:3px 10px;border-radius:100px;font-weight:500">${t}</span>`
     ).join('');
     document.getElementById('reservationPlateformes').innerHTML = (data.plateformes || []).map(p => `
-      <a href="${p.url}" target="_blank" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);text-decoration:none;-webkit-tap-highlight-color:transparent"
-        onmouseover="this.style.background='rgba(255,255,255,0.95)'" onmouseout="this.style.background='rgba(255,255,255,0.6)'">
+      <a href="${p.url}" target="_blank" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);text-decoration:none;-webkit-tap-highlight-color:transparent"
+        onmouseover="this.style.background='rgba(0,212,255,0.12)';this.style.borderColor='rgba(0,212,255,0.45)'" onmouseout="this.style.background='rgba(0,212,255,0.05)';this.style.borderColor='rgba(0,212,255,0.2)'">
         <span style="font-size:24px">${p.icon}</span>
         <div style="flex:1">
           <div style="font-size:13px;font-weight:700;color:var(--text)">${p.nom}</div>
@@ -2151,7 +1987,7 @@ async function showAnalyseModal(text) {
             <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:4px">${v.titre||''}</div>
             <table style="width:100%;border-collapse:collapse;font-size:11px">
               <thead><tr>${(v.colonnes||[]).map(c=>`<th style="background:rgba(74,127,212,0.1);color:var(--accent);padding:6px 8px;text-align:left;font-weight:600;border:1px solid rgba(74,127,212,0.15)">${c}</th>`).join('')}</tr></thead>
-              <tbody>${(v.lignes||[]).map((l,i)=>`<tr style="background:${i%2===0?'rgba(255,255,255,0.6)':'rgba(255,255,255,0.3)'}">${l.map(cell=>`<td style="padding:5px 8px;border:1px solid rgba(0,0,0,0.06);color:var(--text)">${cell}</td>`).join('')}</tr>`).join('')}</tbody>
+              <tbody>${(v.lignes||[]).map((l,i)=>`<tr style="background:${i%2===0?'rgba(0,212,255,0.05)':'transparent'}">${l.map(cell=>`<td style="padding:5px 8px;border:1px solid rgba(0,212,255,0.1);color:var(--text)">${cell}</td>`).join('')}</tr>`).join('')}</tbody>
             </table></div>`;
         } else if (v.type === 'barres') {
           const max = Math.max(...(v.valeurs||[1]));
@@ -2172,7 +2008,7 @@ async function showAnalyseModal(text) {
           visuelHtml = `<div style="margin-top:10px">
             <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:6px">${v.titre||''}</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px">${(v.labels||[]).map((l,i)=>`
-              <div style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,0.5);padding:4px 8px;border-radius:100px">
+              <div style="display:flex;align-items:center;gap:4px;background:rgba(0,212,255,0.06);padding:4px 8px;border-radius:100px;border:1px solid rgba(0,212,255,0.12)">
                 <div style="width:8px;height:8px;border-radius:50%;background:${colors[i%colors.length]};flex-shrink:0"></div>
                 <span style="font-size:11px;color:var(--text)">${l}</span>
                 <span style="font-size:11px;font-weight:600;color:${colors[i%colors.length]}">${Math.round((v.valeurs[i]/total)*100)}%</span>
@@ -2194,7 +2030,7 @@ async function showAnalyseModal(text) {
           </div>`;
         }
       }
-      return `<div style="background:rgba(255,255,255,0.5);border-radius:12px;padding:12px;margin-bottom:8px;border-left:3px solid var(--accent)">
+      return `<div style="background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.15);border-radius:10px;padding:12px;margin-bottom:8px;border-left:3px solid var(--cyan)">
         <div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px">${s.titre}</div>
         ${(s.points||[]).map(p=>`
           <div style="margin-bottom:6px">
@@ -2217,8 +2053,8 @@ async function showAnalyseModal(text) {
     };
 
     document.getElementById('analyseActionBtns').innerHTML = `
-      <a href="${emailUrls[prefMail]}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:var(--accent);color:#fff;text-decoration:none;font-size:14px;font-weight:600">📧 Envoyer par email</a>
-      <button onclick="downloadAnalysePDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.8);background:rgba(255,255,255,0.6);color:var(--text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;width:100%">📄 Exporter en PDF</button>
+      <a href="${emailUrls[prefMail]}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:linear-gradient(135deg,rgba(0,100,200,0.9),rgba(0,180,255,0.8));color:#fff;text-decoration:none;font-size:13px;font-weight:600;border:1px solid rgba(0,220,255,0.4)">📧 Envoyer par email</a>
+      <button onclick="downloadAnalysePDF()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(0,212,255,0.3);background:rgba(0,212,255,0.08);color:var(--cyan);font-family:'Audiowide',sans-serif;font-size:11px;letter-spacing:0.3px;cursor:pointer;width:100%">📄 Exporter en PDF</button>
     `;
 
   } catch(e) {
@@ -2298,7 +2134,7 @@ function copyRappel() {
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px" id="calendrierActionBtns"></div>
     </div>
 
-    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted);margin-top:10px" onclick="document.getElementById('calendrierModal').classList.add('hidden')">Fermer</button>
+    <button class="bubble-modal-btn" class="modal-close-btn" onclick="document.getElementById('calendrierModal').classList.add('hidden')">Fermer</button>
   </div>
 </div>
 
@@ -2339,7 +2175,7 @@ function copyRappel() {
       <div id="commandeSites" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px"></div>
     </div>
 
-    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted)" onclick="document.getElementById('commandeModal').classList.add('hidden')">Fermer</button>
+    <button class="bubble-modal-btn" class="modal-close-btn" onclick="document.getElementById('commandeModal').classList.add('hidden')">Fermer</button>
   </div>
 </div>
 
@@ -2348,11 +2184,11 @@ function copyRappel() {
   <div class="bubble-modal-card">
     <div style="font-size:36px;text-align:center;margin-bottom:12px">💬</div>
     <div class="bubble-modal-type">Message WhatsApp</div>
-    <div style="background:rgba(255,255,255,0.5);border-radius:12px;padding:12px;margin:12px 0;font-size:14px;line-height:1.6;color:var(--text)" id="waModalMessage"></div>
+    <div style="background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.15);border-radius:10px;padding:12px;margin:12px 0;font-size:13px;line-height:1.6;color:var(--text)" id="waModalMessage"></div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px" id="waAppLinks"></div>
     <div style="display:flex;gap:8px">
-      <button class="bubble-modal-btn btn-confirm" onclick="copyWAMessage()" id="waCopyBtn">📋 Copier</button>
-      <button class="bubble-modal-btn" style="background:rgba(0,0,0,0.06);color:var(--muted)" onclick="document.getElementById('waModal').classList.add('hidden')">Fermer</button>
+      <button class="modal-action-btn" onclick="copyWAMessage()" id="waCopyBtn">📋 Copier</button>
+      <button class="bubble-modal-btn" class="modal-close-btn" onclick="document.getElementById('waModal').classList.add('hidden')">Fermer</button>
     </div>
   </div>
 </div>
@@ -2365,8 +2201,8 @@ function copyRappel() {
     <div style="font-size:28px;font-weight:300;letter-spacing:2px;color:var(--text);margin:16px 0" id="callModalPhone"></div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px" id="callAppLinks"></div>
     <div style="display:flex;gap:8px">
-      <button class="bubble-modal-btn btn-confirm" onclick="copyPhone()" id="callCopyBtn">📋 Copier</button>
-      <button class="bubble-modal-btn" style="background:rgba(0,0,0,0.06);color:var(--muted)" onclick="document.getElementById('callModal').classList.add('hidden')">Fermer</button>
+      <button class="modal-action-btn" onclick="copyPhone()" id="callCopyBtn">📋 Copier</button>
+      <button class="bubble-modal-btn" class="modal-close-btn" onclick="document.getElementById('callModal').classList.add('hidden')">Fermer</button>
     </div>
   </div>
 </div>
@@ -2383,7 +2219,7 @@ function copyRappel() {
         <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.6px">Départ</div>
         <div style="display:flex;align-items:center;gap:8px">
           <input type="text" id="mapsDepart" placeholder="Ma position actuelle…"
-            style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:13px;color:var(--text);outline:none"/>
+            style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid rgba(0,212,255,0.2);background:rgba(0,212,255,0.05);font-family:inherit;font-size:13px;color:var(--text);outline:none;caret-color:var(--cyan)"/>
           <button onclick="geolocateDepart()" title="Ma position"
             style="width:36px;height:36px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:16px;cursor:pointer;flex-shrink:0">📍</button>
         </div>
@@ -2391,7 +2227,7 @@ function copyRappel() {
       <div style="margin-bottom:12px">
         <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.6px">Destination</div>
         <input type="text" id="mapsArrivee" placeholder="Adresse de destination…"
-          style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(74,127,212,0.2);background:rgba(255,255,255,0.7);font-family:inherit;font-size:13px;color:var(--text);outline:none"/>
+          style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(0,212,255,0.2);background:rgba(0,212,255,0.05);font-family:inherit;font-size:13px;color:var(--text);outline:none;caret-color:var(--cyan)"/>
       </div>
       <!-- Mode transport -->
       <div style="display:flex;gap:6px;margin-bottom:12px" id="mapsMode">
@@ -2430,7 +2266,7 @@ function copyRappel() {
       </div>
 
       <!-- Météo destination -->
-      <div id="mapsMeteo" style="background:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.8);border-radius:14px;padding:12px;margin-bottom:10px;display:none">
+      <div id="mapsMeteo" style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);border-radius:12px;padding:12px;margin-bottom:10px;display:none">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="font-size:32px" id="mapsMeteoIcon">🌤️</div>
           <div style="flex:1">
@@ -2451,8 +2287,7 @@ function copyRappel() {
       <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px" id="mapsAppBtns"></div>
     </div>
 
-    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted);margin-top:10px"
-      onclick="document.getElementById('mapsModal').classList.add('hidden')">Fermer</button>
+    <button class="modal-close-btn" onclick="document.getElementById('mapsModal').classList.add('hidden')">Fermer</button>
   </div>
 </div>
 
@@ -2476,12 +2311,11 @@ function copyRappel() {
         <div id="reservationTags" style="display:flex;flex-wrap:wrap;gap:6px"></div>
       </div>
       <!-- Plateformes -->
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:8px">Réserver sur</div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--cyan-dim);margin-bottom:8px">Réserver sur</div>
       <div id="reservationPlateformes" style="display:flex;flex-direction:column;gap:8px"></div>
     </div>
 
-    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted);margin-top:10px"
-      onclick="document.getElementById('reservationModal').classList.add('hidden')">Fermer</button>
+    <button class="modal-close-btn" onclick="document.getElementById('reservationModal').classList.add('hidden')">Fermer</button>
   </div>
 </div>
 
@@ -2503,8 +2337,7 @@ function copyRappel() {
       <div style="display:flex;flex-direction:column;gap:8px" id="analyseActionBtns"></div>
     </div>
 
-    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted);margin-top:10px"
-      onclick="document.getElementById('analyseModal').classList.add('hidden')">Fermer</button>
+    <button class="modal-close-btn" onclick="document.getElementById('analyseModal').classList.add('hidden')">Fermer</button>
   </div>
 </div>
 
@@ -2513,13 +2346,12 @@ function copyRappel() {
   <div class="bubble-modal-card">
     <div style="font-size:36px;text-align:center;margin-bottom:8px">🔔</div>
     <div class="bubble-modal-type">Rappel</div>
-    <div style="background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);border-radius:12px;padding:14px;margin:12px 0;font-size:14px;line-height:1.6;color:var(--text);text-align:center" id="rappelText"></div>
+    <div style="background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.15);border-radius:10px;padding:14px;margin:12px 0;font-size:13px;line-height:1.6;color:var(--text);text-align:center" id="rappelText"></div>
     <button onclick="copyRappel()" id="rappelCopyBtn"
-      style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:8px">
+      class="modal-action-btn">
       📋 Copier
     </button>
-    <button class="bubble-modal-btn" style="width:100%;background:rgba(0,0,0,0.06);color:var(--muted)"
-      onclick="document.getElementById('rappelModal').classList.add('hidden')">Fermer</button>
+    <button class="modal-close-btn" onclick="document.getElementById('rappelModal').classList.add('hidden')">Fermer</button>
   </div>
 </div>
 
@@ -2537,4 +2369,53 @@ function copyRappel() {
   </div>
 </div>
 </body>
+<script>
+// ── NeuroCanvas (réseau de neurones ambient) ──
+(function(){
+  const canvas = document.getElementById('neuroCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let W, H, nodes;
+  const N = 55, MAX_DIST = 120, SPEED = 0.25;
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  function initNodes() {
+    nodes = Array.from({length:N}, () => ({
+      x: Math.random()*W, y: Math.random()*H,
+      vx:(Math.random()-0.5)*SPEED, vy:(Math.random()-0.5)*SPEED,
+      r: 1.5 + Math.random()*1.5
+    }));
+  }
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    for(let i=0;i<N;i++){
+      const a=nodes[i];
+      for(let j=i+1;j<N;j++){
+        const b=nodes[j];
+        const dx=a.x-b.x, dy=a.y-b.y, d=Math.sqrt(dx*dx+dy*dy);
+        if(d<MAX_DIST){
+          const alpha=0.08*(1-d/MAX_DIST);
+          ctx.strokeStyle=`rgba(0,212,255,${alpha})`;
+          ctx.lineWidth=0.6;
+          ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+        }
+      }
+    }
+    nodes.forEach(n=>{
+      ctx.beginPath();
+      ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(0,212,255,0.35)';
+      ctx.fill();
+      n.x+=n.vx; n.y+=n.vy;
+      if(n.x<0||n.x>W) n.vx*=-1;
+      if(n.y<0||n.y>H) n.vy*=-1;
+    });
+    requestAnimationFrame(draw);
+  }
+  resize(); initNodes(); draw();
+  window.addEventListener('resize', ()=>{ resize(); initNodes(); });
+})();
+</script>
 </html>
