@@ -20,20 +20,37 @@ module.exports = async function handler(req, res) {
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-1.5-flash'];
+    // Pour deepanalyze/parse : flash-lite suffit, moins cher
+    const MODELS_LITE_FIRST = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+    // Pour prepare/enrich : flash en premier, contenu complexe
+    const MODELS_FLASH_FIRST = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
 
-    async function callGemini(prompt, timeoutMs = 15000) {
-      for (const mn of MODELS) {
-        try {
-          const model = genAI.getGenerativeModel({ model: mn });
-          const timeout = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('timeout')), timeoutMs)
-          );
-          const result = await Promise.race([model.generateContent(prompt), timeout]);
-          return result.response.text().trim();
-        } catch(e) {
-          console.log('[calendrier] fallback from', mn, ':', e.message);
+    async function callGemini(prompt, timeoutMs, models) {
+      for (const modelName of models) {
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const model = genAI.getGenerativeModel({ model: modelName });
+            const timeout = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('timeout')), timeoutMs)
+            );
+            const result = await Promise.race([model.generateContent(prompt), timeout]);
+            console.log(`[calendrier] success: ${modelName} attempt ${attempt} action:${action}`);
+            return result.response.text().trim();
+          } catch (e) {
+            const isTransient =
+              e.message.includes('503') ||
+              e.message.includes('429') ||
+              e.message.includes('timeout') ||
+              e.message.includes('UNAVAILABLE');
+
+            console.log(`[calendrier] ${modelName} attempt ${attempt} failed (${isTransient ? 'transient' : 'fatal'}):`, e.message);
+
+            if (isTransient && attempt < 3) {
+              await new Promise(r => setTimeout(r, attempt * 1500)); // 1.5s puis 3s
+              continue;
+            }
+            break; // erreur fatale ou tentatives épuisées → modèle suivant
+          }
         }
       }
       throw new Error('Tous les modèles ont échoué');
@@ -59,7 +76,7 @@ Format de réponse en français, structuré avec des sections claires :
 
 Réponds directement sans introduction.`;
 
-      const analysis = await callGemini(prompt, 8000);
+      const analysis = await callGemini(prompt, 15000, MODELS_LITE_FIRST);
       return res.status(200).json({ analysis });
     }
 
@@ -99,10 +116,10 @@ JSON uniquement :
 
 JSON uniquement, pas de texte autour.`;
 
-      const raw = await callGemini(prompt, 10000);
+      const raw = await callGemini(prompt, 15000, MODELS_LITE_FIRST);
       try {
         return res.status(200).json(parseJSON(raw));
-      } catch(e) {
+      } catch (e) {
         return res.status(200).json({ raw: text });
       }
     }
@@ -174,11 +191,11 @@ Règles :
 - Tout en français
 - JSON uniquement`;
 
-      const prepRaw = await callGemini(prepPrompt, 15000);
+      const prepRaw = await callGemini(prepPrompt, 20000, MODELS_FLASH_FIRST);
       let prepData;
       try {
         prepData = parseJSON(prepRaw);
-      } catch(e) {
+      } catch (e) {
         return res.status(200).json({ raw: text });
       }
 
@@ -233,8 +250,8 @@ Commence directement par SECTION:, rien avant, rien apres.`;
 
       let enrichedRaw = '';
       try {
-        enrichedRaw = await callGemini(enrichPrompt, 20000);
-      } catch(e) {
+        enrichedRaw = await callGemini(enrichPrompt, 25000, MODELS_FLASH_FIRST);
+      } catch (e) {
         console.log('[calendrier] enrich failed, using basic content');
         enrichedRaw = pdfSections.map(s =>
           `SECTION: ${s.titre.toUpperCase()}\n` +
@@ -287,7 +304,7 @@ Commence directement par SECTION:, rien avant, rien apres.`;
           participants: meta.participants || participants
         },
         sections: parsedSections,
-        generatedAt: new Date().toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'})
+        generatedAt: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
       };
 
       return res.status(200).json(prepData);
