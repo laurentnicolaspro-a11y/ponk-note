@@ -21,12 +21,10 @@ module.exports = async function handler(req, res) {
     function findContact(t) {
       if (!contacts.length) return null;
       const lower = t.toLowerCase();
-      // 1. Cherche sur les alias en premier (plus précis)
       const byAlias = contacts.find(c =>
         c.aliases && c.aliases.some(a => lower.includes(a.toLowerCase()))
       );
       if (byAlias) return byAlias;
-      // 2. Fallback sur le prénom (premier mot du nom)
       return contacts.find(c =>
         c.name && lower.includes(c.name.toLowerCase().split(' ')[0].toLowerCase())
       );
@@ -40,15 +38,43 @@ module.exports = async function handler(req, res) {
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-    const MODELS = [
-      'gemini-2.5-flash',
-    ];
+    // flash en premier (meilleure rédaction), flash-lite en fallback
+    const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+    const TIMEOUT_MS = 15000;
 
-    // Timeout généreux car tâche complexe (rédaction email, message...)
-    const TIMEOUTS = [8000];
+    async function callGemini(prompt) {
+      for (const modelName of MODELS) {
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const model = genAI.getGenerativeModel({ model: modelName });
+            const timeout = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('timeout')), TIMEOUT_MS)
+            );
+            const result = await Promise.race([model.generateContent(prompt), timeout]);
+            console.log(`[generateaction] success: ${modelName} attempt ${attempt}`);
+            return result.response.text().trim();
+          } catch (e) {
+            const isTransient =
+              e.message.includes('503') ||
+              e.message.includes('429') ||
+              e.message.includes('timeout') ||
+              e.message.includes('UNAVAILABLE');
+
+            console.log(`[generateaction] ${modelName} attempt ${attempt} failed (${isTransient ? 'transient' : 'fatal'}):`, e.message);
+
+            if (isTransient && attempt < 3) {
+              await new Promise(r => setTimeout(r, attempt * 1500));
+              continue;
+            }
+            break;
+          }
+        }
+      }
+      return null;
+    }
 
     let prompt = '';
-    switch(type) {
+    switch (type) {
       case 'EMAIL': {
         const dest = contact ? (contact.email || contact.name) : '';
         const destInfo = contact
@@ -73,29 +99,17 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({ raw: text });
     }
 
-    let result = null;
-    for (let i = 0; i < MODELS.length; i++) {
-      try {
-        const model = genAI.getGenerativeModel({ model: MODELS[i] });
-        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), TIMEOUTS[i]));
-        result = await Promise.race([model.generateContent(prompt), timeout]);
-        console.log('[generateaction] succès avec', MODELS[i]);
-        break;
-      } catch(e) {
-        console.log('[generateaction]', MODELS[i], 'failed:', e.message);
-      }
-    }
+    const answer = await callGemini(prompt);
 
-    if (!result) {
+    if (!answer) {
       console.log('[generateaction] tous les modèles ont échoué');
       return res.status(200).json({ raw: text });
     }
 
-    const answer = result.response.text().trim();
     const clean = answer.replace(/```json|```/g, '').trim();
     try {
       return res.status(200).json(JSON.parse(clean));
-    } catch(e) {
+    } catch (e) {
       return res.status(200).json({ raw: text });
     }
 
