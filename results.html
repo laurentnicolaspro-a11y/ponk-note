@@ -539,6 +539,19 @@ const audioData = localStorage.getItem('ponk_audio');
 const driveFile = (() => { try { return JSON.parse(localStorage.getItem('ponk_drive_file') || '{}'); } catch(e) { return {}; } })();
 const supabaseUrl = driveFile.fileName ? `${location.origin}/api/audio-proxy?path=${encodeURIComponent(driveFile.fileName)}` : null;
 
+// Fusionner les actions IA depuis ponk_analyzed_${fileName} si plus récentes
+if (rawResult && driveFile.fileName) {
+  try {
+    const fileName = driveFile.fileName.split('/').pop();
+    const analyzed = JSON.parse(localStorage.getItem(`ponk_analyzed_${fileName}`) || '{}');
+    if (analyzed.actions_ia) {
+      const result = JSON.parse(rawResult);
+      result.actions_ia = analyzed.actions_ia;
+      localStorage.setItem('ponk_result', JSON.stringify(result));
+    }
+  } catch(e) {}
+}
+
 if (!rawResult) { window.location.href = '/'; }
 else {
   let data, meta;
@@ -597,13 +610,16 @@ function render(data, meta) {
   // Bulles manuelles + prochaine étape comme carte CALENDRIER
   const allActions = (() => {
     try {
+      // Actions depuis les bulles index
       const saved = JSON.parse(localStorage.getItem('ponk_action_bubbles') || '[]');
       const bubbles = saved.map(b => ({
         type: b.type, icone: b.icon || '💬',
         titre: b.label || b.type, description: b.text,
         _fromBubble: true, _done: b.confirmed === 'done'
       }));
-      // Ajouter la prochaine étape comme carte CALENDRIER si présente
+      // Actions IA sauvegardées (Gemini + générées manuellement)
+      const savedIA = (data.actions_ia || []).map(a => ({...a, _savedIA: true}));
+      // Prochaine étape
       if (data.summary?.prochaine_etape) {
         bubbles.unshift({
           type: 'CALENDRIER', icone: '📅',
@@ -613,7 +629,7 @@ function render(data, meta) {
           _prochaineEtape: true
         });
       }
-      return bubbles;
+      return [...bubbles, ...savedIA];
     } catch(e) { return []; }
   })();
 
@@ -1160,47 +1176,50 @@ const ACTION_TYPES_IA = {
 };
 
 function openAddActionIA() {
-  // Créer le menu
   let menu = document.getElementById('addIAMenu');
   if (menu) { menu.remove(); return; }
 
   menu = document.createElement('div');
   menu.id = 'addIAMenu';
-  menu.style.cssText = 'position:fixed;inset:0;z-index:400;display:flex;align-items:flex-end;justify-content:center;padding:0 20px 20px;background:rgba(0,0,0,0.25);backdrop-filter:blur(6px);animation:fadeIn 0.2s ease;';
+  menu.style.cssText = 'position:fixed;inset:0;z-index:400;display:flex;align-items:flex-end;justify-content:center;padding:0 20px 20px;background:rgba(0,0,5,0.6);backdrop-filter:blur(10px);animation:fadeIn 0.2s ease;';
   menu.innerHTML = `
-    <div style="background:var(--surface,rgba(255,255,255,0.95));border-radius:20px;padding:20px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--cyan-dim);margin-bottom:14px;text-align:center;">Ajouter une action</div>
+    <div style="background:linear-gradient(145deg,rgba(5,4,25,0.98),rgba(3,2,18,0.98));border:1px solid rgba(0,220,255,0.2);border-radius:20px;padding:20px;width:100%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,0.7),0 0 30px rgba(0,220,255,0.08);animation:slideUp 0.25s cubic-bezier(0.34,1.56,0.64,1);">
+      <div style="font-family:Audiowide,sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(0,220,255,0.6);margin-bottom:16px;text-align:center;">Ajouter une action</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
         ${Object.entries(ACTION_TYPES_IA).map(([type, cfg]) => `
-          <div onclick="selectAddActionIA('${type}','${cfg.icon}','${cfg.label}')" style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 6px;border-radius:12px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);cursor:pointer;">
-            <span style="font-size:22px;">${cfg.icon}</span>
-            <span style="font-size:9px;font-weight:500;color:var(--muted,#888);text-align:center;">${cfg.label}</span>
+          <div onclick="selectAddActionIA('${type}','${cfg.label}')"
+            style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 8px;border-radius:14px;background:rgba(0,220,255,0.04);border:1px solid rgba(0,220,255,0.12);cursor:pointer;transition:background 0.15s,border-color 0.15s;"
+            onmouseover="this.style.background='rgba(0,220,255,0.07)';this.style.borderColor='rgba(0,220,255,0.2)'"
+            onmouseout="this.style.background='rgba(0,220,255,0.04)';this.style.borderColor='rgba(0,220,255,0.12)'">
+            <div style="display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 0 5px rgba(0,220,255,0.5));">${ACTION_SVG[type] || ''}</div>
+            <span style="font-size:10px;font-weight:500;color:rgba(0,220,255,0.6);text-align:center;letter-spacing:0.3px;">${cfg.label}</span>
           </div>`).join('')}
       </div>
-      <button onclick="document.getElementById('addIAMenu').remove()" style="width:100%;padding:12px;border-radius:12px;border:none;background:transparent;color:rgba(0,220,255,0.4);font-family:Audiowide,sans-serif;font-size:11px;letter-spacing:0.8px;text-transform:uppercase;cursor:pointer;">Annuler</button>
+      <button onclick="document.getElementById('addIAMenu').remove()" class="modal-close-btn">Annuler</button>
     </div>`;
   menu.onclick = e => { if (e.target === menu) menu.remove(); };
   document.body.appendChild(menu);
 }
 
-function selectAddActionIA(type, icon, label) {
+function selectAddActionIA(type, label) {
   document.getElementById('addIAMenu')?.remove();
 
-  // Ouvrir modal de saisie
   let modal = document.getElementById('addIAModal');
   if (modal) modal.remove();
 
+  const svgIcon = ACTION_SVG[type] || '';
+
   modal = document.createElement('div');
   modal.id = 'addIAModal';
-  modal.style.cssText = 'position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,0.3);backdrop-filter:blur(8px);';
+  modal.className = 'bubble-modal';
   modal.innerHTML = `
-    <div style="background:var(--surface,rgba(255,255,255,0.95));border-radius:20px;padding:24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-      <div style="font-size:36px;text-align:center;margin-bottom:8px;">${icon}</div>
-      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted,#888);text-align:center;margin-bottom:12px;">${label}</div>
-      <textarea id="addIAText" placeholder="Décris ton action ${label.toLowerCase()}…" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(0,212,255,0.3);background:rgba(0,212,255,0.04);font-family:inherit;font-size:13px;color:var(--text);outline:none;resize:none;min-height:80px;margin-bottom:16px;caret-color:var(--cyan)"></textarea>
-      <div style="display:flex;gap:10px;">
-        <button onclick="document.getElementById('addIAModal').remove()" style="flex:1;padding:13px;border-radius:12px;border:none;background:transparent;color:rgba(0,220,255,0.4);font-family:Audiowide,sans-serif;font-size:11px;letter-spacing:0.8px;text-transform:uppercase;cursor:pointer;">Annuler</button>
-        <button onclick="confirmAddActionIA('${type}','${icon}','${label}')" style="flex:1;padding:13px;border-radius:12px;border:none;background:#4a7fd4;color:#fff;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;">Ajouter</button>
+    <div class="bubble-modal-card">
+      <div class="bubble-modal-icon" style="filter:drop-shadow(0 0 10px rgba(0,220,255,0.7));">${svgIcon}</div>
+      <div class="bubble-modal-type">${label}</div>
+      <textarea id="addIAText" class="bubble-modal-textarea" placeholder="Décris ton action ${label.toLowerCase()}…"></textarea>
+      <div class="bubble-modal-btns">
+        <button onclick="document.getElementById('addIAModal').remove()" class="bubble-modal-btn btn-reject">Annuler</button>
+        <button onclick="confirmAddActionIA('${type}','${label}')" class="bubble-modal-btn btn-confirm">Ajouter</button>
       </div>
     </div>`;
   modal.onclick = e => { if (e.target === modal) modal.remove(); };
@@ -1208,13 +1227,14 @@ function selectAddActionIA(type, icon, label) {
   setTimeout(() => document.getElementById('addIAText')?.focus(), 100);
 }
 
-function confirmAddActionIA(type, icon, label) {
+
+function confirmAddActionIA(type, label) {
   const text = document.getElementById('addIAText')?.value.trim();
   if (!text) return;
   document.getElementById('addIAModal')?.remove();
 
   const newAction = {
-    type, icone: icon, titre: label,
+    type, icone: ACTION_SVG[type] || '', titre: label,
     description: text, _fromBubble: true, _done: false
   };
 
@@ -1280,6 +1300,7 @@ async function generateActionsIA() {
       });
     }
 
+    saveActionsIA();
     if (btn) { btn.textContent = newActions.length + ' action(s) ajoutée(s)'; btn.disabled = true; }
   } catch(e) {
     if (btn) { btn.textContent = 'Générer actions'; btn.disabled = false; }
@@ -1297,10 +1318,12 @@ function resetActionDone(actionId, a) {
   const div = document.createElement('div');
   div.innerHTML = html;
   if (div.firstChild) wrap.replaceWith(div.firstChild);
+  saveActionsIA();
 }
 
 function markDoneVisual(actionId, el) {
   localStorage.setItem('ponk_done_' + actionId, '1');
+  saveActionsIA();
   if (!el) el = document.getElementById(actionId);
   if (!el) return;
   const container = el.closest('[style*="display:flex"]') || el;
@@ -2565,6 +2588,31 @@ function copyRappel() {
 </div>
 </body>
 <script>
+
+function saveActionsIA() {
+  const wrap = document.getElementById('actionsIAWrap');
+  const actions = [];
+  if (wrap) {
+    wrap.querySelectorAll('.action-ia-card[id]').forEach(el => {
+      const meta = ACTION_META[el.id];
+      if (meta && !meta._prochaineEtape && !meta._fromBubble) actions.push(meta);
+    });
+  }
+  // Sauvegarder dans ponk_analyzed_${fileName} pour être lié à l'enregistrement
+  const fileName = (driveFile.fileName || '').split('/').pop();
+  if (fileName) {
+    const key = `ponk_analyzed_${fileName}`;
+    const stored = JSON.parse(localStorage.getItem(key) || '{}');
+    stored.actions_ia = actions;
+    localStorage.setItem(key, JSON.stringify(stored));
+  }
+  // Mettre à jour aussi ponk_result pour le render courant
+  const data = JSON.parse(localStorage.getItem('ponk_result') || '{}');
+  data.actions_ia = actions;
+  localStorage.setItem('ponk_result', JSON.stringify(data));
+}
+function declencherRebond() {} // pas de rebond dans results
+function fermerRebond() {}
 function fermerCalendrier() { document.getElementById('calendrierModal').classList.add('hidden'); }
 function fermerCommande()   { document.getElementById('commandeModal').classList.add('hidden'); }
 function fermerMaps()       { document.getElementById('mapsModal').classList.add('hidden'); }
