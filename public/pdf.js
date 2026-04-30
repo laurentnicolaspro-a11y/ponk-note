@@ -1,23 +1,23 @@
 // ── pdf.js — Ponk Note ──
 
 const PDF_C = {
-  accent:      [74, 127, 212],
-  accentDark:  [50, 95, 170],
-  accentLight: [210, 225, 248],
-  dark:        [25, 30, 50],
-  muted:       [110, 118, 140],
-  light:       [243, 246, 253],
+  accent:      [30, 30, 30],
+  accentDark:  [0, 0, 0],
+  accentLight: [210, 210, 210],
+  dark:        [20, 20, 20],
+  muted:       [100, 100, 100],
+  light:       [245, 245, 245],
   white:       [255, 255, 255],
-  sectionBg:   [232, 240, 255],
-  sectionBdr:  [190, 210, 245],
-  blockBg:     [251, 253, 255],
-  blockBdr:    [215, 228, 248],
-  detail:      [85, 95, 118],
-  ideeline:    [195, 225, 195],
-  ideelabel:   [45, 120, 70],
-  ideetext:    [55, 115, 75],
-  ideetick:    [120, 190, 130],
-  footerbg:    [244, 247, 253],
+  sectionBg:   [230, 230, 230],
+  sectionBdr:  [160, 160, 160],
+  blockBg:     [252, 252, 252],
+  blockBdr:    [190, 190, 190],
+  detail:      [90, 90, 90],
+  ideeline:    [180, 180, 180],
+  ideelabel:   [40, 40, 40],
+  ideetext:    [50, 50, 50],
+  ideetick:    [120, 120, 120],
+  footerbg:    [240, 240, 240],
 };
 
 async function loadJsPDF() {
@@ -73,7 +73,7 @@ function pdfSectionHeader(doc, titre, idx, y, M, maxW, C) {
 }
 
 function pdfBlock(doc, tL, dL, bY, M, maxW, totH, C) {
-  doc.setFillColor(225, 232, 248); doc.roundedRect(M + 0.6, bY + 0.6, maxW, totH, 2.5, 2.5, 'F');
+  doc.setFillColor(200, 200, 200); doc.roundedRect(M + 0.6, bY + 0.6, maxW, totH, 2.5, 2.5, 'F');
   doc.setFillColor(...C.blockBg); doc.setDrawColor(...C.blockBdr); doc.setLineWidth(0.2);
   doc.roundedRect(M, bY, maxW, totH, 2.5, 2.5, 'FD');
   doc.setFillColor(...C.accentLight); doc.roundedRect(M, bY, 3, totH, 1.5, 1.5, 'F');
@@ -107,7 +107,7 @@ async function downloadCalendrierPDF() {
     { label: 'Duree',        val: meta.duree       || '-' },
     { label: 'Participants', val: meta.participants || '-' },
   ];
-  doc.setFillColor(225, 230, 245); doc.roundedRect(M + 0.8, y + 0.8, maxW, 30, 3, 3, 'F');
+  doc.setFillColor(200, 200, 200); doc.roundedRect(M + 0.8, y + 0.8, maxW, 30, 3, 3, 'F');
   doc.setFillColor(...C.light); doc.setDrawColor(...C.sectionBdr); doc.setLineWidth(0.4);
   doc.roundedRect(M, y, maxW, 30, 3, 3, 'FD');
   doc.setFillColor(...C.accent); doc.roundedRect(M, y, 3, 30, 1.5, 1.5, 'F');
@@ -203,19 +203,19 @@ async function downloadAnalysePDF() {
       if (v.type === 'tableau' && v.colonnes && v.lignes) {
         const cW = maxW / v.colonnes.length, cellH = 7;
         v.colonnes.forEach((col, ci) => {
-          doc.setFillColor(232, 240, 255); doc.setDrawColor(190, 210, 245); doc.setLineWidth(0.2);
+          doc.setFillColor(210, 210, 210); doc.setDrawColor(160, 160, 160); doc.setLineWidth(0.2);
           doc.rect(M + ci * cW, y, cW, cellH, 'FD');
-          doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(50, 95, 170);
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(20, 20, 20);
           doc.text(doc.splitTextToSize(String(col), cW - 3)[0], M + ci * cW + 2, y + 4.5);
         });
         y += cellH;
         v.lignes.forEach((row, ri) => {
           checkPage(cellH + 2);
           row.forEach((cell, ci) => {
-            doc.setFillColor(ri % 2 === 0 ? 251 : 244, ri % 2 === 0 ? 253 : 247, 255);
-            doc.setDrawColor(215, 228, 248); doc.setLineWidth(0.2);
+            doc.setFillColor(ri % 2 === 0 ? 252 : 242, ri % 2 === 0 ? 252 : 242, ri % 2 === 0 ? 252 : 242);
+            doc.setDrawColor(190, 190, 190); doc.setLineWidth(0.2);
             doc.rect(M + ci * cW, y, cW, cellH, 'FD');
-            doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(25, 30, 50);
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(20, 20, 20);
             doc.text(doc.splitTextToSize(String(cell), cW - 3)[0], M + ci * cW + 2, y + 4.5);
           });
           y += cellH;
@@ -229,7 +229,7 @@ async function downloadAnalysePDF() {
           const ratio = max > 0 ? v.valeurs[i] / max : 0;
           doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...C.muted);
           doc.text(doc.splitTextToSize(label, lW)[0], M, y + 5);
-          doc.setFillColor(232, 240, 255); doc.roundedRect(M + lW + 2, y + 1, bW, barH - 2, 1, 1, 'F');
+          doc.setFillColor(220, 220, 220); doc.roundedRect(M + lW + 2, y + 1, bW, barH - 2, 1, 1, 'F');
           doc.setFillColor(...C.accent); doc.roundedRect(M + lW + 2, y + 1, Math.max(2, bW * ratio), barH - 2, 1, 1, 'F');
           doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...C.accent);
           doc.text(String(v.valeurs[i]) + (v.unite ? ' ' + v.unite : ''), M + lW + bW + 5, y + 5);
@@ -237,7 +237,7 @@ async function downloadAnalysePDF() {
         });
         y += 4;
       } else if (v.type === 'camembert' && v.labels && v.valeurs) {
-        const colors = [[74,127,212],[61,184,122],[224,122,48],[138,85,212],[224,85,85],[48,168,212]];
+        const colors = [[30,30,30],[90,90,90],[150,150,150],[50,50,50],[120,120,120],[180,180,180]];
         const total = v.valeurs.reduce((a, b) => a + b, 0);
         const iW = maxW / 2;
         v.labels.forEach((label, i) => {
@@ -246,7 +246,7 @@ async function downloadAnalysePDF() {
           doc.setFillColor(...colors[i % colors.length]); doc.circle(px + 3, py + 3, 2.5, 'F');
           doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...C.dark);
           doc.text(label, px + 8, py + 4.5);
-          doc.setFont('helvetica', 'bold'); doc.setTextColor(...colors[i % colors.length]);
+          doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.muted);
           doc.text(Math.round((v.valeurs[i] / total) * 100) + '%', px + iW - 12, py + 4.5);
         });
         y += Math.ceil(v.labels.length / 2) * 9 + 4;
@@ -254,7 +254,7 @@ async function downloadAnalysePDF() {
         const cH = 30, n = v.valeurs.length;
         const max = Math.max(...v.valeurs), min = Math.min(...v.valeurs), range = max - min || 1;
         checkPage(cH + 20);
-        doc.setFillColor(243, 246, 253); doc.setDrawColor(...C.blockBdr); doc.setLineWidth(0.2);
+        doc.setFillColor(242, 242, 242); doc.setDrawColor(...C.blockBdr); doc.setLineWidth(0.2);
         doc.rect(M, y, maxW, cH, 'FD');
         const pts = v.valeurs.map((val, i) => ({
           x: M + (i / (n - 1)) * maxW,
@@ -462,10 +462,10 @@ async function exportPDF() {
       checkPage(12);
       const dL = doc.splitTextToSize('✓ ' + d, maxW - 12);
       const dH = dL.length * 5.2 + 6;
-      doc.setFillColor(225, 245, 235); doc.setDrawColor(150, 210, 180); doc.setLineWidth(0.2);
+      doc.setFillColor(230, 230, 230); doc.setDrawColor(150, 150, 150); doc.setLineWidth(0.2);
       doc.roundedRect(M, y, maxW, dH, 2.5, 2.5, 'FD');
-      doc.setFillColor(61, 184, 122); doc.roundedRect(M, y, 3.5, dH, 1.5, 1.5, 'F');
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(25, 100, 60);
+      doc.setFillColor(60, 60, 60); doc.roundedRect(M, y, 3.5, dH, 1.5, 1.5, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(20, 20, 20);
       const dLclean = dL.map(l => l.replace(/^✓ /, '+ '));
       doc.text(dLclean, M + 7, y + 6);
       y += dH + 4;
@@ -480,7 +480,7 @@ async function exportPDF() {
     pdfSectionHeader(doc, 'Actions', null, y, M, maxW, C);
     y += 13;
     const colQui = 40, colQuand = 32, colQuoi = maxW - colQui - colQuand;
-    doc.setFillColor(...C.accentDark); doc.rect(M, y, maxW, 7, 'F');
+    doc.setFillColor(30, 30, 30); doc.rect(M, y, maxW, 7, 'F');
     doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...C.white);
     doc.text('QUI', M + 3, y + 4.8);
     doc.text('QUOI', M + colQui + 3, y + 4.8);
@@ -489,7 +489,7 @@ async function exportPDF() {
     actions.forEach((a, i) => {
       checkPage(10);
       const rowH = 9;
-      doc.setFillColor(i%2===0 ? 243 : 251, i%2===0 ? 246 : 253, 255);
+      doc.setFillColor(i%2===0 ? 252 : 242, i%2===0 ? 252 : 242, i%2===0 ? 252 : 242);
       doc.setDrawColor(...C.blockBdr); doc.setLineWidth(0.15);
       doc.rect(M, y, maxW, rowH, 'FD');
       doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...C.accent);
@@ -510,10 +510,10 @@ async function exportPDF() {
     y += 13;
     const pL = doc.splitTextToSize(s.prochaine_etape, maxW - 12);
     const pH = pL.length * 5.2 + 8;
-    doc.setFillColor(250, 240, 220); doc.setDrawColor(220, 180, 100); doc.setLineWidth(0.2);
+    doc.setFillColor(238, 238, 238); doc.setDrawColor(170, 170, 170); doc.setLineWidth(0.2);
     doc.roundedRect(M, y, maxW, pH, 2.5, 2.5, 'FD');
-    doc.setFillColor(234, 158, 40); doc.roundedRect(M, y, 3.5, pH, 1.5, 1.5, 'F');
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(140, 80, 10);
+    doc.setFillColor(80, 80, 80); doc.roundedRect(M, y, 3.5, pH, 1.5, 1.5, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(20, 20, 20);
     doc.text(pL, M + 7, y + 6);
     y += pH + 8;
   }
@@ -557,10 +557,10 @@ async function exportPDF() {
       const aL = doc.splitTextToSize(v, maxW - 12);
       const aH = aL.length * 5.2 + 6;
       if (isDone) {
-        doc.setFillColor(225, 245, 235); doc.setDrawColor(150, 210, 180); doc.setLineWidth(0.2);
+        doc.setFillColor(225, 225, 225); doc.setDrawColor(150, 150, 150); doc.setLineWidth(0.2);
         doc.roundedRect(M, y, maxW, aH, 2.5, 2.5, 'FD');
-        doc.setFillColor(61, 184, 122); doc.roundedRect(M, y, 3.5, aH, 1.5, 1.5, 'F');
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(25, 100, 60);
+        doc.setFillColor(60, 60, 60); doc.roundedRect(M, y, 3.5, aH, 1.5, 1.5, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(20, 20, 20);
         doc.text(aL, M + 7, y + 6);
       } else {
         pdfBlock(doc, aL, [], y, M, maxW, aH, C);
