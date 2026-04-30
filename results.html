@@ -597,11 +597,24 @@ function render(data, meta) {
       </div>
     </div></div>`;
     // Bouton téléchargement
-    const downloadBtn = driveFile.fileName ? `
-      <a href="${`${location.origin}/api/audio-proxy?path=${encodeURIComponent(driveFile.fileName)}`}" download="ponk-note.webm"
-        style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:100px;background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.3);font-size:12px;font-weight:500;color:var(--cyan);text-decoration:none;cursor:pointer;">
+    let downloadBtn = '';
+    if (audioData) {
+      // Télécharger depuis le base64 en localStorage
+      const fname = (driveFile.fileName || 'ponk-note').split('/').pop();
+      downloadBtn = `<a href="${audioData}" download="${fname}"
+        style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.3);font-size:12px;color:var(--cyan);text-decoration:none;cursor:pointer;">
         ↓ Télécharger
-      </a>` : '';
+      </a>`;
+    } else if (driveFile.fileName) {
+      // Fallback : URL Supabase publique
+      const profile2 = localStorage.getItem('ponk_profile') || '';
+      const supaUrl = `https://nnppmsomwigihidjpwnp.supabase.co/storage/v1/object/public/audio/${encodeURIComponent(driveFile.fileName)}`;
+      const fname = driveFile.fileName.split('/').pop();
+      downloadBtn = `<a href="${supaUrl}" download="${fname}" target="_blank"
+        style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.3);font-size:12px;color:var(--cyan);text-decoration:none;cursor:pointer;">
+        ↓ Télécharger
+      </a>`;
+    }
 
     const aCard = makeCard('Réécouter', playerHTML, false, downloadBtn);
     aCard.querySelector('.card-bd').classList.add('hidden');
