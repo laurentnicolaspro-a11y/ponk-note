@@ -19,19 +19,35 @@ module.exports = async function handler(req, res) {
     if (!text) return res.status(400).json({ error: 'Texte requis' });
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const MODELS = ['gemini-3.1-flash-lite-preview', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'];
 
-    async function callGemini(prompt, timeoutMs = 10000) {
-      for (const mn of MODELS) {
-        try {
-          const model = genAI.getGenerativeModel({ model: mn });
-          const timeout = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('timeout')), timeoutMs)
-          );
-          const result = await Promise.race([model.generateContent(prompt), timeout]);
-          return result.response.text().trim();
-        } catch(e) {
-          console.log('[shopping] fallback:', mn, e.message);
+    const MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+
+    async function callGemini(prompt, timeoutMs) {
+      for (const modelName of MODELS) {
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const model = genAI.getGenerativeModel({ model: modelName });
+            const timeout = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('timeout')), timeoutMs)
+            );
+            const result = await Promise.race([model.generateContent(prompt), timeout]);
+            console.log(`[shopping] success: ${modelName} attempt ${attempt} action:${action}`);
+            return result.response.text().trim();
+          } catch (e) {
+            const isTransient =
+              e.message.includes('503') ||
+              e.message.includes('429') ||
+              e.message.includes('timeout') ||
+              e.message.includes('UNAVAILABLE');
+
+            console.log(`[shopping] ${modelName} attempt ${attempt} failed (${isTransient ? 'transient' : 'fatal'}):`, e.message);
+
+            if (isTransient && attempt < 3) {
+              await new Promise(r => setTimeout(r, attempt * 1500));
+              continue;
+            }
+            break;
+          }
         }
       }
       throw new Error('Tous les modèles ont échoué');
@@ -98,7 +114,7 @@ Exemples : bricolage→[Leroy Merlin, Castorama], mode→[Zara, H&M, La Redoute]
 Toujours inclure Google Shopping et Amazon en premier.
 JSON uniquement, sans markdown.`;
 
-      const raw = await callGemini(prompt, 8000);
+      const raw = await callGemini(prompt, 15000);
       const clean = raw.replace(/```json|```/g, '').trim();
 
       try {
@@ -110,14 +126,14 @@ JSON uniquement, sans markdown.`;
           url: SITES_URLS[nom] || `https://www.google.com/search?q=${query}+${encodeURIComponent(nom)}`
         }));
         return res.status(200).json(parsed);
-      } catch(e) {
+      } catch (e) {
         return res.status(200).json({ raw: text });
       }
     }
 
     // ── RESERVATION ───────────────────────────────────────────────────────────
     if (action === 'reservation') {
-      const now = new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+      const now = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
       const prompt = `Tu es un assistant expert en réservations de voyages et loisirs.
 
@@ -144,13 +160,13 @@ JSON uniquement :
 
 JSON uniquement, pas de texte autour.`;
 
-      const raw = await callGemini(prompt, 10000);
+      const raw = await callGemini(prompt, 15000);
       const clean = raw.replace(/```json|```/g, '').trim();
 
       let parsed;
       try {
         parsed = JSON.parse(clean);
-      } catch(e) {
+      } catch (e) {
         parsed = { type: 'AUTRE', titre: text, resume: text, infos: {} };
       }
 
@@ -170,10 +186,10 @@ JSON uniquement, pas de texte autour.`;
         ];
       } else if (type === 'TRAIN') {
         plateformes = [
-          { nom: 'SNCF Connect',   icon: '🚄', url: `https://www.sncf-connect.com`, desc: infos.destination ? `Vers ${infos.destination}` : 'Billets officiels SNCF' },
-          { nom: 'Trainline',      icon: '🚆', url: `https://www.thetrainline.com/fr`, desc: infos.destination ? `Vers ${infos.destination}` : 'Meilleurs prix trains' },
-          { nom: 'Ouigo',          icon: '💚', url: `https://www.ouigo.com/`, desc: 'TGV low-cost' },
-          { nom: 'Eurostar',       icon: '🌍', url: `https://www.eurostar.com/fr-fr/train`, desc: 'Trains internationaux' },
+          { nom: 'SNCF Connect', icon: '🚄', url: `https://www.sncf-connect.com`, desc: infos.destination ? `Vers ${infos.destination}` : 'Billets officiels SNCF' },
+          { nom: 'Trainline',    icon: '🚆', url: `https://www.thetrainline.com/fr`, desc: infos.destination ? `Vers ${infos.destination}` : 'Meilleurs prix trains' },
+          { nom: 'Ouigo',        icon: '💚', url: `https://www.ouigo.com/`, desc: 'TGV low-cost' },
+          { nom: 'Eurostar',     icon: '🌍', url: `https://www.eurostar.com/fr-fr/train`, desc: 'Trains internationaux' },
         ];
       } else if (type === 'VOL') {
         const flightsUrl = ori
@@ -193,9 +209,9 @@ JSON uniquement, pas de texte autour.`;
         ];
       } else if (type === 'RESTAURANT') {
         plateformes = [
-          { nom: 'TheFork',        icon: '🍽️', url: `https://www.thefork.fr/recherche?q=${dest}`, desc: 'Réserver une table' },
-          { nom: 'Google Restos',  icon: '🔍', url: `https://www.google.com/search?q=restaurant+${dest}`, desc: 'Trouver un restaurant' },
-          { nom: 'Tripadvisor',    icon: '🦉', url: `https://www.google.com/search?q=tripadvisor+restaurant+${dest}`, desc: 'Avis et réservations' },
+          { nom: 'TheFork',       icon: '🍽️', url: `https://www.thefork.fr/recherche?q=${dest}`, desc: 'Réserver une table' },
+          { nom: 'Google Restos', icon: '🔍', url: `https://www.google.com/search?q=restaurant+${dest}`, desc: 'Trouver un restaurant' },
+          { nom: 'Tripadvisor',   icon: '🦉', url: `https://www.google.com/search?q=tripadvisor+restaurant+${dest}`, desc: 'Avis et réservations' },
         ];
       } else if (type === 'SPECTACLE') {
         plateformes = [
@@ -206,10 +222,10 @@ JSON uniquement, pas de texte autour.`;
         ];
       } else if (type === 'VOITURE') {
         plateformes = [
-          { nom: 'Rentalcars',  icon: '🚗', url: `https://www.rentalcars.com/fr/search/?pickup=${dest}`, desc: 'Comparer les locations' },
-          { nom: 'Europcar',    icon: '🟢', url: `https://www.europcar.fr/`, desc: 'Location de voiture' },
-          { nom: 'Enterprise',  icon: '🚙', url: `https://www.enterprise.fr/fr/`, desc: 'Location longue durée' },
-          { nom: 'Sixt',        icon: '🟠', url: `https://www.sixt.fr/`, desc: 'Voitures premium' },
+          { nom: 'Rentalcars', icon: '🚗', url: `https://www.rentalcars.com/fr/search/?pickup=${dest}`, desc: 'Comparer les locations' },
+          { nom: 'Europcar',   icon: '🟢', url: `https://www.europcar.fr/`, desc: 'Location de voiture' },
+          { nom: 'Enterprise', icon: '🚙', url: `https://www.enterprise.fr/fr/`, desc: 'Location longue durée' },
+          { nom: 'Sixt',       icon: '🟠', url: `https://www.sixt.fr/`, desc: 'Voitures premium' },
         ];
       } else {
         plateformes = [
@@ -225,20 +241,6 @@ JSON uniquement, pas de texte autour.`;
     // ── REBOND ────────────────────────────────────────────────────────────────
     if (action === 'rebond') {
       const { actionFaite, contexte } = body;
-
-      async function callGeminiRebond(prompt) {
-        try {
-          const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
-          const timeout = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('timeout')), 6000)
-          );
-          const result = await Promise.race([model.generateContent(prompt), timeout]);
-          return result.response.text().trim();
-        } catch(e) {
-          console.log('[rebond] failed:', e.message);
-          return null;
-        }
-      }
 
       const ACTIONS_DISPO = [
         { type: 'EMAIL',       label: 'Envoyer un email',         icon: '📧' },
@@ -265,7 +267,7 @@ Si aucune action ne s'impose, retourne un tableau vide.
 
 Exemples :
 - "mail à ma femme je l'aime" → proposer COMMANDE (fleurs)
-- "réunion à Lyon le 26 juin" → proposer RESERVATION (hôtel), MAPS (itinéraire)  
+- "réunion à Lyon le 26 juin" → proposer RESERVATION (hôtel), MAPS (itinéraire)
 - "commande tapis rouges" → proposer CALENDRIER (réception livraison)
 - "analyse concurrence" → proposer RECHERCHE (approfondir)
 
@@ -284,18 +286,22 @@ JSON uniquement :
 Maximum 2 rebonds. Si aucun rebond pertinent, retourne {"rebonds": []}.
 JSON uniquement.`;
 
-      const raw = await callGeminiRebond(prompt);
-      if (!raw) return res.status(200).json({ rebonds: [] });
-      const clean = raw.replace(/```json|```/g, '').trim();
+      let raw = null;
+      try {
+        raw = await callGemini(prompt, 10000);
+      } catch (e) {
+        return res.status(200).json({ rebonds: [] });
+      }
 
+      const clean = raw.replace(/```json|```/g, '').trim();
       try {
         const parsed = JSON.parse(clean);
         parsed.rebonds = (parsed.rebonds || []).map(r => {
-          const action = ACTIONS_DISPO.find(a => a.type === r.type);
-          return { ...r, icon: action?.icon || '✨' };
+          const act = ACTIONS_DISPO.find(a => a.type === r.type);
+          return { ...r, icon: act?.icon || '✨' };
         });
         return res.status(200).json(parsed);
-      } catch(e) {
+      } catch (e) {
         return res.status(200).json({ rebonds: [] });
       }
     }
@@ -314,13 +320,13 @@ Règles :
 
 Réponds UNIQUEMENT avec la requête reformulée, sans guillemets, sans ponctuation, sans explication.`;
 
-      const query = await callGemini(prompt, 5000);
+      const query = await callGemini(prompt, 8000);
       return res.status(200).json({ query: query.trim() });
     }
 
     return res.status(400).json({ error: 'Action non reconnue' });
 
-  } catch(err) {
+  } catch (err) {
     console.error('[shopping]', err.message);
     return res.status(500).json({ error: err.message });
   }
