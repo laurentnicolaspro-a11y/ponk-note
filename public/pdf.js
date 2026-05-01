@@ -75,15 +75,15 @@ function pdfFooter(doc, pageW, pageH, M, C, label) {
   const total = doc.internal.getNumberOfPages();
   for (let i = 1; i <= total; i++) {
     doc.setPage(i);
-    doc.setFillColor(...C.footerbg); doc.rect(0, pageH - 11, pageW, 11, 'F');
-    doc.setDrawColor(...C.sectionBdr); doc.setLineWidth(0.2);
+    doc.setFillColor(240, 240, 240); doc.rect(0, pageH - 11, pageW, 11, 'F');
+    doc.setDrawColor(180, 180, 180); doc.setLineWidth(0.3);
     doc.line(0, pageH - 11, pageW, pageH - 11);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...C.muted);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(150, 150, 150);
     doc.text(label || 'Ponk Note', M, pageH - 4);
-    doc.setFillColor(...C.accent);
-    doc.roundedRect(pageW - M - 14, pageH - 9, 14, 6, 1.5, 1.5, 'F');
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(...C.white);
-    doc.text(i + ' / ' + total, pageW - M - 7, pageH - 4.8, { align: 'center' });
+    doc.setFillColor(30, 30, 30);
+    doc.rect(pageW - M - 12, pageH - 9, 12, 6, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(255, 255, 255);
+    doc.text(i + ' / ' + total, pageW - M - 6, pageH - 4.8, { align: 'center' });
   }
 }
 
@@ -414,7 +414,14 @@ async function exportPDF() {
     let y = M;
 
     const checkPage = (n = 10) => {
-      if (y + n > pageH - 16) { doc.addPage(); pdfFooter(doc, pageW, pageH, M, C, footerTxt); y = M; }
+      if (y + n > pageH - 16) {
+        doc.addPage();
+        // Header sur nouvelle page
+        doc.setFillColor(0, 0, 0); doc.rect(0, 0, pageW, 10, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(255, 255, 255);
+        doc.text('PONK NOTE', M, 7);
+        y = 16;
+      }
     };
 
     const footerTxt = 'Genere par Ponk Note - ' + new Date().toLocaleDateString('fr-FR');
@@ -451,12 +458,13 @@ async function exportPDF() {
     if (checkedLabels.has('resume') && s.resume) {
       checkPage(20);
       sectionTitle('Resume');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
       const lines = doc.splitTextToSize(s.resume, maxW - 8);
-      const h = lines.length * 5.2 + 8;
+      const h = lines.length * 5.5 + 6;
       doc.setFillColor(252, 252, 252); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
       doc.rect(M, y, maxW, h, 'FD');
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(40, 40, 40);
-      doc.text(lines, M + 4, y + 6);
+      doc.setTextColor(40, 40, 40);
+      doc.text(lines, M + 4, y + 5.5);
       y += h + 6;
     }
 
@@ -565,7 +573,10 @@ async function exportPDF() {
         checkPage(10);
         let rowH = 0;
         if (actionsIADone[i]) {
-          const lL = doc.splitTextToSize(actionsIADone[i], colW - 6);
+          // Nettoyer le texte : enlever ✓ et garder juste le titre avant —
+          const rawDone = actionsIADone[i].replace(/^[^\w]*/, '').trim();
+          const cleanDone = rawDone.includes(' — ') ? rawDone.split(' — ')[0].trim() : rawDone;
+          const lL = doc.splitTextToSize(cleanDone, colW - 6);
           const lH = Math.max(lL.length * 4.5 + 5, 9);
           doc.setFillColor(245, 245, 245); doc.setDrawColor(210, 210, 210); doc.setLineWidth(0.15);
           doc.rect(M, y, colW, lH, 'FD');
@@ -574,7 +585,9 @@ async function exportPDF() {
           rowH = Math.max(rowH, lH);
         }
         if (actionsIATodo[i]) {
-          const rL = doc.splitTextToSize(actionsIATodo[i], colW - 6);
+          const rawTodo = actionsIATodo[i].replace(/^[^\w]*/, '').trim();
+          const cleanTodo = rawTodo.includes(' — ') ? rawTodo.split(' — ')[0].trim() : rawTodo;
+          const rL = doc.splitTextToSize(cleanTodo, colW - 6);
           const rH = Math.max(rL.length * 4.5 + 5, 9);
           doc.setFillColor(252, 252, 252); doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3);
           doc.rect(M + colW + 4, y, colW, rH, 'FD');
@@ -605,18 +618,29 @@ async function exportPDF() {
     if (checkedLabels.has('transcript') && transcriptVal) {
       checkPage(22);
       sectionTitle('Transcription');
-      const lines = doc.splitTextToSize(transcriptVal, maxW - 14);
-      doc.setFillColor(247, 247, 247); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
-      const h = lines.length * 4.8 + 8;
-      doc.rect(M, y, maxW, Math.min(h, pageH - y - 20), 'FD');
-      doc.setFillColor(0, 0, 0); doc.rect(M, y, 3, Math.min(h, pageH - y - 20), 'F');
-      doc.setFont('courier', 'normal'); doc.setFontSize(8); doc.setTextColor(60, 60, 60);
-      for (const line of lines) {
-        checkPage(6);
-        doc.text(line, M + 7, y + 5.5);
-        y += 4.8;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+      const tLines = doc.splitTextToSize(transcriptVal, maxW - 14);
+      const tH = tLines.length * 4.8 + 8;
+      // Dessiner le bloc entier si tient sur la page, sinon ligne par ligne
+      if (y + tH < pageH - 16) {
+        doc.setFillColor(247, 247, 247); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
+        doc.rect(M, y, maxW, tH, 'FD');
+        doc.setFillColor(0, 0, 0); doc.rect(M, y, 3, tH, 'F');
+        doc.setTextColor(60, 60, 60);
+        doc.text(tLines, M + 7, y + 5.5);
+        y += tH + 6;
+      } else {
+        for (const line of tLines) {
+          checkPage(6);
+          doc.setFillColor(247, 247, 247); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
+          doc.rect(M, y, maxW, 5.5, 'FD');
+          doc.setFillColor(0, 0, 0); doc.rect(M, y, 3, 5.5, 'F');
+          doc.setTextColor(60, 60, 60);
+          doc.text(line, M + 7, y + 4);
+          y += 4.8;
+        }
+        y += 6;
       }
-      y += 6;
     }
 
     // Footer sur dernière page
