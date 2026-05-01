@@ -897,13 +897,18 @@ function editItem(el, field, s, key, subkey) {
     el.style.borderRadius = '';
     el.style.padding = '';
     el.style.cursor = '';
+    if (!val) { el.style.color = 'rgba(255,255,255,0.3)'; el.style.fontStyle = 'italic'; el.innerText = 'Cliquez pour écrire\u2026'; }
     if (subkey !== undefined) s[field]?.[key] && (s[field][key][subkey] = val);
     else if (key !== null && Array.isArray(s[field])) s[field][key] = val;
     else s[field] = val;
     saveSummary(s);
-    // Toujours re-render pour que data-export-content soit à jour
-    renderSummary(s);
-    // Si prochaine_etape modifiée, mettre à jour la case spécifique
+    // Mettre à jour le data-export-content de la checkbox parente
+    let node = el.parentElement;
+    while (node && !node.classList.contains('export-row')) node = node.parentElement;
+    if (node) {
+      const cb = node.querySelector('.export-cb');
+      if (cb) cb.dataset.exportContent = encodeURIComponent(val);
+    }
     if (field === 'prochaine_etape') {
       const cb = document.getElementById('ecb_prochaine');
       if (cb) { cb.checked = !!val; cb.dataset.exportContent = encodeURIComponent(val); }
