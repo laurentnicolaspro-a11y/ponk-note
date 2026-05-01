@@ -518,7 +518,7 @@ async function exportPDF() {
   // ── POINTS DISCUTÉS — 2 colonnes ──
   const points = Object.entries(checked)
     .filter(([k]) => k.startsWith('point:'))
-    .map(([, v]) => v)
+    .map(([, v]) => { try { return decodeURIComponent(v); } catch(e) { return v; } })
     .filter(v => v && v.trim());
   if (points.length) {
     checkPage(22);
@@ -559,7 +559,7 @@ async function exportPDF() {
   // ── DÉCISIONS — 2 colonnes style coche noire ──
   const decisions = Object.entries(checked)
     .filter(([k]) => k.startsWith('decision:'))
-    .map(([, v]) => v)
+    .map(([, v]) => { try { return decodeURIComponent(v); } catch(e) { return v; } })
     .filter(v => v && v.trim() && !v.includes('Cliquez pour'));
   if (decisions.length) {
     checkPage(22);
