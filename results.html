@@ -900,11 +900,24 @@ function editItem(el, field, s, key, subkey) {
     el.style.borderRadius = '';
     el.style.padding = '';
     el.style.cursor = '';
-    if (!val) { el.style.color = 'rgba(255,255,255,0.3)'; el.style.fontStyle = 'italic'; el.innerText = 'Cliquez pour écrire\u2026'; }
-    if (subkey !== undefined) s[field]?.[key] && (s[field][key][subkey] = val);
-    else if (key !== null && Array.isArray(s[field])) s[field][key] = val;
-    else s[field] = val;
-    saveSummary(s);
+    if (!val) { el.style.color = 'rgba(255,255,255,0.3)'; el.style.fontStyle = 'italic'; el.innerText = 'Cliquez pour \u00e9crire\u2026'; }
+    
+    // Lire localStorage, modifier, réécrire
+    const freshData2 = JSON.parse(localStorage.getItem('ponk_result') || '{}');
+    const s2 = freshData2.summary;
+    if (s2) {
+      if (subkey !== null && subkey !== undefined) {
+        if (s2[field]?.[key]) s2[field][key][subkey] = val;
+      } else if (key !== null && Array.isArray(s2[field])) {
+        s2[field][key] = val;
+      } else if (key === null) {
+        s2[field] = val;
+      }
+      freshData2.summary = s2;
+      localStorage.setItem('ponk_result', JSON.stringify(freshData2));
+      console.log('[editItem] saved', field, key, '=', val, '| decisions:', s2.decisions);
+    }
+
     // Mettre à jour le data-export-content de la checkbox parente
     let node = el.parentElement;
     while (node && !node.classList.contains('export-row')) node = node.parentElement;
