@@ -369,6 +369,10 @@ async function exportPDF() {
     const transcriptCb = document.querySelector('.export-cb[data-export-label="transcript"]:checked');
     const transcriptVal = transcriptCb ? decodeURIComponent(transcriptCb.dataset.exportContent || '').trim() : '';
 
+    // ── Points et décisions depuis localStorage ──
+    const points = (s.points_discutes || []).filter((p, i) => checkedLabels.has('point:' + i) && p && p.trim());
+    const decisions = (s.decisions || []).filter((d, i) => checkedLabels.has('decision:' + i) && d && d.trim());
+
     // ── 7. Gemini relit et corrige le style ──
     const summaryToRewrite = {};
     if (checkedLabels.has('contexte') && s.contexte) summaryToRewrite.contexte = s.contexte;
@@ -457,7 +461,6 @@ async function exportPDF() {
     }
 
     // Points discutés — 2 colonnes
-    const points = (s.points_discutes || []).filter((p, i) => checkedLabels.has('point:' + i) && p && p.trim());
     if (points.length) {
       checkPage(22);
       sectionTitle('Points discutes');
@@ -485,7 +488,6 @@ async function exportPDF() {
     }
 
     // Décisions — 2 colonnes avec coche
-    const decisions = (s.decisions || []).filter((d, i) => checkedLabels.has('decision:' + i) && d && d.trim());
     if (decisions.length) {
       checkPage(22);
       sectionTitle('Decisions');
