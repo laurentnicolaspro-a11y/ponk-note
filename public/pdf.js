@@ -348,7 +348,7 @@ async function exportPDF() {
 
     // ── 3. Lire la prochaine étape depuis le textarea directement ──
     const prochaineTextarea = document.getElementById('prochaineTextarea');
-    const prochaineVal = prochaineTextarea ? prochaineTextarea.value.trim() : (s.prochaine_etape || '');
+    let prochaineVal = prochaineTextarea ? prochaineTextarea.value.trim() : (s.prochaine_etape || '');
 
     // ── 4. Lire les actions IA depuis le DOM ──
     const actionsIADone = [];
@@ -363,13 +363,46 @@ async function exportPDF() {
 
     // ── 5. Lire le mémo depuis le textarea ──
     const memoArea = document.getElementById('memoNotesArea');
-    const memoVal = memoArea ? memoArea.value.trim() : '';
+    let memoVal = memoArea ? memoArea.value.trim() : '';
 
     // ── 6. Lire la transcription ──
     const transcriptCb = document.querySelector('.export-cb[data-export-label="transcript"]:checked');
     const transcriptVal = transcriptCb ? decodeURIComponent(transcriptCb.dataset.exportContent || '').trim() : '';
 
-    // ── 7. Construire le PDF ──
+    // ── 7. Gemini relit et corrige le style ──
+    const summaryToRewrite = {};
+    if (checkedLabels.has('contexte') && s.contexte) summaryToRewrite.contexte = s.contexte;
+    if (checkedLabels.has('resume') && s.resume) summaryToRewrite.resume = s.resume;
+    if (points.length) summaryToRewrite.points_discutes = points;
+    if (decisions.length) summaryToRewrite.decisions = decisions;
+    if (checkedLabels.has('prochaine') && prochaineVal) summaryToRewrite.prochaine_etape = prochaineVal;
+    if (memoVal) summaryToRewrite.memo = memoVal;
+
+    let rewritten = summaryToRewrite;
+    try {
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rewrite: true, summary: summaryToRewrite, transcript: data.transcript || '' })
+      });
+      if (res.ok) {
+        const result = await res.json();
+        if (result && !result.error) {
+          rewritten = result;
+          // Mettre à jour les variables avec les versions corrigées
+          if (rewritten.contexte) s.contexte = rewritten.contexte;
+          if (rewritten.resume) s.resume = rewritten.resume;
+          if (rewritten.points_discutes?.length) points.splice(0, points.length, ...rewritten.points_discutes);
+          if (rewritten.decisions?.length) decisions.splice(0, decisions.length, ...rewritten.decisions);
+          if (rewritten.prochaine_etape) prochaineVal = rewritten.prochaine_etape;
+          if (rewritten.memo) memoVal = rewritten.memo;
+        }
+      }
+    } catch(e) {
+      console.warn('[PDF] Gemini rewrite échoué, export sans correction:', e.message);
+    }
+
+    // ── 8. Construire le PDF ──
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
