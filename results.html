@@ -901,17 +901,12 @@ function editItem(el, field, s, key, subkey) {
     else if (key !== null && Array.isArray(s[field])) s[field][key] = val;
     else s[field] = val;
     saveSummary(s);
-    // Mettre à jour la case export parente
-    const exportRow = el.closest('.export-row');
-    if (exportRow) {
-      const cb = exportRow.querySelector('.export-cb');
-      if (cb) cb.dataset.exportContent = encodeURIComponent(val);
-    }
-    // Si prochaine_etape modifiée, mettre à jour la case
+    // Toujours re-render pour que data-export-content soit à jour
+    renderSummary(s);
+    // Si prochaine_etape modifiée, mettre à jour la case spécifique
     if (field === 'prochaine_etape') {
       const cb = document.getElementById('ecb_prochaine');
       if (cb) { cb.checked = !!val; cb.dataset.exportContent = encodeURIComponent(val); }
-      renderSummary(s);
     }
   };
   el.onblur = confirm;
