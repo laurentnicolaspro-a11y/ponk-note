@@ -560,7 +560,7 @@ async function exportPDF() {
   const decisions = Object.entries(checked)
     .filter(([k]) => k.startsWith('decision:'))
     .map(([, v]) => v)
-    .filter(v => v && v.trim());
+    .filter(v => v && v.trim() && !v.includes('Cliquez pour'));
   if (decisions.length) {
     checkPage(22);
     sectionTitle('Décisions');
@@ -570,31 +570,31 @@ async function exportPDF() {
     const rowCount = Math.max(leftD.length, rightD.length);
     for (let i = 0; i < rowCount; i++) {
       checkPage(12);
-      const ld = leftD[i]  || null;
+      const ld = leftD[i] || null;
       const rd = rightD[i] || null;
       let rowH = 0;
       if (ld) {
         const lL = doc.splitTextToSize(ld, colW - 14);
-        const lH = lL.length * 4.8 + 5;
+        const lH = Math.max(lL.length * 4.8 + 5, 10);
         doc.setFillColor(252, 252, 252); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
         doc.rect(M, y, colW, lH, 'FD');
-        doc.setFillColor(0, 0, 0); doc.rect(M, y, 7, lH, 'F');
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(255, 255, 255);
-        doc.text('v', M + 1.8, y + lH/2 + 1.5);
+        doc.setFillColor(0, 0, 0); doc.rect(M, y, 8, lH, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(255, 255, 255);
+        doc.text('v', M + 4, y + lH/2 + 1.8, { align: 'center' });
         doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(30, 30, 30);
-        doc.text(lL, M + 10, y + 4.5);
+        doc.text(lL, M + 11, y + 4.5);
         rowH = Math.max(rowH, lH);
       }
       if (rd) {
         const rL = doc.splitTextToSize(rd, colW - 14);
-        const rH = rL.length * 4.8 + 5;
+        const rH = Math.max(rL.length * 4.8 + 5, 10);
         doc.setFillColor(252, 252, 252); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
         doc.rect(M + colW + 3, y, colW, rH, 'FD');
-        doc.setFillColor(0, 0, 0); doc.rect(M + colW + 3, y, 7, rH, 'F');
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(255, 255, 255);
-        doc.text('v', M + colW + 4.8, y + rH/2 + 1.5);
+        doc.setFillColor(0, 0, 0); doc.rect(M + colW + 3, y, 8, rH, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(255, 255, 255);
+        doc.text('v', M + colW + 7, y + rH/2 + 1.8, { align: 'center' });
         doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(30, 30, 30);
-        doc.text(rL, M + colW + 13, y + 4.5);
+        doc.text(rL, M + colW + 14, y + 4.5);
         rowH = Math.max(rowH, rH);
       }
       y += rowH + 3;
@@ -606,23 +606,21 @@ async function exportPDF() {
   const prochaineEtape = (checked['prochaine'] && checked['prochaine'].trim()) ? checked['prochaine'] : (s && s.prochaine_etape) || '';
   if (prochaineEtape) {
     checkPage(22);
-    // Ligne épaisse + label centré
-    const labelW = 36;
-    const labelX = M + maxW/2 - labelW/2;
-    doc.setDrawColor(0, 0, 0); doc.setLineWidth(1.5);
-    doc.line(M, y + 3, labelX - 2, y + 3);
-    doc.line(labelX + labelW + 2, y + 3, M + maxW, y + 3);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5);
+    const labelTxt = 'PROCHAINE ETAPE';
+    const labelW2 = doc.getTextWidth(labelTxt) + 8;
+    const cx = M + maxW / 2;
+    doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.4);
+    doc.line(M, y + 4, cx - labelW2/2 - 3, y + 4);
+    doc.line(cx + labelW2/2 + 3, y + 4, M + maxW, y + 4);
     doc.setFillColor(255, 255, 255);
-    doc.rect(labelX - 1, y - 1, labelW + 2, 8, 'F');
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(0, 0, 0);
-    doc.text('PROCHAINE ÉTAPE', labelX, y + 5, { align: 'left' });
-    y += 10;
+    doc.rect(cx - labelW2/2 - 1, y, labelW2 + 2, 8, 'F');
+    doc.setTextColor(0, 0, 0);
+    doc.text(labelTxt, cx, y + 5.5, { align: 'center' });
+    y += 12;
     const peL = doc.splitTextToSize(prochaineEtape, maxW - 20);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(50, 50, 50);
-    peL.forEach(line => {
-      doc.text(line, M + maxW/2, y, { align: 'center' });
-      y += 5.5;
-    });
+    peL.forEach(line => { doc.text(line, cx, y, { align: 'center' }); y += 5.5; });
     y += 6;
   }
 
@@ -638,11 +636,11 @@ async function exportPDF() {
     // En-têtes colonnes avec espace après le titre de section
     y += 2;
     doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(0, 0, 0);
-    doc.text('✓ RÉALISÉES', M, y);
+    doc.text('REALISEES', M, y);
     doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.4);
     doc.line(M, y + 1.5, M + colW, y + 1.5);
     doc.setTextColor(150, 150, 150);
-    doc.text('→ À FAIRE', M + colW + 4, y);
+    doc.text('A FAIRE', M + colW + 4, y);
     doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3);
     doc.line(M + colW + 4, y + 1.5, M + maxW, y + 1.5);
     y += 6;
