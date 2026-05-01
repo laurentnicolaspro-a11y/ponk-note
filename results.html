@@ -865,8 +865,10 @@ function editMetaTitle(el) {
 }
 
 function editItem(el, field, s, key, subkey) {
+  // Toujours lire le s frais depuis localStorage
+  const freshData = JSON.parse(localStorage.getItem('ponk_result') || '{}');
+  s = freshData.summary || s;
   if (!s) return;
-  // key peut arriver comme string 'null' depuis le HTML onclick
   if (key === 'null') key = null;
   if (subkey === 'null') subkey = null;
   const current = subkey != null
@@ -1098,7 +1100,7 @@ function buildActionCard(a) {
     </div>`;
   }
   const cbIdAction = 'ecb_action_' + actionId;
-  return `<div style="display:flex;align-items:center;gap:8px;">
+  return `<div id="wrap_${actionId}" style="display:flex;align-items:center;gap:8px;">
     <input type="checkbox" class="export-cb" id="${cbIdAction}" checked data-export-label="action_ia:${(a.titre||'').replace(/"/g,'')}" data-export-content="${encodeURIComponent((a.titre||'') + ' — ' + (a.description||''))}">
     <div class="action-ia-card" id="${actionId}" onclick="markActionDone('${actionId}')" style="flex:1;margin:0">
       <div class="action-ia-icon">${ACTION_SVG[a.type] || a.icone}</div>
@@ -1330,6 +1332,19 @@ function resetActionDone(actionId, a) {
 function markDoneVisual(actionId, el) {
   localStorage.setItem('ponk_done_' + actionId, '1');
   saveActionsIA();
+  // Reconstruire la carte complète avec le bouton ↺
+  const a = ACTION_META[actionId];
+  if (a) {
+    const wrap = document.getElementById('wrap_' + actionId) || (el ? el.closest('[style*="display:flex"]') : null);
+    if (wrap) {
+      const html = buildActionCard(a);
+      const div = document.createElement('div');
+      div.innerHTML = html;
+      if (div.firstChild) wrap.replaceWith(div.firstChild);
+      return;
+    }
+  }
+  // Fallback visuel si pas de wrap
   if (!el) el = document.getElementById(actionId);
   if (!el) return;
   const container = el.closest('[style*="display:flex"]') || el;
