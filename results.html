@@ -898,6 +898,12 @@ function editItem(el, field, s, key, subkey) {
     else if (key !== null && Array.isArray(s[field])) s[field][key] = val;
     else s[field] = val;
     saveSummary(s);
+    // Mettre à jour la case export parente
+    const exportRow = el.closest('.export-row');
+    if (exportRow) {
+      const cb = exportRow.querySelector('.export-cb');
+      if (cb) cb.dataset.exportContent = encodeURIComponent(val);
+    }
     // Si prochaine_etape modifiée, mettre à jour la case
     if (field === 'prochaine_etape') {
       const cb = document.getElementById('ecb_prochaine');
@@ -984,7 +990,7 @@ function buildSummaryHTML(s) {
     <div class="summary-section-title">Décisions</div>
     <div class="decisions-list" id="list-decisions">
       ${(s.decisions||[]).map((d,i) => cb('decision:'+i,
-        `<div class="decision-item" style="margin:0;cursor:pointer" onclick="editItem(this,'decisions',${JSON.stringify(s).replace(/"/g,'&quot;')},${i},null)"><div class="decision-dot"></div><span>${d}</span></div>`,
+        `<div class="decision-item" style="margin:0;"><div class="decision-dot"></div><span style="flex:1;cursor:pointer" onclick="editItem(this,'decisions',${JSON.stringify(s).replace(/"/g,'&quot;')},${i},null)">${d}</span></div>`,
         true, `deleteItem('decisions',${JSON.stringify(s).replace(/"/g,'&quot;')},${i})`
       )).join('')}
     </div>
