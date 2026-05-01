@@ -871,6 +871,9 @@ function editItem(el, field, s, key, subkey) {
   if (!s) return;
   if (key === 'null') key = null;
   if (subkey === 'null') subkey = null;
+  // Convertir key en entier si c'est un index de tableau
+  if (key !== null && !isNaN(key)) key = parseInt(key);
+  if (subkey !== null && subkey !== undefined && !isNaN(subkey)) subkey = parseInt(subkey);
   const current = subkey != null
     ? (s[field]?.[key]?.[subkey] || '')
     : (key != null ? (s[field]?.[key] || '') : (s[field] || ''));
