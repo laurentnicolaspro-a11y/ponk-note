@@ -451,7 +451,7 @@ async function exportPDF() {
   const checkPage = (n = 10) => { if (y + n > pageH - 14) { doc.addPage(); y = M; } };
 
   // ── HEADER ──
-  const titre = meta.title || 'Compte-rendu';
+  const titre = (meta.title || 'Compte-rendu').charAt(0).toUpperCase() + (meta.title || 'Compte-rendu').slice(1);
   pdfBandeau(doc, titre, pageW, M, C);
   y = 38;
 
@@ -516,7 +516,10 @@ async function exportPDF() {
   }
 
   // ── POINTS DISCUTÉS — 2 colonnes ──
-  const points = s ? (s.points_discutes||[]).filter((p,i) => checked['point:'+i] !== undefined) : [];
+  const points = Object.entries(checked)
+    .filter(([k]) => k.startsWith('point:'))
+    .map(([, v]) => v)
+    .filter(v => v && v.trim());
   if (points.length) {
     checkPage(22);
     sectionTitle('Points discutés');
@@ -554,7 +557,10 @@ async function exportPDF() {
   }
 
   // ── DÉCISIONS — 2 colonnes style coche noire ──
-  const decisions = s ? (s.decisions||[]).filter((d,i) => checked['decision:'+i] !== undefined) : [];
+  const decisions = Object.entries(checked)
+    .filter(([k]) => k.startsWith('decision:'))
+    .map(([, v]) => v)
+    .filter(v => v && v.trim());
   if (decisions.length) {
     checkPage(22);
     sectionTitle('Décisions');
@@ -597,7 +603,7 @@ async function exportPDF() {
   }
 
   // ── PROCHAINE ÉTAPE — séparateur style B centré ──
-  const prochaineEtape = checked['prochaine'] || (s && s.prochaine_etape) || '';
+  const prochaineEtape = (checked['prochaine'] && checked['prochaine'].trim()) ? checked['prochaine'] : (s && s.prochaine_etape) || '';
   if (prochaineEtape) {
     checkPage(22);
     // Ligne épaisse + label centré
@@ -629,16 +635,17 @@ async function exportPDF() {
     sectionTitle('Actions IA');
     const colW = (maxW - 4) / 2;
 
-    // En-têtes colonnes
+    // En-têtes colonnes avec espace après le titre de section
+    y += 2;
     doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(0, 0, 0);
-    doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.5);
-    doc.line(M, y, M + colW, y);
-    doc.text('v RÉALISÉES', M, y - 1.5);
+    doc.text('✓ RÉALISÉES', M, y);
+    doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.4);
+    doc.line(M, y + 1.5, M + colW, y + 1.5);
     doc.setTextColor(150, 150, 150);
+    doc.text('→ À FAIRE', M + colW + 4, y);
     doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3);
-    doc.line(M + colW + 4, y, M + maxW, y);
-    doc.text('> À FAIRE', M + colW + 4, y - 1.5);
-    y += 4;
+    doc.line(M + colW + 4, y + 1.5, M + maxW, y + 1.5);
+    y += 6;
 
     const maxRows = Math.max(actionsIADone.length, actionsIATodo.length);
     for (let i = 0; i < maxRows; i++) {
