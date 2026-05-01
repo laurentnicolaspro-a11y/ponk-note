@@ -875,6 +875,7 @@ function editItem(el, field, s, key, subkey) {
     ? (s[field]?.[key]?.[subkey] || '')
     : (key != null ? (s[field]?.[key] || '') : (s[field] || ''));
   // Rendre le div directement éditable comme Word
+  if (el.innerText.trim() === 'Cliquez pour écrire…') el.innerText = '';
   el.contentEditable = 'true';
   el.style.outline = '1.5px solid var(--accent)';
   el.style.borderRadius = '6px';
@@ -992,7 +993,7 @@ function buildSummaryHTML(s) {
     <div class="summary-section-title">Décisions</div>
     <div class="decisions-list" id="list-decisions">
       ${(s.decisions||[]).map((d,i) => cb('decision:'+i,
-        `<div class="decision-item" style="margin:0;"><div class="decision-dot"></div><span style="flex:1;cursor:pointer" onclick="editItem(this,'decisions',${JSON.stringify(s).replace(/"/g,'&quot;')},${i},null)">${d}</span></div>`,
+        `<div class="decision-item" style="margin:0;"><div class="decision-dot"></div><span style="flex:1;cursor:pointer;min-width:40px;min-height:16px;${!d?'color:rgba(255,255,255,0.3);font-style:italic;':''}" onclick="editItem(this,'decisions',${JSON.stringify(s).replace(/"/g,'&quot;')},${i},null)">${d||'Cliquez pour écrire…'}</span></div>`,
         true, `deleteItem('decisions',${JSON.stringify(s).replace(/"/g,'&quot;')},${i})`
       )).join('')}
     </div>
