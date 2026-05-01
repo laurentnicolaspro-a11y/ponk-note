@@ -25,7 +25,7 @@ module.exports = async function handler(req, res) {
 
     // ── Retry exponentiel : 3 tentatives par modèle, backoff 1.5s / 3s ──
     async function tryGenerate(content_arg) {
-      const models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+      const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite']; // flash en premier — transcription audio critique
 
       for (const modelName of models) {
         for (let attempt = 1; attempt <= 3; attempt++) {
