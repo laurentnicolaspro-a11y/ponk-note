@@ -331,383 +331,269 @@ async function exportPDF() {
   const jsPDF = await loadJsPDF();
   const C = PDF_C;
 
-  // Cases cochées
-  const checked = {};
-  document.querySelectorAll('.export-cb:checked').forEach(cb => {
-    checked[cb.dataset.exportLabel] = decodeURIComponent(cb.dataset.exportContent || '');
-  });
-
-  let data = JSON.parse(localStorage.getItem('ponk_result')||'{}');
-  const meta = JSON.parse(localStorage.getItem('ponk_meta')||'{}');
-  let s = (typeof data.summary === 'object') ? data.summary : null;
-
-  // Gemini relit avant export
   const pdfBtn = document.querySelector('.btn-pdf');
-  if (pdfBtn) { pdfBtn.textContent = '⏳ Gemini relit…'; pdfBtn.disabled = true; }
-  console.log('[PDF] Envoi à Gemini pour relecture...');
-  console.log('[PDF] checked keys:', Object.keys(checked));
-  console.log('[PDF] prochaine:', checked['prochaine']);
-  console.log('[PDF] s.prochaine_etape:', s?.prochaine_etape);
+  if (pdfBtn) { pdfBtn.textContent = '⏳ Génération…'; pdfBtn.disabled = true; }
 
   try {
-    // Construire uniquement les éléments cochés pour Gemini
-    const summaryToSend = {};
-    if (checked['contexte']) summaryToSend.contexte = s.contexte;
-    if (checked['resume']) summaryToSend.resume = s.resume;
-    const checkedPoints = (s.points_discutes||[]).filter((p,i) => checked['point:'+i] !== undefined);
-    if (checkedPoints.length) summaryToSend.points_discutes = checkedPoints;
-    const checkedDecisions = (s.decisions||[]).filter((d,i) => checked['decision:'+i] !== undefined);
-    if (checkedDecisions.length) summaryToSend.decisions = checkedDecisions;
-    if (checked['prochaine'] && s.prochaine_etape) summaryToSend.prochaine_etape = s.prochaine_etape;
+    // ── 1. Lire les données depuis localStorage (source de vérité) ──
+    const data = JSON.parse(localStorage.getItem('ponk_result') || '{}');
+    const meta = JSON.parse(localStorage.getItem('ponk_meta') || '{}');
+    const s = (typeof data.summary === 'object') ? data.summary : {};
 
-    // Actions IA cochées — nettoyer les descriptions
-    const actionsIACochees = Object.entries(checked)
-      .filter(([k]) => k.startsWith('action_ia:') || k.startsWith('action_ia_done:'))
-      .map(([, v]) => decodeURIComponent(v));
-    if (actionsIACochees.length) summaryToSend.actions_ia = actionsIACochees;
-
-    // Mémo coché
-    const memoNotesCochees = checked['memo_notes'] ? decodeURIComponent(checked['memo_notes']) : '';
-    if (memoNotesCochees) summaryToSend.memo = memoNotesCochees;
-
-    const res = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        rewrite: true,
-        summary: summaryToSend,
-        transcript: data.transcript || ''
-      })
+    // ── 2. Lire les cases cochées pour savoir quoi inclure ──
+    const checkedLabels = new Set();
+    document.querySelectorAll('.export-cb:checked').forEach(cb => {
+      checkedLabels.add(cb.dataset.exportLabel);
     });
 
-    if (res.ok) {
-      const result = await res.json();
-      console.log('[PDF rewrite] Résultat Gemini:', JSON.stringify(result).substring(0, 500));
-      if (result && s) {
-        // Appliquer uniquement les champs cochés, sans inventer
-        if (result.contexte && checked['contexte']) s.contexte = result.contexte;
-        if (result.resume && checked['resume']) s.resume = result.resume;
-        if (result.points_discutes?.length && checkedPoints.length) {
-          // Remplacer seulement les points cochés, garder les non cochés
-          let pi = 0;
-          s.points_discutes = (s.points_discutes||[]).map((p,i) =>
-            checked['point:'+i] !== undefined ? (result.points_discutes[pi++] || p) : p
-          );
-        }
-        if (result.decisions?.length && checkedDecisions.length) {
-          let di = 0;
-          s.decisions = (s.decisions||[]).map((d,i) =>
-            checked['decision:'+i] !== undefined ? (result.decisions[di++] || d) : d
-          );
-        }
-        if (result.prochaine_etape && checked['prochaine']) s.prochaine_etape = result.prochaine_etape;
+    // ── 3. Lire la prochaine étape depuis le textarea directement ──
+    const prochaineTextarea = document.getElementById('prochaineTextarea');
+    const prochaineVal = prochaineTextarea ? prochaineTextarea.value.trim() : (s.prochaine_etape || '');
 
-        // Appliquer corrections actions IA
-        if (result.actions_ia?.length) {
-          const cards = document.querySelectorAll('.action-ia-info .action-ia-desc');
-          const checkboxes = document.querySelectorAll('.export-cb[data-export-label^="action_ia"]');
-          result.actions_ia.forEach((corrected, i) => {
-            if (cards[i]) cards[i].textContent = corrected.replace(/^[^—]+— /, '');
-            if (checkboxes[i]) checkboxes[i].dataset.exportContent = encodeURIComponent(corrected);
-          });
-        }
+    // ── 4. Lire les actions IA depuis le DOM ──
+    const actionsIADone = [];
+    const actionsIATodo = [];
+    document.querySelectorAll('.export-cb:checked').forEach(cb => {
+      const label = cb.dataset.exportLabel || '';
+      const val = decodeURIComponent(cb.dataset.exportContent || '').trim();
+      if (!val) return;
+      if (label.startsWith('action_ia_done:')) actionsIADone.push(val);
+      else if (label.startsWith('action_ia:')) actionsIATodo.push(val);
+    });
 
-        // Appliquer correction mémo
-        if (result.memo) {
-          const memoArea = document.getElementById('memoNotesArea');
-          const memoCb = document.getElementById('ecb_memo_notes');
-          if (memoArea) memoArea.value = result.memo;
-          if (memoCb) memoCb.dataset.exportContent = encodeURIComponent(result.memo);
-        }
+    // ── 5. Lire le mémo depuis le textarea ──
+    const memoArea = document.getElementById('memoNotesArea');
+    const memoVal = memoArea ? memoArea.value.trim() : '';
 
-        saveSummary(s);
-        renderSummary(s);
-      }
+    // ── 6. Lire la transcription ──
+    const transcriptCb = document.querySelector('.export-cb[data-export-label="transcript"]:checked');
+    const transcriptVal = transcriptCb ? decodeURIComponent(transcriptCb.dataset.exportContent || '').trim() : '';
+
+    // ── 7. Construire le PDF ──
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const M = 16, maxW = pageW - M * 2;
+    let y = M;
+
+    const checkPage = (n = 10) => {
+      if (y + n > pageH - 16) { doc.addPage(); pdfFooter(doc, pageW, pageH, M, C, footerTxt); y = M; }
+    };
+
+    const footerTxt = 'Genere par Ponk Note - ' + new Date().toLocaleDateString('fr-FR');
+
+    const sectionTitle = (label) => {
+      checkPage(14);
+      doc.setFillColor(232, 232, 232); doc.rect(M, y, maxW, 10, 'F');
+      doc.setFillColor(0, 0, 0); doc.rect(M, y, 3, 10, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(0, 0, 0);
+      doc.text(label.toUpperCase(), M + 7, y + 6.5);
+      y += 14;
+    };
+
+    // Header
+    const titre = (meta.title || s.titre || 'Compte-rendu');
+    const titreFmt = titre.charAt(0).toUpperCase() + titre.slice(1);
+    pdfBandeau(doc, titreFmt, pageW, M, C);
+    y = 38;
+
+    // Contexte
+    if (checkedLabels.has('contexte') && s.contexte) {
+      checkPage(16);
+      const lines = doc.splitTextToSize(s.contexte, maxW - 10);
+      const h = lines.length * 5 + 6;
+      doc.setFillColor(250, 250, 250); doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3);
+      doc.rect(M, y, maxW, h, 'FD');
+      doc.setFillColor(160, 160, 160); doc.rect(M, y, 2.5, h, 'F');
+      doc.setFont('helvetica', 'italic'); doc.setFontSize(8.5); doc.setTextColor(90, 90, 90);
+      doc.text(lines, M + 7, y + 5);
+      y += h + 6;
     }
-  } catch(e) { 
-    console.warn('Gemini relit échoué, export sans relecture:', e);
+
+    // Résumé
+    if (checkedLabels.has('resume') && s.resume) {
+      checkPage(20);
+      sectionTitle('Resume');
+      const lines = doc.splitTextToSize(s.resume, maxW - 8);
+      const h = lines.length * 5.2 + 8;
+      doc.setFillColor(252, 252, 252); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
+      doc.rect(M, y, maxW, h, 'FD');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(40, 40, 40);
+      doc.text(lines, M + 4, y + 6);
+      y += h + 6;
+    }
+
+    // Points discutés — 2 colonnes
+    const points = (s.points_discutes || []).filter((p, i) => checkedLabels.has('point:' + i) && p && p.trim());
+    if (points.length) {
+      checkPage(22);
+      sectionTitle('Points discutes');
+      const colW = (maxW - 3) / 2;
+      for (let i = 0; i < points.length; i += 2) {
+        checkPage(12);
+        const lp = points[i], rp = points[i + 1] || null;
+        const lL = doc.splitTextToSize('- ' + lp, colW - 6);
+        const lH = Math.max(lL.length * 4.8 + 5, 9);
+        const rH = rp ? Math.max(doc.splitTextToSize('- ' + rp, colW - 6).length * 4.8 + 5, 9) : 0;
+        const rowH = Math.max(lH, rH);
+        doc.setFillColor(252, 252, 252); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
+        doc.rect(M, y, colW, rowH, 'FD');
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(30, 30, 30);
+        doc.text(lL, M + 4, y + 4.5);
+        if (rp) {
+          const rL = doc.splitTextToSize('- ' + rp, colW - 6);
+          doc.setFillColor(252, 252, 252); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
+          doc.rect(M + colW + 3, y, colW, rowH, 'FD');
+          doc.text(rL, M + colW + 7, y + 4.5);
+        }
+        y += rowH + 3;
+      }
+      y += 4;
+    }
+
+    // Décisions — 2 colonnes avec coche
+    const decisions = (s.decisions || []).filter((d, i) => checkedLabels.has('decision:' + i) && d && d.trim());
+    if (decisions.length) {
+      checkPage(22);
+      sectionTitle('Decisions');
+      const colW = (maxW - 3) / 2;
+      for (let i = 0; i < decisions.length; i += 2) {
+        checkPage(12);
+        const ld = decisions[i], rd = decisions[i + 1] || null;
+        const lL = doc.splitTextToSize(ld, colW - 14);
+        const lH = Math.max(lL.length * 4.8 + 5, 10);
+        const rH = rd ? Math.max(doc.splitTextToSize(rd, colW - 14).length * 4.8 + 5, 10) : 0;
+        const rowH = Math.max(lH, rH);
+        // Gauche
+        doc.setFillColor(252, 252, 252); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
+        doc.rect(M, y, colW, rowH, 'FD');
+        doc.setFillColor(0, 0, 0); doc.rect(M, y, 8, rowH, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(255, 255, 255);
+        doc.text('v', M + 4, y + rowH / 2 + 1.8, { align: 'center' });
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(30, 30, 30);
+        doc.text(lL, M + 11, y + 4.5);
+        // Droite
+        if (rd) {
+          const rL = doc.splitTextToSize(rd, colW - 14);
+          doc.setFillColor(252, 252, 252); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
+          doc.rect(M + colW + 3, y, colW, rowH, 'FD');
+          doc.setFillColor(0, 0, 0); doc.rect(M + colW + 3, y, 8, rowH, 'F');
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(255, 255, 255);
+          doc.text('v', M + colW + 7, y + rowH / 2 + 1.8, { align: 'center' });
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(30, 30, 30);
+          doc.text(rL, M + colW + 14, y + 4.5);
+        }
+        y += rowH + 3;
+      }
+      y += 4;
+    }
+
+    // Prochaine étape
+    if (checkedLabels.has('prochaine') && prochaineVal) {
+      checkPage(22);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5);
+      const labelTxt = 'PROCHAINE ETAPE';
+      const lw = doc.getTextWidth(labelTxt) + 8;
+      const cx = M + maxW / 2;
+      doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.4);
+      doc.line(M, y + 4, cx - lw / 2 - 3, y + 4);
+      doc.line(cx + lw / 2 + 3, y + 4, M + maxW, y + 4);
+      doc.setFillColor(255, 255, 255);
+      doc.rect(cx - lw / 2 - 1, y, lw + 2, 8, 'F');
+      doc.setTextColor(0, 0, 0);
+      doc.text(labelTxt, cx, y + 5.5, { align: 'center' });
+      y += 12;
+      const peL = doc.splitTextToSize(prochaineVal, maxW - 20);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(50, 50, 50);
+      peL.forEach(line => { checkPage(6); doc.text(line, cx, y, { align: 'center' }); y += 5.5; });
+      y += 6;
+    }
+
+    // Actions IA
+    if (actionsIADone.length || actionsIATodo.length) {
+      checkPage(22);
+      sectionTitle('Actions IA');
+      const colW = (maxW - 4) / 2;
+      y += 2;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7);
+      doc.setTextColor(0, 0, 0);
+      doc.text('REALISEES', M, y);
+      doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.4);
+      doc.line(M, y + 1.5, M + colW, y + 1.5);
+      doc.setTextColor(150, 150, 150);
+      doc.text('A FAIRE', M + colW + 4, y);
+      doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3);
+      doc.line(M + colW + 4, y + 1.5, M + maxW, y + 1.5);
+      y += 6;
+      const maxRows = Math.max(actionsIADone.length, actionsIATodo.length);
+      for (let i = 0; i < maxRows; i++) {
+        checkPage(10);
+        let rowH = 0;
+        if (actionsIADone[i]) {
+          const lL = doc.splitTextToSize(actionsIADone[i], colW - 6);
+          const lH = Math.max(lL.length * 4.5 + 5, 9);
+          doc.setFillColor(245, 245, 245); doc.setDrawColor(210, 210, 210); doc.setLineWidth(0.15);
+          doc.rect(M, y, colW, lH, 'FD');
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(30, 30, 30);
+          doc.text(lL, M + 4, y + 4);
+          rowH = Math.max(rowH, lH);
+        }
+        if (actionsIATodo[i]) {
+          const rL = doc.splitTextToSize(actionsIATodo[i], colW - 6);
+          const rH = Math.max(rL.length * 4.5 + 5, 9);
+          doc.setFillColor(252, 252, 252); doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3);
+          doc.rect(M + colW + 4, y, colW, rH, 'FD');
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(150, 150, 150);
+          doc.text(rL, M + colW + 8, y + 4);
+          rowH = Math.max(rowH, rH);
+        }
+        y += rowH + 3;
+      }
+      y += 5;
+    }
+
+    // Mémo
+    if (checkedLabels.has('memo_notes') && memoVal) {
+      checkPage(22);
+      sectionTitle('Memo');
+      const lines = doc.splitTextToSize(memoVal, maxW - 14);
+      const h = lines.length * 5.2 + 8;
+      doc.setFillColor(247, 247, 247); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
+      doc.rect(M, y, maxW, h, 'FD');
+      doc.setFillColor(0, 0, 0); doc.rect(M, y, 3, h, 'F');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(60, 60, 60);
+      doc.text(lines, M + 7, y + 6);
+      y += h + 6;
+    }
+
+    // Transcription
+    if (checkedLabels.has('transcript') && transcriptVal) {
+      checkPage(22);
+      sectionTitle('Transcription');
+      const lines = doc.splitTextToSize(transcriptVal, maxW - 14);
+      doc.setFillColor(247, 247, 247); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
+      const h = lines.length * 4.8 + 8;
+      doc.rect(M, y, maxW, Math.min(h, pageH - y - 20), 'FD');
+      doc.setFillColor(0, 0, 0); doc.rect(M, y, 3, Math.min(h, pageH - y - 20), 'F');
+      doc.setFont('courier', 'normal'); doc.setFontSize(8); doc.setTextColor(60, 60, 60);
+      for (const line of lines) {
+        checkPage(6);
+        doc.text(line, M + 7, y + 5.5);
+        y += 4.8;
+      }
+      y += 6;
+    }
+
+    // Footer sur dernière page
+    pdfFooter(doc, pageW, pageH, M, C, footerTxt);
+
+    const filename = titreFmt.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_' + new Date().toISOString().slice(0, 10) + '.pdf';
+    doc.save(filename);
+
+  } catch(e) {
+    console.error('[PDF] Erreur:', e);
+    alert('Erreur lors de la génération du PDF : ' + e.message);
   } finally {
     if (pdfBtn) { pdfBtn.textContent = '↓ Exporter en PDF'; pdfBtn.disabled = false; }
   }
-
-  // Reconstruire checked après relecture pour avoir les valeurs corrigées
-  document.querySelectorAll('.export-cb:checked').forEach(cb => {
-    checked[cb.dataset.exportLabel] = decodeURIComponent(cb.dataset.exportContent || '');
-  });
-  // Lire le mémo directement depuis le textarea
-  const memoAreaFinal = document.getElementById('memoNotesArea');
-  if (memoAreaFinal && memoAreaFinal.value) {
-    checked['memo_notes'] = memoAreaFinal.value;
-  }
-
-  data = JSON.parse(localStorage.getItem('ponk_result')||'{}');
-  s = (typeof data.summary === 'object') ? data.summary : null;
-
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  const M = 16, maxW = pageW - M * 2;
-  let y = M;
-  const checkPage = (n = 10) => { if (y + n > pageH - 14) { doc.addPage(); y = M; } };
-
-  // ── HEADER ──
-  const titre = (meta.title || 'Compte-rendu').charAt(0).toUpperCase() + (meta.title || 'Compte-rendu').slice(1);
-  pdfBandeau(doc, titre, pageW, M, C);
-  y = 38;
-
-  // helpers locaux
-  const sectionTitle = (label) => {
-    checkPage(14);
-    const shH = 10;
-    doc.setFillColor(232, 232, 232);
-    doc.rect(M, y, maxW, shH, 'F');
-    doc.setFillColor(0, 0, 0);
-    doc.rect(M, y, 3, shH, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(0, 0, 0);
-    doc.text(label.toUpperCase(), M + 7, y + 6.5);
-    y += shH + 4;
-  };
-
-  const colBlock = (text, x, w, yy, isBlack) => {
-    const lines = doc.splitTextToSize(text, w - 6);
-    const h = lines.length * 4.8 + 5;
-    if (isBlack) {
-      doc.setFillColor(0, 0, 0);
-      doc.rect(x, yy, w, h, 'F');
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(255, 255, 255);
-      doc.text('v', x + 2, yy + h/2 + 1.5);
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(255, 255, 255);
-      doc.text(lines, x + 8, yy + 4.5);
-    } else {
-      doc.setFillColor(252, 252, 252); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
-      doc.rect(x, yy, w, h, 'FD');
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(30, 30, 30);
-      doc.text(lines, x + 4, yy + 4.5);
-    }
-    return h;
-  };
-
-  // ── CONTEXTE ──
-  if (s && checked['contexte'] && s.contexte) {
-    checkPage(16);
-    const ctxL = doc.splitTextToSize(s.contexte, maxW - 10);
-    const ctxH = ctxL.length * 5 + 6;
-    doc.setFillColor(250, 250, 250); doc.setDrawColor(210, 210, 210); doc.setLineWidth(0.3);
-    doc.rect(M, y, maxW, ctxH, 'FD');
-    doc.setFillColor(180, 180, 180); doc.rect(M, y, 2.5, ctxH, 'F');
-    doc.setFont('helvetica', 'italic'); doc.setFontSize(8.5); doc.setTextColor(90, 90, 90);
-    doc.text(ctxL, M + 7, y + 5);
-    y += ctxH + 6;
-  }
-
-  // ── RÉSUMÉ ──
-  if (s && checked['resume'] && s.resume) {
-    checkPage(20);
-    sectionTitle('Résumé');
-    const rL = doc.splitTextToSize(s.resume, maxW - 8);
-    const rH = rL.length * 5 + 8;
-    doc.setFillColor(252, 252, 252); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
-    doc.rect(M, y, maxW, rH, 'FD');
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(50, 50, 50);
-    doc.text(rL, M + 4, y + 6);
-    y += rH + 6;
-  }
-
-  // ── POINTS DISCUTÉS — 2 colonnes ──
-  const points = Object.entries(checked)
-    .filter(([k]) => k.startsWith('point:'))
-    .map(([, v]) => { try { return decodeURIComponent(v); } catch(e) { return v; } })
-    .filter(v => v && v.trim());
-  if (points.length) {
-    checkPage(22);
-    sectionTitle('Points discutés');
-    const colW = (maxW - 3) / 2;
-    let maxH = 0;
-    const leftPoints  = points.filter((_, i) => i % 2 === 0);
-    const rightPoints = points.filter((_, i) => i % 2 === 1);
-    const rowCount = Math.max(leftPoints.length, rightPoints.length);
-    for (let i = 0; i < rowCount; i++) {
-      checkPage(12);
-      const lp = leftPoints[i]  ? '— ' + leftPoints[i]  : null;
-      const rp = rightPoints[i] ? '— ' + rightPoints[i] : null;
-      let rowH = 0;
-      if (lp) {
-        const lL = doc.splitTextToSize(lp, colW - 6);
-        const lH = lL.length * 4.8 + 5;
-        doc.setFillColor(252, 252, 252); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
-        doc.rect(M, y, colW, lH, 'FD');
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(30, 30, 30);
-        doc.text(lL, M + 4, y + 4.5);
-        rowH = Math.max(rowH, lH);
-      }
-      if (rp) {
-        const rL = doc.splitTextToSize(rp, colW - 6);
-        const rH = rL.length * 4.8 + 5;
-        doc.setFillColor(252, 252, 252); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
-        doc.rect(M + colW + 3, y, colW, rH, 'FD');
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(30, 30, 30);
-        doc.text(rL, M + colW + 7, y + 4.5);
-        rowH = Math.max(rowH, rH);
-      }
-      y += rowH + 3;
-    }
-    y += 4;
-  }
-
-  // ── DÉCISIONS — 2 colonnes style coche noire ──
-  const decisions = Object.entries(checked)
-    .filter(([k]) => k.startsWith('decision:'))
-    .map(([, v]) => { try { return decodeURIComponent(v); } catch(e) { return v; } })
-    .filter(v => v && v.trim() && !v.includes('Cliquez pour'));
-  if (decisions.length) {
-    checkPage(22);
-    sectionTitle('Décisions');
-    const colW = (maxW - 3) / 2;
-    const leftD  = decisions.filter((_, i) => i % 2 === 0);
-    const rightD = decisions.filter((_, i) => i % 2 === 1);
-    const rowCount = Math.max(leftD.length, rightD.length);
-    for (let i = 0; i < rowCount; i++) {
-      checkPage(12);
-      const ld = leftD[i] || null;
-      const rd = rightD[i] || null;
-      let rowH = 0;
-      if (ld) {
-        const lL = doc.splitTextToSize(ld, colW - 14);
-        const lH = Math.max(lL.length * 4.8 + 5, 10);
-        doc.setFillColor(252, 252, 252); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
-        doc.rect(M, y, colW, lH, 'FD');
-        doc.setFillColor(0, 0, 0); doc.rect(M, y, 8, lH, 'F');
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(255, 255, 255);
-        doc.text('v', M + 4, y + lH/2 + 1.8, { align: 'center' });
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(30, 30, 30);
-        doc.text(lL, M + 11, y + 4.5);
-        rowH = Math.max(rowH, lH);
-      }
-      if (rd) {
-        const rL = doc.splitTextToSize(rd, colW - 14);
-        const rH = Math.max(rL.length * 4.8 + 5, 10);
-        doc.setFillColor(252, 252, 252); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
-        doc.rect(M + colW + 3, y, colW, rH, 'FD');
-        doc.setFillColor(0, 0, 0); doc.rect(M + colW + 3, y, 8, rH, 'F');
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(255, 255, 255);
-        doc.text('v', M + colW + 7, y + rH/2 + 1.8, { align: 'center' });
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(30, 30, 30);
-        doc.text(rL, M + colW + 14, y + 4.5);
-        rowH = Math.max(rowH, rH);
-      }
-      y += rowH + 3;
-    }
-    y += 4;
-  }
-
-  // ── PROCHAINE ÉTAPE — séparateur style B centré ──
-  const prochaineEtape = (checked['prochaine'] && checked['prochaine'].trim()) ? checked['prochaine'] : (s && s.prochaine_etape) || '';
-  if (prochaineEtape) {
-    checkPage(22);
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5);
-    const labelTxt = 'PROCHAINE ETAPE';
-    const labelW2 = doc.getTextWidth(labelTxt) + 8;
-    const cx = M + maxW / 2;
-    doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.4);
-    doc.line(M, y + 4, cx - labelW2/2 - 3, y + 4);
-    doc.line(cx + labelW2/2 + 3, y + 4, M + maxW, y + 4);
-    doc.setFillColor(255, 255, 255);
-    doc.rect(cx - labelW2/2 - 1, y, labelW2 + 2, 8, 'F');
-    doc.setTextColor(0, 0, 0);
-    doc.text(labelTxt, cx, y + 5.5, { align: 'center' });
-    y += 12;
-    const peL = doc.splitTextToSize(prochaineEtape, maxW - 20);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(50, 50, 50);
-    peL.forEach(line => { doc.text(line, cx, y, { align: 'center' }); y += 5.5; });
-    y += 6;
-  }
-
-  // ── ACTIONS IA — 2 colonnes réalisées / à faire ──
-  const actionsIADone = Object.entries(checked).filter(([k]) => k.startsWith('action_ia_done:'));
-  const actionsIATodo = Object.entries(checked).filter(([k]) => k.startsWith('action_ia:') && !k.startsWith('action_ia_done:'));
-
-  if (actionsIADone.length || actionsIATodo.length) {
-    checkPage(22);
-    sectionTitle('Actions IA');
-    const colW = (maxW - 4) / 2;
-
-    // En-têtes colonnes avec espace après le titre de section
-    y += 2;
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(0, 0, 0);
-    doc.text('REALISEES', M, y);
-    doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.4);
-    doc.line(M, y + 1.5, M + colW, y + 1.5);
-    doc.setTextColor(150, 150, 150);
-    doc.text('A FAIRE', M + colW + 4, y);
-    doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3);
-    doc.line(M + colW + 4, y + 1.5, M + maxW, y + 1.5);
-    y += 6;
-
-    const maxRows = Math.max(actionsIADone.length, actionsIATodo.length);
-    for (let i = 0; i < maxRows; i++) {
-      checkPage(10);
-      let rowH = 0;
-      if (actionsIADone[i]) {
-        const txt = actionsIADone[i][1].replace(/^✓\s*/, '');
-        const lL = doc.splitTextToSize(txt, colW - 6);
-        const lH = lL.length * 4.5 + 5;
-        doc.setFillColor(245, 245, 245); doc.setDrawColor(210, 210, 210); doc.setLineWidth(0.15);
-        doc.rect(M, y, colW, lH, 'FD');
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(30, 30, 30);
-        doc.text(lL, M + 4, y + 4);
-        rowH = Math.max(rowH, lH);
-      }
-      if (actionsIATodo[i]) {
-        const txt = actionsIATodo[i][1];
-        const rL = doc.splitTextToSize(txt, colW - 6);
-        const rH = rL.length * 4.5 + 5;
-        doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3);
-        doc.setFillColor(252, 252, 252);
-        doc.rect(M + colW + 4, y, colW, rH, 'FD');
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(150, 150, 150);
-        doc.text(rL, M + colW + 8, y + 4);
-        rowH = Math.max(rowH, rH);
-      }
-      y += rowH + 3;
-    }
-    y += 5;
-  }
-
-  // ── MÉMO — fond gris + bordure gauche ──
-  const memoNotes = checked['memo_notes'] || '';
-  if (memoNotes) {
-    checkPage(22);
-    sectionTitle('Mémo');
-    const nL = doc.splitTextToSize(memoNotes, maxW - 14);
-    const nH = nL.length * 5.2 + 8;
-    doc.setFillColor(247, 247, 247); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
-    doc.rect(M, y, maxW, nH, 'FD');
-    doc.setFillColor(0, 0, 0); doc.rect(M, y, 3, nH, 'F');
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(60, 60, 60);
-    doc.text(nL, M + 7, y + 6);
-    y += nH + 6;
-  }
-
-  // ── TRANSCRIPTION — fond gris + bordure gauche + monospace ──
-  if (checked['transcript']) {
-    checkPage(22);
-    sectionTitle('Transcription');
-    const tL = doc.splitTextToSize(checked['transcript'], maxW - 14);
-    const tH = tL.length * 4.8 + 8;
-    doc.setFillColor(247, 247, 247); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
-    doc.rect(M, y, maxW, tH, 'FD');
-    doc.setFillColor(0, 0, 0); doc.rect(M, y, 3, tH, 'F');
-    doc.setFont('courier', 'normal'); doc.setFontSize(8); doc.setTextColor(60, 60, 60);
-    for (const line of tL) {
-      checkPage(6);
-      doc.text(line, M + 7, y + 5.5);
-      y += 4.8;
-    }
-    y += 6;
-  }
-
-  pdfFooter(doc, pageW, pageH, M, C, 'Généré par Ponk Note · ' + new Date().toLocaleDateString('fr-FR'));
-  doc.save((meta.title||'ponk-note').replace(/[^a-z0-9\s]/gi,'').trim().replace(/\s+/g,'_') + '-' + new Date().toISOString().slice(0,10) + '.pdf');
 }
