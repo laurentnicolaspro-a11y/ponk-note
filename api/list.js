@@ -26,7 +26,50 @@ module.exports = async function handler(req, res) {
     if (!response.ok) throw new Error('Erreur Supabase list');
     const files = await response.json();
 
-    return res.status(200).json({ files: files || [] });
+    const groups = {};
+    const singles = [];
+
+    for (const f of (files || [])) {
+      if (!f.name || f.name === '.emptyFolderPlaceholder') continue;
+
+      const segMatch = f.name.match(/^(.+)-seg(\d{3})\.webm$/);
+      if (segMatch) {
+        const prefix = segMatch[1];
+        const idx    = parseInt(segMatch[2]);
+        if (!groups[prefix]) {
+          groups[prefix] = { representative: null, segments: [], totalSize: 0 };
+        }
+        groups[prefix].segments.push({ ...f, segIndex: idx });
+        groups[prefix].totalSize += f.metadata?.size || 0;
+        if (idx === 0) groups[prefix].representative = f;
+      } else {
+        singles.push(f);
+      }
+    }
+
+    const merged = [];
+
+    for (const prefix of Object.keys(groups)) {
+      const g = groups[prefix];
+      g.segments.sort((a, b) => a.segIndex - b.segIndex);
+      const rep = g.representative || g.segments[0];
+      if (!rep) continue;
+
+      merged.push({
+        ...rep,
+        name: rep.name.replace(/-seg\d{3}\.webm$/, '.webm'),
+        metadata: { ...(rep.metadata || {}), size: g.totalSize },
+        _segmented: true,
+        _segmentFiles: g.segments.map(s => `${uid}/${s.name}`),
+        _segmentCount: g.segments.length
+      });
+    }
+
+    const allFiles = [...singles, ...merged].sort((a, b) => {
+      return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    });
+
+    return res.status(200).json({ files: allFiles });
 
   } catch (err) {
     console.error('[list] Error:', err.message);
