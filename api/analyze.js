@@ -13,19 +13,17 @@ module.exports = async function handler(req, res) {
 
     const body = JSON.parse(Buffer.concat(chunks).toString());
     const {
-      fileName, title = '', duration = '', datetime = '', bubbles = [],
+      fileName, segmentFileNames = [], title = '', duration = '', datetime = '', bubbles = [],
       transcript_only = false, transcript: transcriptPassed = '',
       rewrite = false, summary: summaryToRewrite = null
     } = body;
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-    // ── Timeout aligné sur Vercel Pro (55s max pour laisser de la marge) ──
     const TIMEOUT_MS = 50000;
 
-    // ── Retry exponentiel : 3 tentatives par modèle, backoff 1.5s / 3s ──
     async function tryGenerate(content_arg) {
-      const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite']; // flash en premier — transcription audio critique
+      const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
 
       for (const modelName of models) {
         for (let attempt = 1; attempt <= 3; attempt++) {
@@ -47,18 +45,17 @@ module.exports = async function handler(req, res) {
             console.log(`[analyze] ${modelName} attempt ${attempt} failed (${isTransient ? 'transient' : 'fatal'}):`, e.message);
 
             if (isTransient && attempt < 3) {
-              // Backoff : 1.5s puis 3s
               await new Promise(r => setTimeout(r, attempt * 1500));
               continue;
             }
-            break; // erreur fatale ou 3 tentatives épuisées → modèle suivant
+            break;
           }
         }
       }
       throw new Error('All models failed');
     }
 
-    // ── Mode rewrite : améliore la synthèse avant export PDF ──
+    // ── Mode rewrite ──
     if (rewrite && summaryToRewrite) {
       const rewritePrompt = 'Tu améliores UNIQUEMENT les éléments fournis. RÈGLES STRICTES:\n- Ne supprime aucun élément existant\n- N\'ajoute JAMAIS de nouveaux éléments\n- Ne modifie que le style et la formulation\n- Corrige les fautes d\'orthographe et de grammaire\n- Pour actions_ia: nettoie et corrige les descriptions (liste de strings)\n- Pour memo: corrige les fautes du texte libre\n\nÉléments:\n' + JSON.stringify(summaryToRewrite) + '\n\nTranscription:\n\"\"\"\n' + transcriptPassed + '\n\"\"\"\n\nRéponds UNIQUEMENT avec le même JSON, mêmes clés, même nombre d\'éléments, formulations améliorées.';
       const result = await tryGenerate(rewritePrompt);
@@ -67,7 +64,7 @@ module.exports = async function handler(req, res) {
       catch (e) { return res.status(200).json(summaryToRewrite); }
     }
 
-    // ── Mode transcript_only : détecte les actions IA ──
+    // ── Mode transcript_only ──
     if (transcript_only && transcriptPassed) {
       const actionsPrompt = 'Extrais les ACTIONS IA. Types: EMAIL, WHATSAPP, CALENDRIER, MAPS, RECHERCHE, COMMANDE\n\nTranscription:\n"""\n' + transcriptPassed + '\n"""\n\nRègles: intention claire, pas de questions, max 5.\n\nRéponds UNIQUEMENT JSON:\n{"actions_ia":[{"type":"EMAIL","icone":"📧","titre":"Mail à X","description":"..."}]}';
       const result = await tryGenerate(actionsPrompt);
@@ -78,31 +75,52 @@ module.exports = async function handler(req, res) {
 
     if (!fileName) return res.status(400).json({ error: 'fileName manquant' });
 
-    const audioUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/audio/${fileName}`;
-    console.log('[analyze] audio URL:', audioUrl);
+    // ── Déterminer la liste des fichiers à transcrire ──
+    // Si segmentFileNames fourni (multi-segments), on les utilise tous.
+    // Sinon fallback sur fileName seul (enregistrement court, ancienne logique).
+    const filesToTranscribe = segmentFileNames.length > 0 ? segmentFileNames : [fileName];
+    console.log(`[analyze] segments à transcrire: ${filesToTranscribe.length}`);
 
-    // ── APPEL 1 : Transcription via base64 (fiable) ──
-    let transcript = '';
-    try {
-      console.log('[analyze] fetching audio from Supabase...');
+    // ── Transcription de chaque segment ──
+    async function transcribeFile(fName) {
+      const audioUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/audio/${fName}`;
+      console.log('[analyze] fetching segment:', audioUrl);
       const audioResponse = await fetch(audioUrl);
-      if (!audioResponse.ok) throw new Error(`Supabase fetch failed: ${audioResponse.status}`);
+      if (!audioResponse.ok) throw new Error(`Supabase fetch failed: ${audioResponse.status} for ${fName}`);
       const audioBuffer = await audioResponse.arrayBuffer();
       const audioBase64 = Buffer.from(audioBuffer).toString('base64');
-      console.log('[analyze] audio fetched, size:', audioBuffer.byteLength, 'bytes');
+      console.log('[analyze] segment fetched, size:', audioBuffer.byteLength, 'bytes');
 
-      const transcriptResult = await tryGenerate([
+      const result = await tryGenerate([
         { inlineData: { mimeType: 'audio/webm', data: audioBase64 } },
-        { text: `Transcris cet audio mot par mot en français. Sois fidèle à ce qui est dit. Réponds UNIQUEMENT avec le texte transcrit, sans commentaire.` }
+        { text: 'Transcris cet audio mot par mot en français. Sois fidèle à ce qui est dit. Réponds UNIQUEMENT avec le texte transcrit, sans commentaire.' }
       ]);
-      transcript = transcriptResult.response.text().trim();
-      console.log('[analyze] transcript length:', transcript.length);
+      return result.response.text().trim();
+    }
+
+    let transcript = '';
+    try {
+      if (filesToTranscribe.length === 1) {
+        // Cas simple — un seul fichier
+        transcript = await transcribeFile(filesToTranscribe[0]);
+      } else {
+        // Multi-segments — transcrire séquentiellement et fusionner
+        const transcripts = [];
+        for (let i = 0; i < filesToTranscribe.length; i++) {
+          console.log(`[analyze] transcription segment ${i + 1}/${filesToTranscribe.length}`);
+          const t = await transcribeFile(filesToTranscribe[i]);
+          transcripts.push(t);
+        }
+        // Fusion simple par concaténation avec séparateur de contexte
+        transcript = transcripts.join('\n\n[suite de l\'enregistrement]\n\n');
+        console.log('[analyze] transcriptions fusionnées, longueur totale:', transcript.length);
+      }
     } catch (e) {
       console.error('[analyze] transcription failed:', e.message);
       throw new Error('Transcription échouée : ' + e.message);
     }
 
-    // ── APPEL 2 : Analyse structurée — avec fallback si ça plante ──
+    // ── Analyse structurée ──
     const analysisPrompt = `Tu es un assistant intelligent qui analyse des retranscriptions audio et en extrait les informations utiles.
 IMPORTANT : Réponds OBLIGATOIREMENT en FRANÇAIS.
 
@@ -284,7 +302,6 @@ Règles STRICTES pour les actions_ia :
       const clean = rawText.replace(/```json|```/g, '').trim();
       parsed = JSON.parse(clean);
     } catch (e) {
-      // L'analyse a planté — on sauvegarde quand même la transcription
       console.error('[analyze] analysis failed, returning transcript only:', e.message);
       parsed = {
         modes: ['MEMO'],
