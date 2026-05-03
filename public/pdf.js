@@ -163,10 +163,19 @@ async function downloadCalendrierPDF() {
     checkPage(22);
     sectionTitle(section.titre);
     for (const point of (section.points || [])) {
-      checkPage(16);
       const tL = doc.splitTextToSize(point.titre, maxW - 8);
       const dL = point.detail ? doc.splitTextToSize(point.detail, maxW - 10) : [];
       const totH = tL.length * 5.2 + (dL.length > 0 ? dL.length * 4.8 + 4 : 0) + 8;
+
+      // Suggestions (max 3 pour éviter les pages vides)
+      const iL = (point.idees || []).slice(0, 3).map(id => doc.splitTextToSize(id, maxW - 20));
+      const iH = iL.length > 0 ? iL.reduce((a, l) => a + l.length * 4.8 + 2, 0) + 10 : 0;
+
+      // Calculer la hauteur totale du bloc (point + suggestions) AVANT de dessiner
+      const blockH = totH + (iH > 0 ? iH + 2 : 0);
+      checkPage(blockH + 4);
+
+      // Dessiner le bloc point
       doc.setFillColor(252, 252, 252); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
       doc.rect(M, y, maxW, totH, 'FD');
       doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(20, 20, 20);
@@ -175,12 +184,10 @@ async function downloadCalendrierPDF() {
         doc.setFont('helvetica', 'italic'); doc.setFontSize(8.5); doc.setTextColor(90, 90, 90);
         doc.text(dL, M + 6, y + 6 + tL.length * 5.2 + 3);
       }
-      // Suggestions / idées
-      const iL = (point.idees || []).map(id => doc.splitTextToSize(id, maxW - 20));
+
+      // Dessiner les suggestions juste en dessous, sur la même page
       if (iL.length > 0) {
         const iY = y + totH;
-        const iH = iL.reduce((a, l) => a + l.length * 4.8 + 2, 0) + 10;
-        checkPage(iH);
         doc.setFillColor(242, 242, 242); doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.15);
         doc.rect(M + 4, iY, maxW - 4, iH, 'FD');
         doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(100, 100, 100);
@@ -192,7 +199,7 @@ async function downloadCalendrierPDF() {
           doc.text(lines, M + 13, iy);
           iy += lines.length * 4.8 + 2;
         }
-        y = iY + iH + 4;
+        y += blockH + 4;
       } else {
         y += totH + 4;
       }
