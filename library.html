@@ -327,6 +327,10 @@ function renderList(files) {
 }
 
 function makeCard(file, index) {
+  // Normaliser le nom : enlever le préfixe uid/ si présent (fichiers courts vs segmentés)
+  const uidPrefix = (uid || profile) + '/';
+  if (file.name.startsWith(uidPrefix)) file.name = file.name.slice(uidPrefix.length);
+
   // Mémoriser les infos segments pour handleAnalyze
   if (file._segmented && file._segmentFiles) {
     fileSegmentMap[file.name] = { segmentFiles: file._segmentFiles, count: file._segmentCount };
