@@ -1211,6 +1211,7 @@
   }
   document.getElementById('spikyPath').setAttribute('d', buildSpiky(32, 88, 8, 110, 110));
   let recorder=null, chunks=[], blob=null, interval=null, seconds=0, recording=false, uploadedFileName=null;
+  let sessionId=null, segmentIndex=0, segmentFileNames=[], segmentInterval=null;
 
   async function checkQuota() {
     const profile = localStorage.getItem('ponk_profile') || 'user';
@@ -1240,20 +1241,45 @@
       chunks = [];
       blob = null;
       uploadedFileName = null;
+      segmentFileNames = [];
+      segmentIndex = 0;
+      sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
       document.getElementById('btnAnalyze').classList.remove('visible');
-      recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 16000 });
-      recorder.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
-      recorder.onstop = () => {
-        blob = new Blob(chunks, {type:'audio/webm'});
-        stream.getTracks().forEach(t=>t.stop());
-        setStatus('loading', 'Sauvegarde en cours…');
-        document.getElementById('btnAnalyze').classList.add('visible');
-        uploadAudio();
-      };
+
+      function createRecorder() {
+        const rec = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 16000 });
+        rec.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
+        rec.onstop = () => {
+          const segBlob = new Blob(chunks, {type:'audio/webm'});
+          chunks = [];
+          if (!recording) {
+            // Dernier segment — upload final puis affiche le bouton analyser
+            uploadSegment(segBlob, true);
+          } else {
+            // Segment intermédiaire — upload silencieux
+            uploadSegment(segBlob, false);
+            // Démarrer le segment suivant
+            segmentIndex++;
+            recorder = createRecorder();
+            recorder.start(500);
+          }
+        };
+        return rec;
+      }
+
+      recorder = createRecorder();
       recorder.start(500);
       recording = true;
       seconds = 0;
       interval = setInterval(() => { seconds++; tick(); }, 1000);
+
+      // Toutes les 10 minutes, couper le segment en cours et en démarrer un nouveau
+      const SEGMENT_MS = 10 * 60 * 1000;
+      segmentInterval = setInterval(() => {
+        if (recording && recorder && recorder.state === 'recording') {
+          recorder.stop(); // onstop va créer le suivant automatiquement
+        }
+      }, SEGMENT_MS);
       window.addEventListener('beforeunload', confirmQuit);
       if (assistantActive) startSpeechRecognition();
       document.getElementById('recordBtn').classList.add('is-recording');
@@ -1268,9 +1294,13 @@
   }
 
   function stopRec() {
-    recorder.stop(); recording = false; clearInterval(interval);
+    recording = false;
+    clearInterval(interval);
+    clearInterval(segmentInterval);
     window.removeEventListener('beforeunload', confirmQuit);
     stopSpeechRecognition();
+    setStatus('loading', 'Sauvegarde en cours…');
+    if (recorder && recorder.state === 'recording') recorder.stop(); // déclenche onstop → uploadSegment(blob, true)
     document.getElementById('recordBtn').classList.remove('is-recording');
     document.getElementById('powerWrap').classList.remove('is-recording');
     document.getElementById('manualMenuBtn').classList.remove('active');
@@ -1282,34 +1312,51 @@
       : 'linear-gradient(145deg, #dce8f8 0%, #e8d8f0 40%, #f5e6d8 100%)';
   }
 
-  async function uploadAudio() {
-    if (!blob) return;
+  async function uploadSegment(segBlob, isFinal) {
+    if (!segBlob) return;
     const profile = localStorage.getItem('ponk_profile') || 'user';
-    try {
-      const checkRes = await fetch('/api/list?uid=' + encodeURIComponent(profile));
-      const checkData = await checkRes.json();
-      const count = (checkData.files || []).filter(f => f.name && f.name !== '.emptyFolderPlaceholder').length;
-      if (count >= 5) {
-        setStatus('error', 'Bibliothèque pleine (5/5) — supprime un enregistrement');
-        return;
-      }
-    } catch(e) { console.warn('Quota check failed:', e.message); }
+
+    // Quota check uniquement sur le premier segment
+    if (segmentIndex === 0) {
+      try {
+        const checkRes = await fetch('/api/list?uid=' + encodeURIComponent(profile));
+        const checkData = await checkRes.json();
+        const count = (checkData.files || []).filter(f => f.name && f.name !== '.emptyFolderPlaceholder').length;
+        if (count >= 5) {
+          setStatus('error', 'Bibliothèque pleine (5/5) — supprime un enregistrement');
+          return;
+        }
+      } catch(e) { console.warn('Quota check failed:', e.message); }
+    }
 
     const title = document.getElementById('title').value || 'enregistrement';
     const fd = new FormData();
-    fd.append('audio', blob, 'rec.webm');
+    fd.append('audio', segBlob, 'rec.webm');
     fd.append('title', title);
     fd.append('email', localStorage.getItem('ponk_email') || profile);
     fd.append('profile', profile);
+    fd.append('sessionId', sessionId);
+    fd.append('segmentIndex', String(segmentIndex));
+    fd.append('isFinal', isFinal ? 'true' : 'false');
+
     try {
       const res = await fetch('/api/upload', {method:'POST', body:fd});
       if (res.ok) {
         const r = await res.json();
-        uploadedFileName = r.fileName;
-        localStorage.setItem('ponk_drive_file', JSON.stringify(r));
-        setStatus('active', 'Audio sauvegardé ☁️ — ' + fmt(seconds));
+        segmentFileNames.push(r.fileName);
+        if (isFinal) {
+          // Dernier segment uploadé — on retient le fileName principal (premier segment ou dernier selon API)
+          uploadedFileName = segmentFileNames[0]; // analyze utilisera sessionId
+          localStorage.setItem('ponk_drive_file', JSON.stringify({ ...r, sessionId, segmentFileNames }));
+          setStatus('active', 'Audio sauvegardé ☁️ — ' + fmt(seconds));
+          document.getElementById('btnAnalyze').classList.add('visible');
+          // Arrêter le stream micro maintenant que tout est uploadé
+          if (recorder && recorder.stream) recorder.stream.getTracks().forEach(t=>t.stop());
+        } else {
+          console.log(`[segment ${segmentIndex}] uploaded: ${r.fileName}`);
+        }
       }
-    } catch(e) { console.warn('Upload:', e.message); }
+    } catch(e) { console.warn('Upload segment:', e.message); }
   }
 
   function tick() {
@@ -1450,7 +1497,7 @@
   }
 
   async function analyze() {
-    if(!blob) return;
+    if(!uploadedFileName && segmentFileNames.length === 0) return;
     document.getElementById('btnAnalyze').disabled = true;
     showOverlay(seconds);
     const title    = document.getElementById('title').value || '';
@@ -1461,16 +1508,17 @@
     const savedBubbles = actionBubbles.filter(b => b.confirmed === true || b.confirmed === 'done' || b.confirmed === 'kept');
 
     try {
-      // Étape 1 : utiliser le fileName déjà uploadé automatiquement
-      if (!uploadedFileName) throw new Error('Audio non encore uploadé, réessaie dans un instant');
-      const fileName = uploadedFileName;
+      // Étape 1 : utiliser les fileNames déjà uploadés automatiquement
+      if (segmentFileNames.length === 0) throw new Error('Audio non encore uploadé, réessaie dans un instant');
+      const fileName = segmentFileNames[0]; // pour compatibilité library/results
 
-      // Étape 2 : envoyer fileName + métadonnées à analyze (pas le fichier brut)
+      // Étape 2 : envoyer sessionId + segmentFileNames + métadonnées à analyze
       const analyzeRes = await fetch('/api/analyze', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
           fileName,
+          segmentFileNames,
           title,
           duration,
           datetime,
