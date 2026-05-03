@@ -41,15 +41,20 @@ module.exports = async function handler(req, res) {
     const dateStr = now.toISOString().slice(0, 19).replace(/[:.]/g, '-');
     const profile = fields['profile'] || 'user';
     const title = (fields['title'] || 'enregistrement').replace(/\s+/g, '_');
-
-    // Si l'upload vient d'un enregistrement segmenté, on intègre l'index dans le nom
-    // pour éviter que deux segments du même enregistrement s'écrasent.
+    const sessionId = fields['sessionId'] || null;
     const segmentIndex = fields['segmentIndex'];
-    const segmentSuffix = (segmentIndex !== undefined && segmentIndex !== '')
-      ? `-seg${String(segmentIndex).padStart(3, '0')}`
-      : '';
+    const hasSegment = segmentIndex !== undefined && segmentIndex !== '';
 
-    const fileName = `${profile}/${dateStr}-${title}${segmentSuffix}.webm`;
+    let fileName;
+    if (sessionId && hasSegment) {
+      // Enregistrement segmenté : tous les segments partagent le même sessionId comme base
+      // → préfixe identique garanti pour le groupement dans list.js
+      const segSuffix = `-seg${String(segmentIndex).padStart(3, '0')}`;
+      fileName = `${profile}/${sessionId}-${title}${segSuffix}.webm`;
+    } else {
+      // Enregistrement court (pas de segmentation)
+      fileName = `${profile}/${dateStr}-${title}.webm`;
+    }
 
     // Upload vers Supabase Storage
     const uploadRes = await fetch(
