@@ -20,9 +20,7 @@ module.exports = async function handler(req, res) {
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-    // Pour deepanalyze/parse : flash-lite suffit, moins cher
-    const MODELS_LITE_FIRST = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
-    // Pour prepare/enrich : flash en premier, contenu complexe
+    const MODELS_LITE_FIRST  = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
     const MODELS_FLASH_FIRST = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
 
     async function callGemini(prompt, timeoutMs, models) {
@@ -42,18 +40,16 @@ module.exports = async function handler(req, res) {
               e.message.includes('429') ||
               e.message.includes('timeout') ||
               e.message.includes('UNAVAILABLE');
-
             console.log(`[calendrier] ${modelName} attempt ${attempt} failed (${isTransient ? 'transient' : 'fatal'}):`, e.message);
-
             if (isTransient && attempt < 3) {
-              await new Promise(r => setTimeout(r, attempt * 1500)); // 1.5s puis 3s
+              await new Promise(r => setTimeout(r, attempt * 1500));
               continue;
             }
-            break; // erreur fatale ou tentatives épuisées → modèle suivant
+            break;
           }
         }
       }
-      throw new Error('Tous les modèles ont échoué');
+      throw new Error('Tous les modeles ont echoue');
     }
 
     function parseJSON(raw) {
@@ -61,50 +57,50 @@ module.exports = async function handler(req, res) {
       return JSON.parse(clean);
     }
 
-    // ── Deep analyze (from results.html) ─────────────────────────────────────
+    // ── Deep analyze ──────────────────────────────────────────────────────────
     if (action === 'deepanalyze') {
-      const prompt = `Tu es un expert analyste. Fais une analyse complète et structurée sur le sujet suivant :
+      const prompt = `Tu es un expert analyste. Fais une analyse complete et structuree sur le sujet suivant :
 
 "${text}"
 
-Format de réponse en français, structuré avec des sections claires :
-- Commence par un résumé en 2-3 phrases
-- Développe en 3-5 points clés avec des titres en gras
+Format de reponse en francais, structure avec des sections claires :
+- Commence par un resume en 2-3 phrases
+- Developpe en 3-5 points cles avec des titres en gras
 - Termine par une conclusion ou recommandation
-- Sois factuel, précis et utile
+- Sois factuel, precis et utile
 - Maximum 400 mots
 
-Réponds directement sans introduction.`;
+Reponds directement sans introduction.`;
 
-      const analysis = await callGemini(prompt, 15000, MODELS_LITE_FIRST);
+      const analysis = await callGemini(prompt, 10000, MODELS_LITE_FIRST);
       return res.status(200).json({ analysis });
     }
 
-    // ── Parse : détection type + questions ciblées ────────────────────────────
+    // ── Parse ─────────────────────────────────────────────────────────────────
     if (action === 'parse') {
-      const prompt = `Tu es un assistant expert en préparation de réunions et d'événements.
+      const prompt = `Tu es un assistant expert en preparation de reunions et d'evenements.
 
-Événement : "${text}"
-Date actuelle : ${datetime || 'non précisée'}
+Evenement : "${text}"
+Date actuelle : ${datetime || 'non precisee'}
 
-Analyse cet événement. S'il s'agit d'une réunion (REUNION), pose exactement ces 5 questions dans cet ordre :
-1. "Sur quoi doit-on aboutir concrètement à la fin de cette réunion ?" (objectif décisionnel)
-2. "Qui participe et quels sont leurs intérêts ou positions ?" (rapport de force)
-3. "Y a-t-il un événement récent, une tension ou un chiffre clé qui sera forcément sur la table ?" (contexte chaud)
-4. "Quelle est ta position ou ton objectif personnel en entrant dans cette réunion ?" (posture)
-5. "As-tu d'autres précisions à ajouter qui pourraient être utiles pour la préparation ?" (informations complémentaires)
+Analyse cet evenement. S'il s'agit d'une reunion (REUNION), pose exactement ces 5 questions dans cet ordre :
+1. "Sur quoi doit-on aboutir concretement a la fin de cette reunion ?" (objectif decisionnel)
+2. "Qui participe et quels sont leurs interets ou positions ?" (rapport de force)
+3. "Y a-t-il un evenement recent, une tension ou un chiffre cle qui sera forcement sur la table ?" (contexte chaud)
+4. "Quelle est ta position ou ton objectif personnel en entrant dans cette reunion ?" (posture)
+5. "As-tu d'autres precisions a ajouter qui pourraient etre utiles pour la preparation ?" (informations complementaires)
 
-Pour les autres types, génère 2 à 4 questions adaptées au contexte, et ajoute toujours en dernière position : "As-tu d'autres précisions à ajouter ?"
+Pour les autres types, genere 2 a 4 questions adaptees au contexte, et ajoute toujours en derniere position : "As-tu d'autres precisions a ajouter ?"
 
 JSON uniquement :
 {
-  "titre": "titre court et précis",
+  "titre": "titre court et precis",
   "type": "REUNION|RDVMEDICAL|ENTRETIEN|APPEL|ANNIVERSAIRE|VOYAGE|REPAS|SPORT|FORMATION|ADMINISTRATIF|AUTRE",
   "date": "date extraite ou null",
   "heure": "heure extraite ou null",
-  "duree": "durée estimée ou null",
+  "duree": "duree estimee ou null",
   "description": "description courte en 1 phrase",
-  "participants": ["noms si mentionnés"],
+  "participants": ["noms si mentionnes"],
   "questions": [
     {"id": 1, "question": "question ?"},
     {"id": 2, "question": "question ?"},
@@ -116,7 +112,7 @@ JSON uniquement :
 
 JSON uniquement, pas de texte autour.`;
 
-      const raw = await callGemini(prompt, 15000, MODELS_LITE_FIRST);
+      const raw = await callGemini(prompt, 10000, MODELS_LITE_FIRST);
       try {
         return res.status(200).json(parseJSON(raw));
       } catch (e) {
@@ -124,143 +120,93 @@ JSON uniquement, pas de texte autour.`;
       }
     }
 
-    // ── Prepare : structure du dossier ────────────────────────────────────────
+    // ── Prepare : structure + enrichissement en UN SEUL appel ─────────────────
     if (action === 'prepare') {
       const answersText = (answers || []).map(a => `Q: ${a.question}\nR: ${a.answer}`).join('\n\n');
-      const participants = (body.participants || []).join(', ') || 'non précisés';
+      const participants = (body.participants || []).join(', ') || 'non precises';
       const eventType = body.type || 'REUNION';
+      const generatedAt = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 
-      const prepPrompt = `Tu es un expert en préparation de réunions institutionnelles et professionnelles.
+      const prepPrompt = `Tu es un expert en preparation de reunions institutionnelles et professionnelles.
 
-Événement : "${text}"
+Evenement : "${text}"
 Type : ${eventType}
-Date : ${body.date || 'non précisée'}
-Date actuelle : ${datetime || 'non précisée'}
+Date : ${body.date || 'non precisee'}
+Date actuelle : ${datetime || 'non precisee'}
 Participants : ${participants}
 
-Réponses de l'utilisateur :
+Reponses de l utilisateur :
 ${answersText}
 
-Génère un dossier de préparation COMPLET et PROFESSIONNEL.
-Pour une REUNION, inclus obligatoirement ces sections dans cet ordre :
-1. 🎯 Objectif de séance (ce qui doit être décidé/validé)
-2. 👥 Participants et positionnement (intérêts et postures de chacun)
-3. 📋 Ordre du jour détaillé (points à traiter avec timing suggéré)
-4. ⚡ Contexte et enjeux (situation actuelle, tensions, éléments chauds)
-5. 🎤 Points clés à porter (arguments, positions à défendre)
-6. ⚠️ Points de vigilance (risques, sujets sensibles à anticiper)
-7. 📎 Documents à préparer (ce qu'il faut avoir avec soi)
+Reponds en DEUX PARTIES separees par la ligne ---DOSSIER---
 
-JSON uniquement :
+PARTIE 1 - JSON valide uniquement :
 {
   "preparation": {
     "titre": "Titre du dossier",
     "sections": [
-      {
-        "emoji": "🎯",
-        "titre": "Titre section",
-        "items": ["item 1", "item 2", "item 3"]
-      }
+      { "emoji": "cible", "titre": "Objectif de seance", "items": ["item concret 1", "item 2"] },
+      { "emoji": "groupe", "titre": "Participants et positionnement", "items": ["item 1"] },
+      { "emoji": "liste", "titre": "Ordre du jour detaille", "items": ["item 1"] },
+      { "emoji": "eclair", "titre": "Contexte et enjeux", "items": ["item 1"] },
+      { "emoji": "micro", "titre": "Points cles a porter", "items": ["item 1"] },
+      { "emoji": "alerte", "titre": "Points de vigilance", "items": ["item 1"] },
+      { "emoji": "trombone", "titre": "Documents a preparer", "items": ["item 1"] }
     ]
   },
   "hasEmail": true,
   "email": {
     "sujet": "sujet email professionnel",
-    "corps": "corps email complet avec ordre du jour et informations pratiques",
+    "corps": "corps email complet avec ordre du jour",
     "destinataires": ["noms"]
   },
   "pdf": {
     "titre": "Titre du document PDF",
-    "sections": [
-      {
-        "titre": "Titre section",
-        "items": ["item à enrichir 1", "item à enrichir 2"]
-      }
-    ],
     "meta": {
-      "date": "${body.date || ''}",
+      "date": "${body.date || 'A preciser'}",
       "participants": "${participants}",
-      "lieu": "lieu si mentionné ou À préciser",
-      "duree": "${body.duree || 'À préciser'}"
+      "lieu": "lieu si mentionne ou A preciser",
+      "duree": "${body.duree || 'A preciser'}"
     }
   }
 }
 
-Règles :
-- Items concrets et actionnables, pas de généralités
-- Tout en français
-- JSON uniquement`;
+---DOSSIER---
 
-      const prepRaw = await callGemini(prepPrompt, 20000, MODELS_FLASH_FIRST);
-      let prepData;
-      try {
-        prepData = parseJSON(prepRaw);
-      } catch (e) {
-        return res.status(200).json({ raw: text });
-      }
-
-      // ── Enrich : deuxième passe — format scannable ───────────────────────────
-      const pdfSections = prepData.pdf?.sections || [];
-      const sectionsText = pdfSections.map(s =>
-        `SECTION: ${s.titre}\n${(s.items || []).map(i => `- ${i}`).join('\n')}`
-      ).join('\n\n');
-
-      const enrichPrompt = `Tu es un expert qui prepare des dossiers de reunion ultra-lisibles.
-
-Contexte :
-- Evenement : "${text}"
-- Participants : ${participants}
-- Date : ${body.date || 'non precisee'}
-- Reponses : ${answersText}
-
-Structure a enrichir :
-${sectionsText}
-
-REGLES ABSOLUES — toute violation invalide le document :
-1. ZERO emoji, ZERO symbole special, ZERO esperluette, ZERO pourcent, ZERO arobase
-2. Uniquement : lettres a-z, chiffres 0-9, tiret, point, virgule, apostrophe, parentheses
-3. Titre du point : 4 mots maximum
-4. DETAIL : 1 phrase factuelle avec chiffre ou nom precis. Si incertain : "(a verifier)"
-5. IDEE : outil concret nomme, service reel, methode avec un nom. PAS une reformulation du detail.
-6. Exactement 5 IDEE par point, ni plus ni moins
-7. Exclusivement en francais
-
-FORMAT EXACT a respecter a la lettre :
+PARTIE 2 - Dossier PDF enrichi. FORMAT STRICT (sans emoji, sans symbole special) :
 
 SECTION: Titre section
-POINT: Titre point court
-DETAIL: Une phrase factuelle
+POINT: Titre court (4 mots max)
+DETAIL: Une phrase factuelle avec chiffre ou nom precis
 IDEE: Premiere idee avec outil ou methode nommee
 IDEE: Deuxieme idee differente
 IDEE: Troisieme idee differente
 IDEE: Quatrieme idee differente
 IDEE: Cinquieme idee differente
-POINT: Titre suivant
-DETAIL: Phrase factuelle
-IDEE: Idee 1
-IDEE: Idee 2
-IDEE: Idee 3
-IDEE: Idee 4
-IDEE: Idee 5
 
-SECTION: Section suivante
-...
+Genere 3 a 5 SECTION avec 2 a 3 POINT chacune. Tout en francais. Commence directement par SECTION:.`;
 
-Commence directement par SECTION:, rien avant, rien apres.`;
-
-      let enrichedRaw = '';
+      let prepRaw = '';
       try {
-        enrichedRaw = await callGemini(enrichPrompt, 25000, MODELS_FLASH_FIRST);
+        prepRaw = await callGemini(prepPrompt, 30000, MODELS_FLASH_FIRST);
       } catch (e) {
-        console.log('[calendrier] enrich failed, using basic content');
-        enrichedRaw = pdfSections.map(s =>
-          `SECTION: ${s.titre.toUpperCase()}\n` +
-          (s.items || []).map(i => `POINT: ${i}\nDETAIL: À compléter`).join('\n')
-        ).join('\n\n');
+        return res.status(500).json({ error: 'Preparation echouee : ' + e.message });
       }
 
-      // Nettoyer emojis, symboles et artefacts d'encodage que Gemini glisse
-      const stripEmojis = (str) => str
+      // Separer JSON et bloc DOSSIER
+      const splitIdx = prepRaw.indexOf('---DOSSIER---');
+      const jsonPart    = splitIdx !== -1 ? prepRaw.slice(0, splitIdx) : prepRaw;
+      const enrichedRaw = splitIdx !== -1 ? prepRaw.slice(splitIdx + 13) : '';
+
+      let prepData;
+      try {
+        prepData = parseJSON(jsonPart);
+      } catch (e) {
+        return res.status(200).json({ raw: text });
+      }
+
+      // Nettoyer emojis et symboles parasites
+      const strip = (str) => str
         .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
         .replace(/[\u{2600}-\u{27BF}]/gu, '')
         .replace(/[\u{FE00}-\u{FEFF}]/gu, '')
@@ -269,42 +215,39 @@ Commence directement par SECTION:, rien avant, rien apres.`;
         .replace(/[^\x00-\x7E\u00C0-\u024F\s]/g, '')
         .trim();
 
-      // Parser le format SECTION/POINT/DETAIL/IDEE en structure JSON propre
+      // Parser le format SECTION/POINT/DETAIL/IDEE
       const parsedSections = [];
       let currentSection = null;
       let currentPoint = null;
 
       for (const line of enrichedRaw.split('\n')) {
-        const trimmed = stripEmojis(line.trim());
+        const trimmed = strip(line.trim());
         if (!trimmed) continue;
-
         if (trimmed.startsWith('SECTION:')) {
           if (currentSection) parsedSections.push(currentSection);
-          currentSection = { titre: stripEmojis(trimmed.replace('SECTION:', '').trim()), points: [] };
+          currentSection = { titre: strip(trimmed.replace('SECTION:', '').trim()), points: [] };
           currentPoint = null;
         } else if (trimmed.startsWith('POINT:')) {
-          currentPoint = { titre: stripEmojis(trimmed.replace('POINT:', '').trim()), detail: '', idees: [] };
+          currentPoint = { titre: strip(trimmed.replace('POINT:', '').trim()), detail: '', idees: [] };
           if (currentSection) currentSection.points.push(currentPoint);
         } else if (trimmed.startsWith('DETAIL:') && currentPoint) {
-          currentPoint.detail = stripEmojis(trimmed.replace('DETAIL:', '').trim());
+          currentPoint.detail = strip(trimmed.replace('DETAIL:', '').trim());
         } else if (trimmed.startsWith('IDEE:') && currentPoint) {
-          currentPoint.idees.push(stripEmojis(trimmed.replace('IDEE:', '').trim()));
+          currentPoint.idees.push(strip(trimmed.replace('IDEE:', '').trim()));
         }
       }
       if (currentSection) parsedSections.push(currentSection);
 
-      // Construire le contenu PDF enrichi
-      const meta = prepData.pdf?.meta || {};
       prepData.pdf = {
-        titre: prepData.pdf?.titre || `Dossier — ${text}`,
-        meta: {
-          date: meta.date || body.date || 'À préciser',
-          lieu: meta.lieu || 'À préciser',
-          duree: meta.duree || body.duree || 'À préciser',
-          participants: meta.participants || participants
+        titre: prepData.pdf?.titre || `Dossier - ${text}`,
+        meta: prepData.pdf?.meta || {
+          date: body.date || 'A preciser',
+          lieu: 'A preciser',
+          duree: body.duree || 'A preciser',
+          participants
         },
         sections: parsedSections,
-        generatedAt: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+        generatedAt
       };
 
       return res.status(200).json(prepData);
