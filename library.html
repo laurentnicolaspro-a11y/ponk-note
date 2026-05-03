@@ -301,7 +301,7 @@ async function loadRecordings() {
     const res = await fetch(`/api/list?uid=${encodeURIComponent(uid||profile)}`);
     const data = await res.json();
     const files = (data.files||[]).filter(f=>f.name&&f.name!=='.emptyFolderPlaceholder');
-    updateQuota(files.length);
+    updateQuota(files.length); // list.js retourne déjà des groupes fusionnés
     renderList(files);
   } catch(e) {
     document.getElementById('recordingsList').innerHTML = '<div class="loading">Erreur de chargement</div>';
@@ -327,6 +327,10 @@ function renderList(files) {
 }
 
 function makeCard(file, index) {
+  // Mémoriser les infos segments pour handleAnalyze
+  if (file._segmented && file._segmentFiles) {
+    fileSegmentMap[file.name] = { segmentFiles: file._segmentFiles, count: file._segmentCount };
+  }
   const card = document.createElement('div');
   card.className = 'card';
   card.style.animationDelay = `${index * 80}ms`;
@@ -405,6 +409,9 @@ async function toggleAudio(fileName, e) {
   btn.innerHTML='<svg viewBox="0 0 24 24" width="12" height="12" fill="var(--cyan)"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
 }
 
+// Stockage temporaire des infos segments par fileName (rempli dans makeCard)
+const fileSegmentMap = {};
+
 async function handleAnalyze(fileName, btn) {
   const analyzed = localStorage.getItem(`ponk_analyzed_${fileName}`);
   if (analyzed) {
@@ -419,10 +426,19 @@ async function handleAnalyze(fileName, btn) {
     const parts = fileName.replace('.webm','').split('-');
     const title = parts.slice(6).join(' ')||'enregistrement';
     const datetime = parts.slice(0,6).join('-');
+
+    // Récupérer les segments si c'est un enregistrement multi-segments
+    const segInfo = fileSegmentMap[fileName];
+    const segmentFileNames = segInfo ? segInfo.segmentFiles : [];
+
     const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ fileName: fullFileName, title, duration: '', datetime, profile: uid||profile, bubbles: [] })
+      body: JSON.stringify({
+        fileName: fullFileName,
+        segmentFileNames,
+        title, duration: '', datetime, profile: uid||profile, bubbles: []
+      })
     });
     if (!res.ok) throw new Error('Erreur analyse ' + res.status);
     const data = await res.json();
@@ -441,18 +457,32 @@ async function handleDelete(fileName, btn) {
   if (!confirm('Supprimer cet enregistrement ?')) return;
   btn.disabled = true;
   try {
-    const res = await fetch('/api/delete', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ path: `${uid||profile}/${fileName}` })
-    });
-    if (!res.ok) throw new Error('Erreur suppression');
+    const segInfo = fileSegmentMap[fileName];
+    if (segInfo && segInfo.segmentFiles && segInfo.segmentFiles.length > 0) {
+      // Supprimer tous les segments
+      for (const segPath of segInfo.segmentFiles) {
+        await fetch('/api/delete', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ path: segPath })
+        });
+      }
+    } else {
+      // Fichier simple
+      const res = await fetch('/api/delete', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ path: `${uid||profile}/${fileName}` })
+      });
+      if (!res.ok) throw new Error('Erreur suppression');
+    }
     localStorage.removeItem(`ponk_analyzed_${fileName}`);
     loadRecordings();
   } catch(e) {
     btn.disabled = false;
     alert('Erreur : ' + e.message);
   }
+}
 }
 
 function formatDuration(sec) {
