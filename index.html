@@ -1834,15 +1834,24 @@
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = LANG_CODES_SR[translatorLang] || 'en-GB';
     utter.rate = 0.95;
-    if (btn) {
-      const orig = btn.innerHTML;
-      btn.style.borderColor = 'rgba(0,220,255,0.6)';
-      btn.style.background = 'rgba(0,220,255,0.12)';
-      utter.onend = () => {
-        btn.innerHTML = orig;
+
+    // Couper le SR pendant la lecture pour éviter que le micro capte le TTS
+    stopSpeechRecognition();
+
+    utter.onend = () => {
+      if (btn) {
         btn.style.borderColor = 'rgba(0,220,255,0.2)';
         btn.style.background = 'rgba(0,220,255,0.04)';
-      };
+      }
+      // Relancer le SR après un court délai
+      if (recording && translatorActive) {
+        setTimeout(() => startSpeechRecognition(), 400);
+      }
+    };
+
+    if (btn) {
+      btn.style.borderColor = 'rgba(0,220,255,0.6)';
+      btn.style.background = 'rgba(0,220,255,0.12)';
     }
     window.speechSynthesis.speak(utter);
   }
