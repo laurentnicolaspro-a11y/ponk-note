@@ -1785,26 +1785,30 @@
       speechRecognition.onerror = e => {
         if (e.error === 'aborted') return;
         isRestarting = false;
-        if ((assistantActive || translatorActive) && recording) setTimeout(createAndStart, 500);
+        if (speechRecognition !== null && (assistantActive || translatorActive) && recording) setTimeout(createAndStart, 500);
       };
 
       speechRecognition.onend = () => {
         isRestarting = false;
-        if ((assistantActive || translatorActive) && recording) setTimeout(createAndStart, 300);
+        if (speechRecognition !== null && (assistantActive || translatorActive) && recording) setTimeout(createAndStart, 300);
       };
 
       try {
         speechRecognition.start();
       } catch(e) {
         isRestarting = false;
-        if (assistantActive && recording) setTimeout(createAndStart, 500);
+        if ((assistantActive || translatorActive) && recording) setTimeout(createAndStart, 500);
       }
     }
     createAndStart();
   }
 
   function stopSpeechRecognition() {
-    if (speechRecognition) { speechRecognition.stop(); speechRecognition = null; }
+    if (speechRecognition) {
+      const sr = speechRecognition;
+      speechRecognition = null; // null en premier → onend verra null et ne redémarrera pas
+      try { sr.abort(); } catch(e) {}
+    }
     if (assistantStream) { assistantStream.getTracks().forEach(t=>t.stop()); assistantStream = null; }
   }
 
