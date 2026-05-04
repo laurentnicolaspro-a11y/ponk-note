@@ -1,23 +1,37 @@
 // ── pdf.js — Ponk Note ──
 
 const PDF_C = {
-  accent:      [30, 30, 30],
+  // ── Bleu électrique #0066FF ──
+  blue:        [0, 102, 255],
+  blueLight:   [235, 242, 255],
+  blueBorder:  [199, 218, 255],
+  black:       [0, 0, 0],
+  nearBlack:   [13, 13, 13],
+  white:       [255, 255, 255],
+  offWhite:    [250, 250, 250],
+  lightGray:   [245, 245, 245],
+  borderGray:  [239, 239, 239],
+  midGray:     [180, 180, 180],
+  textDark:    [17, 17, 17],
+  textMid:     [100, 100, 100],
+  textLight:   [170, 170, 170],
+  // Compatibilité anciens appels
+  accent:      [0, 102, 255],
   accentDark:  [0, 0, 0],
-  accentLight: [210, 210, 210],
-  dark:        [20, 20, 20],
+  accentLight: [235, 242, 255],
+  dark:        [17, 17, 17],
   muted:       [100, 100, 100],
   light:       [245, 245, 245],
-  white:       [255, 255, 255],
-  sectionBg:   [230, 230, 230],
-  sectionBdr:  [160, 160, 160],
-  blockBg:     [252, 252, 252],
-  blockBdr:    [190, 190, 190],
-  detail:      [90, 90, 90],
-  ideeline:    [180, 180, 180],
-  ideelabel:   [40, 40, 40],
-  ideetext:    [50, 50, 50],
-  ideetick:    [120, 120, 120],
-  footerbg:    [240, 240, 240],
+  sectionBg:   [245, 245, 245],
+  sectionBdr:  [220, 220, 220],
+  blockBg:     [250, 250, 250],
+  blockBdr:    [239, 239, 239],
+  detail:      [100, 100, 100],
+  ideeline:    [220, 220, 220],
+  ideelabel:   [17, 17, 17],
+  ideetext:    [60, 60, 60],
+  ideetick:    [0, 102, 255],
+  footerbg:    [13, 13, 13],
 };
 
 
@@ -46,69 +60,156 @@ async function loadJsPDF() {
 function pdfBandeau(doc, titre, pageW, M, C) {
   loadAudiowide(doc);
 
-  // Barre noire
-  const fontSize = 17;
-  const barH = 22;
-  doc.setFillColor(0, 0, 0);
-  doc.rect(0, 0, pageW, barH, 'F');
+  // ── Colonne latérale bleue (style 3) ──
+  const colW = 22;         // largeur colonne gauche
+  const headH = 28;        // hauteur totale du header
+  const stripeH = 3;       // barre colorée en bas du header
+  const B = C.blue;
 
-  // "PONK NOTE" centré verticalement dans la barre
+  // Fond noir global du header
+  doc.setFillColor(...C.nearBlack);
+  doc.rect(0, 0, pageW, headH, 'F');
+
+  // Colonne bleue gauche
+  doc.setFillColor(...B);
+  doc.rect(0, 0, colW, headH, 'F');
+
+  // Cercle déco dans la colonne bleue
+  doc.setFillColor(255, 255, 255);
+  doc.circle(colW / 2, headH - 6, 7, 'F');
+  // On redessine par-dessus en bleu pour faire un anneau
+  doc.setFillColor(...B);
+  doc.circle(colW / 2, headH - 6, 5.5, 'F');
+
+  // Logo PONK en vertical dans la colonne (on l'écrit horizontal, petit)
   doc.setFont('Audiowide', 'normal');
-  doc.setFontSize(fontSize);
+  doc.setFontSize(6);
   doc.setTextColor(255, 255, 255);
-  doc.text('PONK NOTE', M, barH / 2 + (fontSize * 0.35 / 2));
+  doc.text('PONK', colW / 2, 8, { align: 'center' });
 
-  // Ligne de séparation fine sous la barre
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(0.4);
-  doc.line(0, barH, pageW, barH);
+  // Badge mode (on lit le mode depuis titre si présent)
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(6.5);
+  doc.setTextColor(...B);
+  doc.setFillColor(...C.blueLight);
+  doc.rect(colW + 3, 5, 28, 5, 'F');
+  doc.text('ANALYSE', colW + 17, 8.8, { align: 'center' });
 
-  // Titre du document en Inter (helvetica) sous la barre
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(13);
-  doc.setTextColor(20, 20, 20);
-  const tl = doc.splitTextToSize(titre, pageW - M * 2);
-  doc.text(tl, M, barH + 9);
+  // Titre principal
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(...C.white);
+  const titreLines = doc.splitTextToSize(titre, pageW - colW - 8);
+  const titleY = titreLines.length > 1 ? 13 : 17;
+  doc.text(titreLines.slice(0, 2), colW + 4, titleY);
+
+  // Barre tricolore bleue en bas du header
+  doc.setFillColor(...B);
+  doc.rect(0, headH, pageW * 0.55, stripeH, 'F');
+  doc.setFillColor(0, 102, 255);
+  doc.setGState && doc.setGState(doc.GState ? new doc.GState({opacity: 0.5}) : {});
+  doc.setFillColor(80, 150, 255);
+  doc.rect(pageW * 0.55, headH, pageW * 0.25, stripeH, 'F');
+  doc.setFillColor(160, 200, 255);
+  doc.rect(pageW * 0.8, headH, pageW * 0.2, stripeH, 'F');
 }
 
 function pdfFooter(doc, pageW, pageH, M, C, label) {
+  // ── Footer bicolore style 3 ──
+  const footH = 12;
+  const colW = 22;
   const total = doc.internal.getNumberOfPages();
   for (let i = 1; i <= total; i++) {
     doc.setPage(i);
-    doc.setFillColor(240, 240, 240); doc.rect(0, pageH - 11, pageW, 11, 'F');
-    doc.setDrawColor(180, 180, 180); doc.setLineWidth(0.3);
-    doc.line(0, pageH - 11, pageW, pageH - 11);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(150, 150, 150);
-    doc.text(label || 'Ponk Note', M, pageH - 4);
-    doc.setFillColor(30, 30, 30);
-    doc.rect(pageW - M - 12, pageH - 9, 12, 6, 'F');
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(255, 255, 255);
-    doc.text(i + ' / ' + total, pageW - M - 6, pageH - 4.8, { align: 'center' });
+
+    // Fond gris clair droite
+    doc.setFillColor(...C.lightGray);
+    doc.rect(0, pageH - footH, pageW, footH, 'F');
+
+    // Séparateur top
+    doc.setDrawColor(...C.borderGray);
+    doc.setLineWidth(0.3);
+    doc.line(0, pageH - footH, pageW, pageH - footH);
+
+    // Colonne bleue gauche avec numéro de page
+    doc.setFillColor(...C.blue);
+    doc.rect(0, pageH - footH, colW, footH, 'F');
+
+    // Numéro de page
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...C.white);
+    doc.text(String(i), colW / 2, pageH - footH + 7.5, { align: 'center' });
+
+    // Total pages petit
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6);
+    doc.setTextColor(200, 220, 255);
+    doc.text('/ ' + total, colW / 2, pageH - footH + 10.5, { align: 'center' });
+
+    // Label et url droite
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(...C.textMid);
+    doc.text(label || 'Ponk Note', colW + 4, pageH - footH + 5);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(...C.textLight);
+    doc.text('ponk-note.vercel.app', colW + 4, pageH - footH + 9.5);
   }
 }
 
 function pdfSectionHeader(doc, titre, idx, y, M, maxW, C) {
-  doc.setFillColor(...C.sectionBg); doc.setDrawColor(...C.sectionBdr); doc.setLineWidth(0.25);
-  doc.roundedRect(M, y, maxW, 10, 2.5, 2.5, 'FD');
-  doc.setFillColor(...C.accent); doc.roundedRect(M, y, 3.5, 10, 1.5, 1.5, 'F');
-  if (idx !== null) {
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(...C.white);
-    doc.text(String(idx), M + 1.75, y + 6.5, { align: 'center' });
-  }
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...C.accentDark);
-  doc.text(titre.toUpperCase(), M + 7, y + 6.5);
+  // ── Section header style 3 : carré bleu + label ──
+  const shH = 9;
+  const sqW = 9;
+
+  doc.setFillColor(...C.lightGray);
+  doc.rect(M, y, maxW, shH, 'F');
+
+  // Carré bleu avec numéro ou point
+  doc.setFillColor(...C.blue);
+  doc.rect(M, y, sqW, shH, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(...C.white);
+  const numStr = (idx !== null && idx !== undefined) ? String(idx) : '·';
+  doc.text(numStr, M + sqW / 2, y + 6, { align: 'center' });
+
+  // Label section
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(...C.textDark);
+  doc.text(titre.toUpperCase(), M + sqW + 4, y + 6);
+
+  // Ligne bleue sous le header
+  doc.setDrawColor(...C.blue);
+  doc.setLineWidth(0.8);
+  doc.line(M, y + shH, M + 36, y + shH);
+  doc.setDrawColor(...C.borderGray);
+  doc.setLineWidth(0.3);
+  doc.line(M + 36, y + shH, M + maxW, y + shH);
 }
 
 function pdfBlock(doc, tL, dL, bY, M, maxW, totH, C) {
-  doc.setFillColor(200, 200, 200); doc.roundedRect(M + 0.6, bY + 0.6, maxW, totH, 2.5, 2.5, 'F');
-  doc.setFillColor(...C.blockBg); doc.setDrawColor(...C.blockBdr); doc.setLineWidth(0.2);
-  doc.roundedRect(M, bY, maxW, totH, 2.5, 2.5, 'FD');
-  doc.setFillColor(...C.accentLight); doc.roundedRect(M, bY, 3, totH, 1.5, 1.5, 'F');
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...C.dark);
+  // ── Card style 3 : barre bleue gauche fine ──
+  doc.setFillColor(...C.offWhite);
+  doc.setDrawColor(...C.borderGray);
+  doc.setLineWidth(0.2);
+  doc.rect(M, bY, maxW, totH, 'FD');
+  // Barre bleue active
+  doc.setFillColor(...C.blue);
+  doc.rect(M, bY, 3, totH, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(...C.textDark);
   doc.text(tL, M + 6, bY + 6);
   if (dL && dL.length > 0) {
-    doc.setFont('helvetica', 'italic'); doc.setFontSize(8.5); doc.setTextColor(...C.detail);
-    doc.text(dL, M + 8, bY + 6 + tL.length * 5.8 + 3);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...C.textMid);
+    doc.text(dL, M + 6, bY + 6 + tL.length * 5.2 + 3);
   }
 }
 
@@ -421,24 +522,40 @@ async function exportPDF() {
     let y = M;
 
     const checkPage = (n = 10) => {
-      if (y + n > pageH - 16) {
+      if (y + n > pageH - 14) {
         doc.addPage();
-        // Header sur nouvelle page
-        doc.setFillColor(0, 0, 0); doc.rect(0, 0, pageW, 10, 'F');
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(255, 255, 255);
-        doc.text('PONK NOTE', M, 7);
-        y = 16;
+        // Mini header style 3 sur nouvelle page
+        const mhH = 8;
+        doc.setFillColor(...C.nearBlack);
+        doc.rect(0, 0, pageW, mhH, 'F');
+        doc.setFillColor(...C.blue);
+        doc.rect(0, 0, 22, mhH, 'F');
+        doc.setFont('Audiowide', 'normal');
+        doc.setFontSize(5.5);
+        doc.setTextColor(255, 255, 255);
+        doc.text('PONK', 11, 5.5, { align: 'center' });
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        doc.setTextColor(180, 180, 180);
+        doc.text('PONK NOTE', 26, 5.5);
+        // Ligne bleue
+        doc.setDrawColor(...C.blue);
+        doc.setLineWidth(0.5);
+        doc.line(0, mhH, pageW * 0.4, mhH);
+        doc.setDrawColor(...C.borderGray);
+        doc.setLineWidth(0.2);
+        doc.line(pageW * 0.4, mhH, pageW, mhH);
+        y = mhH + 6;
       }
     };
 
     const footerTxt = 'Genere par Ponk Note - ' + new Date().toLocaleDateString('fr-FR');
 
+    let _sectionIdx = 0;
     const sectionTitle = (label) => {
       checkPage(14);
-      doc.setFillColor(232, 232, 232); doc.rect(M, y, maxW, 10, 'F');
-      doc.setFillColor(0, 0, 0); doc.rect(M, y, 3, 10, 'F');
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(0, 0, 0);
-      doc.text(label.toUpperCase(), M + 7, y + 6.5);
+      _sectionIdx++;
+      pdfSectionHeader(doc, label, _sectionIdx, y, M, maxW, C);
       y += 14;
     };
 
@@ -446,18 +563,25 @@ async function exportPDF() {
     const titre = (meta.title || s.titre || 'Compte-rendu');
     const titreFmt = titre.charAt(0).toUpperCase() + titre.slice(1);
     pdfBandeau(doc, titreFmt, pageW, M, C);
-    y = 38;
+    y = 36;
 
     // Contexte
     if (checkedLabels.has('contexte') && s.contexte) {
       checkPage(16);
       const lines = doc.splitTextToSize(s.contexte, maxW - 10);
-      const h = lines.length * 5 + 6;
-      doc.setFillColor(250, 250, 250); doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3);
+      const h = lines.length * 5 + 8;
+      // Fond teinté bleu très léger
+      doc.setFillColor(...C.blueLight);
+      doc.setDrawColor(...C.blueBorder);
+      doc.setLineWidth(0.3);
       doc.rect(M, y, maxW, h, 'FD');
-      doc.setFillColor(160, 160, 160); doc.rect(M, y, 2.5, h, 'F');
-      doc.setFont('helvetica', 'italic'); doc.setFontSize(8.5); doc.setTextColor(90, 90, 90);
-      doc.text(lines, M + 7, y + 5);
+      // Barre bleue gauche
+      doc.setFillColor(...C.blue);
+      doc.rect(M, y, 3, h, 'F');
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8.5);
+      doc.setTextColor(...C.textMid);
+      doc.text(lines, M + 7, y + 5.5);
       y += h + 6;
     }
 
@@ -465,13 +589,19 @@ async function exportPDF() {
     if (checkedLabels.has('resume') && s.resume) {
       checkPage(20);
       sectionTitle('Resume');
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
-      const lines = doc.splitTextToSize(s.resume, maxW - 8);
-      const h = lines.length * 5.5 + 6;
-      doc.setFillColor(252, 252, 252); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      const lines = doc.splitTextToSize(s.resume, maxW - 10);
+      const h = lines.length * 5.5 + 8;
+      doc.setFillColor(...C.offWhite);
+      doc.setDrawColor(...C.borderGray);
+      doc.setLineWidth(0.2);
       doc.rect(M, y, maxW, h, 'FD');
-      doc.setTextColor(40, 40, 40);
-      doc.text(lines, M + 4, y + 5.5);
+      // Barre bleue gauche
+      doc.setFillColor(...C.blue);
+      doc.rect(M, y, 3, h, 'F');
+      doc.setTextColor(...C.textDark);
+      doc.text(lines, M + 7, y + 5.5);
       y += h + 6;
     }
 
@@ -514,23 +644,30 @@ async function exportPDF() {
         const lH = Math.max(lL.length * 4.8 + 5, 10);
         const rH = rd ? Math.max(doc.splitTextToSize(rd, colW - 14).length * 4.8 + 5, 10) : 0;
         const rowH = Math.max(lH, rH);
-        // Gauche
-        doc.setFillColor(252, 252, 252); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
+        // Gauche — card bleue
+        doc.setFillColor(...C.blueLight);
+        doc.setDrawColor(...C.blueBorder);
+        doc.setLineWidth(0.2);
         doc.rect(M, y, colW, rowH, 'FD');
-        doc.setFillColor(0, 0, 0); doc.rect(M, y, 8, rowH, 'F');
+        // Carré de check bleu
+        doc.setFillColor(...C.blue);
+        doc.rect(M, y, 8, rowH, 'F');
         doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(255, 255, 255);
-        doc.text('v', M + 4, y + rowH / 2 + 1.8, { align: 'center' });
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(30, 30, 30);
+        doc.text('✓', M + 4, y + rowH / 2 + 1.8, { align: 'center' });
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...C.blue);
         doc.text(lL, M + 11, y + 4.5);
-        // Droite
+        // Droite — card grise non validée
         if (rd) {
           const rL = doc.splitTextToSize(rd, colW - 14);
-          doc.setFillColor(252, 252, 252); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
+          doc.setFillColor(...C.offWhite);
+          doc.setDrawColor(...C.borderGray);
+          doc.setLineWidth(0.2);
           doc.rect(M + colW + 3, y, colW, rowH, 'FD');
-          doc.setFillColor(0, 0, 0); doc.rect(M + colW + 3, y, 8, rowH, 'F');
-          doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(255, 255, 255);
-          doc.text('v', M + colW + 7, y + rowH / 2 + 1.8, { align: 'center' });
-          doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(30, 30, 30);
+          // Carré vide
+          doc.setDrawColor(...C.midGray);
+          doc.setLineWidth(0.8);
+          doc.rect(M + colW + 3, y, 8, rowH, 'S');
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...C.textMid);
           doc.text(rL, M + colW + 14, y + 4.5);
         }
         y += rowH + 3;
@@ -566,13 +703,13 @@ async function exportPDF() {
       const colW = (maxW - 4) / 2;
       y += 2;
       doc.setFont('helvetica', 'bold'); doc.setFontSize(7);
-      doc.setTextColor(0, 0, 0);
+      doc.setTextColor(...C.blue);
       doc.text('REALISEES', M, y);
-      doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.4);
+      doc.setDrawColor(...C.blue); doc.setLineWidth(0.6);
       doc.line(M, y + 1.5, M + colW, y + 1.5);
-      doc.setTextColor(150, 150, 150);
+      doc.setTextColor(...C.textLight);
       doc.text('A FAIRE', M + colW + 4, y);
-      doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3);
+      doc.setDrawColor(...C.borderGray); doc.setLineWidth(0.3);
       doc.line(M + colW + 4, y + 1.5, M + maxW, y + 1.5);
       y += 6;
       const maxRows = Math.max(actionsIADone.length, actionsIATodo.length);
@@ -585,10 +722,14 @@ async function exportPDF() {
           const cleanDone = rawDone.includes(' — ') ? rawDone.split(' — ')[0].trim() : rawDone;
           const lL = doc.splitTextToSize(cleanDone, colW - 6);
           const lH = Math.max(lL.length * 4.5 + 5, 9);
-          doc.setFillColor(245, 245, 245); doc.setDrawColor(210, 210, 210); doc.setLineWidth(0.15);
+          doc.setFillColor(...C.blueLight);
+          doc.setDrawColor(...C.blueBorder);
+          doc.setLineWidth(0.2);
           doc.rect(M, y, colW, lH, 'FD');
-          doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(30, 30, 30);
-          doc.text(lL, M + 4, y + 4);
+          doc.setFillColor(...C.blue);
+          doc.rect(M, y, 3, lH, 'F');
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...C.blue);
+          doc.text(lL, M + 6, y + 4);
           rowH = Math.max(rowH, lH);
         }
         if (actionsIATodo[i]) {
@@ -596,9 +737,13 @@ async function exportPDF() {
           const cleanTodo = rawTodo.includes(' — ') ? rawTodo.split(' — ')[0].trim() : rawTodo;
           const rL = doc.splitTextToSize(cleanTodo, colW - 6);
           const rH = Math.max(rL.length * 4.5 + 5, 9);
-          doc.setFillColor(252, 252, 252); doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3);
+          doc.setFillColor(...C.offWhite);
+          doc.setDrawColor(...C.borderGray);
+          doc.setLineWidth(0.2);
           doc.rect(M + colW + 4, y, colW, rH, 'FD');
-          doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(150, 150, 150);
+          doc.setFillColor(...C.midGray);
+          doc.rect(M + colW + 4, y, 2, rH, 'F');
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...C.textMid);
           doc.text(rL, M + colW + 8, y + 4);
           rowH = Math.max(rowH, rH);
         }
