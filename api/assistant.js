@@ -57,7 +57,7 @@ Traduis UNIQUEMENT en français. Réponse : juste la traduction, rien d'autre, p
 
     // ── Mode traduction + suggestions de réponse ──
     if (mode === 'translate_suggest') {
-      const { sourceLang, targetLang, history } = req.body;
+      const { sourceLang, history } = req.body;
       const historyText = (history || []).length > 0
         ? '\nContexte des échanges précédents :\n' + history.map(h => `- "${h}"`).join('\n')
         : '';
@@ -65,17 +65,14 @@ Traduis UNIQUEMENT en français. Réponse : juste la traduction, rien d'autre, p
       const prompt = `Tu es un interprète professionnel en temps réel.
 Phrase prononcée en ${sourceLang} : "${question}"${historyText}
 
-Fais les 3 choses suivantes :
+Fais les 2 choses suivantes :
 
 1. TRADUCTION : Traduis la phrase en français (pour que l'utilisateur comprenne ce qu'on lui dit).
 
-2. SUGGESTIONS : Propose 3 réponses courtes et naturelles en ${sourceLang} que l'utilisateur pourrait dire à son interlocuteur. Les suggestions doivent être :
-- Courtes (max 15 mots chacune)
-- Adaptées au contexte et à la phrase
-- Variées (une directe, une qui demande du temps/clarification, une alternative)
+2. SUGGESTIONS : Propose 3 réponses courtes et naturelles que l'utilisateur pourrait dire à son interlocuteur. Pour chaque suggestion donne la phrase en ${sourceLang} ET sa traduction en français. Courtes (max 15 mots), adaptées au contexte, variées (une directe, une qui demande du temps/clarification, une alternative).
 
-3. Réponds UNIQUEMENT en JSON sans markdown :
-{"translation":"traduction en français","suggestions":["suggestion 1 en ${sourceLang}","suggestion 2 en ${sourceLang}","suggestion 3 en ${sourceLang}"]}`;
+Réponds UNIQUEMENT en JSON sans markdown :
+{"translation":"traduction en français","suggestions":[{"text":"suggestion en ${sourceLang}","fr":"traduction française"},{"text":"...","fr":"..."},{"text":"...","fr":"..."}]}`;
 
       const raw = await callGemini(prompt);
       if (!raw) return res.status(200).json({ translation: null, suggestions: [] });
