@@ -435,7 +435,15 @@
     <div class="create-modal-title">Nouveau projet</div>
     <input class="create-input" id="createNom" placeholder="Nom du projet (ex: Chantier cuisine)" maxlength="60"
       oninput="document.getElementById('btnCreerConfirm').disabled=!this.value.trim()">
-    <input class="create-input" id="createDesc" placeholder="Description courte (optionnel)" maxlength="120">
+    <div style="font-size:11px;color:var(--muted);font-family:var(--font-display);letter-spacing:0.5px;margin:4px 0 10px;padding:0 2px">Cadrage — aide l'IA à comprendre votre projet</div>
+    <div style="font-size:12px;color:var(--cyan-dim);margin-bottom:6px">Quel est le sujet de ce projet ?</div>
+    <textarea class="create-input" id="createSujet" placeholder="Ex: Rénovation complète de la cuisine, remplacement sol et cuisine équipée" maxlength="300" rows="2" style="resize:none;line-height:1.5"></textarea>
+    <div style="font-size:12px;color:var(--cyan-dim);margin-bottom:6px">Y a-t-il un budget ?</div>
+    <input class="create-input" id="createBudget" placeholder="Ex: 15 000€ / Non / À définir" maxlength="80">
+    <div style="font-size:12px;color:var(--cyan-dim);margin-bottom:6px">Y a-t-il une deadline ?</div>
+    <input class="create-input" id="createDeadline" placeholder="Ex: Juin 2026 / Non / Urgent" maxlength="80">
+    <div style="font-size:12px;color:var(--cyan-dim);margin-bottom:6px">Autre précision ? <span style="color:var(--muted)">(optionnel)</span></div>
+    <textarea class="create-input" id="createAutre" placeholder="Tout ce qui peut aider l'IA à mieux comprendre le contexte…" maxlength="300" rows="2" style="resize:none;line-height:1.5"></textarea>
     <button class="btn-creer" id="btnCreerConfirm" onclick="creerProjet()" disabled>Créer le projet</button>
     <button class="modal-close-btn" onclick="fermerCreateModal()">Annuler</button>
   </div>
@@ -744,7 +752,10 @@ async function supprimerProjet() {
 // ── Création projet ───────────────────────────────────────────────────────────
 function ouvrirCreateModal() {
   document.getElementById('createNom').value = '';
-  document.getElementById('createDesc').value = '';
+  document.getElementById('createSujet').value = '';
+  document.getElementById('createBudget').value = '';
+  document.getElementById('createDeadline').value = '';
+  document.getElementById('createAutre').value = '';
   document.getElementById('btnCreerConfirm').disabled = true;
   document.getElementById('createModal').classList.add('active');
   setTimeout(() => document.getElementById('createNom').focus(), 100);
@@ -755,9 +766,20 @@ function fermerCreateModal() {
 }
 
 async function creerProjet() {
-  const nom  = document.getElementById('createNom').value.trim();
-  const desc = document.getElementById('createDesc').value.trim();
+  const nom      = document.getElementById('createNom').value.trim();
+  const sujet    = document.getElementById('createSujet').value.trim();
+  const budget   = document.getElementById('createBudget').value.trim();
+  const deadline = document.getElementById('createDeadline').value.trim();
+  const autre    = document.getElementById('createAutre').value.trim();
   if (!nom) return;
+
+  // Construire le cadrage pour l'IA
+  const cadrageLines = [];
+  if (sujet)    cadrageLines.push(`Sujet : ${sujet}`);
+  if (budget)   cadrageLines.push(`Budget : ${budget}`);
+  if (deadline) cadrageLines.push(`Deadline : ${deadline}`);
+  if (autre)    cadrageLines.push(`Précisions : ${autre}`);
+  const cadrage = cadrageLines.join('\n');
 
   const btn = document.getElementById('btnCreerConfirm');
   btn.disabled = true; btn.textContent = 'Création…';
@@ -765,7 +787,7 @@ async function creerProjet() {
   try {
     const res = await fetch(`/api/project?action=create&uid=${encodeURIComponent(uid)}`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ uid, nom, description: desc })
+      body: JSON.stringify({ uid, nom, description: sujet, cadrage })
     });
     const { project, error } = await res.json();
     if (error) throw new Error(error);
