@@ -1805,10 +1805,17 @@
         if (data.suggestions && data.suggestions.length > 0) {
           suggestList.innerHTML = '';
           data.suggestions.forEach(s => {
+            const text = typeof s === 'object' ? s.text : s;
+            const fr = typeof s === 'object' ? s.fr : null;
             const btn = document.createElement('button');
             btn.className = 'trad-suggest-btn';
-            btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00dcff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>${s}`;
-            btn.addEventListener('click', () => speakText(s, btn));
+            btn.innerHTML = `
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00dcff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              <div style="display:flex;flex-direction:column;gap:2px;text-align:left">
+                <span style="font-size:13px;color:#fff">${text}</span>
+                ${fr ? `<span style="font-size:11px;color:rgba(0,220,255,0.45);font-style:italic">${fr}</span>` : ''}
+              </div>`;
+            btn.addEventListener('click', () => speakText(text, btn));
             suggestList.appendChild(btn);
           });
           suggestionsZone.style.display = 'block';
