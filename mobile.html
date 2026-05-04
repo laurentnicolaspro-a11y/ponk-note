@@ -640,7 +640,10 @@
     const email   = localStorage.getItem('ponk_email');
     if (profile && email) {
       try {
-        const res = await fetch('/api/profile?email=' + encodeURIComponent(email));
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+        const res = await fetch('/api/profile?email=' + encodeURIComponent(email), { signal: controller.signal });
+        clearTimeout(timeout);
         if (res.ok) {
           const data = await res.json();
           if (data.prefs) {
@@ -706,8 +709,10 @@
       if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
     }, 400);
     const av = document.getElementById('headerAvatar');
-    av.textContent = name[0].toUpperCase();
-    av.style.background = 'linear-gradient(135deg, rgba(0,100,200,0.7), rgba(0,180,255,0.5))';
+    if (av && name) {
+      av.textContent = name[0].toUpperCase();
+      av.style.background = 'linear-gradient(135deg, rgba(0,100,200,0.7), rgba(0,180,255,0.5))';
+    }
   }
 
   function changeProfile() {
