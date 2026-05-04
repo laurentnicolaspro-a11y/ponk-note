@@ -865,10 +865,32 @@
     <!-- Droite : zone assistant IA -->
     <div class="stage-right">
       <div class="assistant-title">
-        <span class="assistant-title-text" id="assistantTitleText">ASSISTANT IA</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+          <span class="assistant-title-text" id="assistantTitleText">ASSISTANT IA</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <select class="trad-lang-picker" id="tradLangPicker" onchange="onLangChange()" style="display:none">
+              <option value="en">Anglais</option>
+              <option value="es">Espagnol</option>
+              <option value="de">Allemand</option>
+              <option value="it">Italien</option>
+              <option value="pt">Portugais</option>
+              <option value="nl">Neerlandais</option>
+              <option value="ja">Japonais</option>
+              <option value="zh">Mandarin</option>
+              <option value="ar">Arabe</option>
+              <option value="ru">Russe</option>
+            </select>
+            <div id="tradToggle" onclick="toggleTranslator()" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 10px;border-radius:100px;border:1.5px solid rgba(0,220,255,0.25);background:rgba(0,220,255,0.04);transition:all 0.2s" title="Activer le traducteur">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(0,220,255,0.5)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
+              <div id="tradTrack" style="width:28px;height:16px;border-radius:100px;background:rgba(0,220,255,0.15);position:relative;transition:background 0.2s;flex-shrink:0">
+                <div id="tradThumb" style="width:12px;height:12px;border-radius:50%;background:rgba(0,220,255,0.5);position:absolute;top:2px;left:2px;transition:all 0.2s"></div>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="listening-row">
           <div class="listening-dot"></div>
-          <span class="listening-text" id="listeningText">En écoute…</span>
+          <span class="listening-text" id="listeningText">En ecoute...</span>
         </div>
       </div>
 
@@ -908,28 +930,6 @@
     </div>
     <div class="main-add-btn" id="manualMenuBtn" onclick="openManualMenu()">+</div>
     <div style="flex:1"></div>
-
-    <!-- Traducteur toggle + sélecteur langue -->
-    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-      <div class="trad-toggle" id="tradToggle" onclick="toggleTranslator()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
-        🌐 Traducteur
-      </div>
-      <div class="trad-lang-select" id="tradLangSelect">
-        <select class="trad-lang-picker" id="tradLangPicker" onchange="onLangChange()">
-          <option value="en">🇬🇧 Anglais</option>
-          <option value="es">🇪🇸 Espagnol</option>
-          <option value="de">🇩🇪 Allemand</option>
-          <option value="it">🇮🇹 Italien</option>
-          <option value="pt">🇵🇹 Portugais</option>
-          <option value="nl">🇳🇱 Néerlandais</option>
-          <option value="ja">🇯🇵 Japonais</option>
-          <option value="zh">🇨🇳 Mandarin</option>
-          <option value="ar">🇦🇪 Arabe</option>
-          <option value="ru">🇷🇺 Russe</option>
-        </select>
-      </div>
-    </div>
 
     <div class="bottom-ia">
       <div class="action-bubbles-wrap" id="actionBubblesWrap"></div>
@@ -1670,7 +1670,9 @@
   function toggleTranslator() {
     translatorActive = !translatorActive;
     const toggle = document.getElementById('tradToggle');
-    const langSelect = document.getElementById('tradLangSelect');
+    const track = document.getElementById('tradTrack');
+    const thumb = document.getElementById('tradThumb');
+    const langPicker = document.getElementById('tradLangPicker');
     const tradPanel = document.getElementById('tradPanel');
     const bubbleEmpty = document.getElementById('bubbleEmpty');
     const bubbleContent = document.getElementById('bubbleContent');
@@ -1678,30 +1680,31 @@
     const listeningText = document.getElementById('listeningText');
 
     if (translatorActive) {
-      toggle.classList.add('active');
-      langSelect.classList.add('visible');
+      track.style.background = 'rgba(0,220,255,0.7)';
+      thumb.style.left = '14px';
+      thumb.style.background = '#fff';
+      toggle.style.borderColor = 'rgba(0,220,255,0.7)';
+      toggle.style.background = 'rgba(0,220,255,0.12)';
+      langPicker.style.display = 'block';
       tradPanel.classList.add('visible');
       bubbleEmpty.style.display = 'none';
       bubbleContent.style.display = 'none';
-      titleText.textContent = '🌐 TRADUCTEUR';
-      listeningText.textContent = 'Parle en ' + LANG_NAMES[translatorLang] + '…';
-      // Redémarrer SR dans la bonne langue si on enregistre
-      if (recording) {
-        stopSpeechRecognition();
-        startSpeechRecognition();
-      }
+      titleText.textContent = 'TRADUCTEUR';
+      listeningText.textContent = 'Parle en ' + LANG_NAMES[translatorLang] + '...';
+      if (recording) { stopSpeechRecognition(); startSpeechRecognition(); }
     } else {
-      toggle.classList.remove('active');
-      langSelect.classList.remove('visible');
+      track.style.background = 'rgba(0,220,255,0.15)';
+      thumb.style.left = '2px';
+      thumb.style.background = 'rgba(0,220,255,0.5)';
+      toggle.style.borderColor = 'rgba(0,220,255,0.25)';
+      toggle.style.background = 'rgba(0,220,255,0.04)';
+      langPicker.style.display = 'none';
       tradPanel.classList.remove('visible');
       bubbleEmpty.style.display = 'block';
       bubbleContent.style.display = 'none';
       titleText.textContent = 'ASSISTANT IA';
-      listeningText.textContent = 'En écoute…';
-      if (recording) {
-        stopSpeechRecognition();
-        startSpeechRecognition();
-      }
+      listeningText.textContent = 'En ecoute...';
+      if (recording) { stopSpeechRecognition(); startSpeechRecognition(); }
     }
   }
 
