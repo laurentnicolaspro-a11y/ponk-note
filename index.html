@@ -1803,12 +1803,14 @@
 
         // Afficher les suggestions
         if (data.suggestions && data.suggestions.length > 0) {
-          suggestList.innerHTML = data.suggestions.map(s => `
-            <button class="trad-suggest-btn" onclick="speakText(${JSON.stringify(s)}, this)">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00dcff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-              ${s}
-            </button>
-          `).join('');
+          suggestList.innerHTML = '';
+          data.suggestions.forEach(s => {
+            const btn = document.createElement('button');
+            btn.className = 'trad-suggest-btn';
+            btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00dcff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>${s}`;
+            btn.addEventListener('click', () => speakText(s, btn));
+            suggestList.appendChild(btn);
+          });
           suggestionsZone.style.display = 'block';
           sepLine.style.display = 'block';
         }
