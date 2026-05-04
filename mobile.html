@@ -797,6 +797,21 @@
 
   initProfile();
 
+  // Fallback : si après 2s rien n'est visible, forcer l'affichage
+  setTimeout(() => {
+    const profile = localStorage.getItem('ponk_profile');
+    const email = localStorage.getItem('ponk_email');
+    const mainApp = document.getElementById('mainApp');
+    const profileScreen = document.getElementById('profileScreen');
+    const bothHidden = mainApp.classList.contains('hidden') && !profileScreen.classList.contains('visible');
+    if (bothHidden) {
+      if (profile && email) {
+        showApp(profile);
+      } else {
+        profileScreen.classList.add('visible');
+      }
+    }
+  }, 2000);
 
 </script>
 
