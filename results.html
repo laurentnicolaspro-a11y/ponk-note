@@ -2841,9 +2841,13 @@ async function ajouterAuProjet(projectId) {
     fileName,
     date:      meta.datetime || new Date().toISOString(),
     titre:     meta.title    || fileName.replace('.webm', ''),
-    resume:    analyzed.summary?.resume    || '',
-    decisions: analyzed.summary?.decisions || [],
-    actions:   analyzed.summary?.actions   || []
+    resume:    analyzed.summary?.resume              || '',
+    decisions: analyzed.summary?.decisions           || [],
+    actions:   analyzed.summary?.actions             || [],
+    points_discutes: analyzed.summary?.points_discutes || [],
+    prochaine_etape: analyzed.summary?.prochaine_etape || '',
+    modes:     analyzed.modes                        || [],
+    summary:   analyzed.summary                      || {}
   };
 
   try {
