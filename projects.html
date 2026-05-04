@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Ponk Note — Projets</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+    :root {
+      --bg-deep:   #050c1a;
+      --bg-mid:    #080f20;
+      --bg-card:   rgba(4,10,30,0.7);
+      --bg-card2:  rgba(4,10,30,0.85);
+      --cyan:      #00d4ff;
+      --cyan-dim:  rgba(0,212,255,0.55);
+      --cyan-glow: rgba(0,212,255,0.18);
+      --cyan-border: rgba(0,212,255,0.3);
+      --cyan-border-hi: rgba(0,212,255,0.6);
+      --text:      #e8f4ff;
+      --muted:     rgba(180,220,255,0.45);
+      --danger:    #ff4466;
+      --green:     #00e5a0;
+      --purple:    #7c4dff;
+      --purple-dim: rgba(124,77,255,0.4);
+      --font-display: 'Orbitron', sans-serif;
+      --font-body:    'Exo 2', sans-serif;
+    }
+
+    html, body { min-height:100%; font-family:var(--font-body); color:var(--text); background:var(--bg-deep); }
+    body { padding-bottom:60px; overflow-x:hidden; }
+    body::before {
+      content:''; position:fixed; inset:0; z-index:0;
+      background: radial-gradient(ellipse at 20% 30%, #1a3060 0%, #101e40 40%, #080f28 100%);
+    }
+    #neuroCanvas { position:fixed; inset:0; z-index:0; pointer-events:none; }
+    .scanline {
+      position:fixed; inset:0; z-index:0; pointer-events:none;
+      background:linear-gradient(transparent 50%, rgba(0,212,255,0.03) 50%);
+      background-size:100% 4px;
+    }
+
+    @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes cardIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    @keyframes slideRight { from{opacity:0;transform:translateX(24px)} to{opacity:1;transform:translateX(0)} }
+    @keyframes slideLeft { from{opacity:0;transform:translateX(-24px)} to{opacity:1;transform:translateX(0)} }
+
+    /* ── Header ── */
+    header {
+      position:sticky; top:0; z-index:10;
+      background:rgba(5,12,26,0.85); backdrop-filter:blur(20px);
+      border-bottom:1px solid var(--cyan-border);
+      padding:env(safe-area-inset-top,0px) 20px 0;
+    }
+    .header-inner {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 0; max-width:480px; margin:0 auto;
+    }
+    .logo {
+      font-family:var(--font-display); font-size:16px; font-weight:700;
+      letter-spacing:1px; color:var(--cyan);
+      text-shadow:0 0 10px var(--cyan-dim), 0 0 20px rgba(0,212,255,0.3);
+    }
+    .logo span { color:var(--text); text-shadow:0 0 10px rgba(232,244,255,0.6); }
+    .back-btn {
+      background:transparent; border:1px solid var(--cyan-border);
+      color:var(--cyan); padding:6px 14px; border-radius:6px;
+      font-family:var(--font-display); font-size:11px; font-weight:600;
+      letter-spacing:0.5px; cursor:pointer;
+      transition:background 0.2s, border-color 0.2s;
+    }
+    .back-btn:hover { background:var(--cyan-glow); border-color:var(--cyan-border-hi); }
+
+    /* ── Content ── */
+    .content { position:relative; z-index:1; max-width:480px; margin:0 auto; padding:20px 20px 0; }
+
+    .section-title {
+      font-family:var(--font-display); font-size:9px; font-weight:700;
+      color:var(--cyan-dim); text-transform:uppercase; letter-spacing:2px;
+      margin-bottom:12px; padding:0 4px;
+    }
+
+    /* ── Vue liste projets ── */
+    #viewListe { animation:fadeUp 0.3s ease; }
+    #viewDetail { display:none; animation:slideRight 0.3s ease; }
+
+    /* Quota projets */
+    .quota-wrap {
+      background:var(--bg-card); border:1px solid var(--cyan-border);
+      border-radius:10px; padding:16px; margin-bottom:20px;
+    }
+    .quota-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .quota-label { font-family:var(--font-display); font-size:10px; font-weight:600; letter-spacing:1.5px; color:var(--purple); text-transform:uppercase; }
+    .quota-count { font-family:var(--font-display); font-size:11px; color:var(--muted); letter-spacing:1px; }
+    .quota-dots { display:flex; gap:6px; }
+    .quota-dot { flex:1; height:4px; border-radius:2px; background:rgba(124,77,255,0.12); border:1px solid rgba(124,77,255,0.15); transition:all 0.3s; }
+    .quota-dot.filled { background:var(--purple); box-shadow:0 0 6px var(--purple-dim); border-color:var(--purple); }
+
+    /* Carte projet */
+    .projet-card {
+      background:var(--bg-card); border:1px solid var(--cyan-border);
+      border-radius:12px; padding:18px 16px; margin-bottom:10px;
+      cursor:pointer; transition:all 0.2s;
+      animation:cardIn 0.35s ease both;
+      display:flex; align-items:center; gap:14px;
+    }
+    .projet-card:hover { border-color:var(--cyan-border-hi); background:var(--bg-card2); transform:translateY(-1px); }
+    .projet-card:active { transform:scale(0.99); }
+    .projet-card-icon {
+      width:44px; height:44px; border-radius:10px; flex-shrink:0;
+      background:rgba(124,77,255,0.12); border:1px solid rgba(124,77,255,0.3);
+      display:flex; align-items:center; justify-content:center; font-size:20px;
+    }
+    .projet-card-body { flex:1; min-width:0; }
+    .projet-card-name {
+      font-family:var(--font-display); font-size:13px; font-weight:600;
+      color:var(--text); margin-bottom:4px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .projet-card-meta { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px; }
+    .statut-badge {
+      padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600;
+      font-family:var(--font-display); letter-spacing:0.5px;
+    }
+    .statut-en_cours  { background:rgba(0,229,160,0.1); color:var(--green); border:1px solid rgba(0,229,160,0.25); }
+    .statut-termine   { background:rgba(0,212,255,0.1); color:var(--cyan); border:1px solid rgba(0,212,255,0.25); }
+    .statut-en_pause  { background:rgba(255,180,0,0.1); color:#ffb400; border:1px solid rgba(255,180,0,0.25); }
+    .projet-card-arrow { color:var(--cyan-dim); font-size:18px; flex-shrink:0; }
+
+    /* Bouton nouveau projet */
+    .btn-nouveau {
+      width:100%; padding:16px; border-radius:12px; margin-top:4px;
+      background:transparent; border:1px dashed rgba(124,77,255,0.35);
+      color:var(--purple); font-family:var(--font-display); font-size:11px;
+      font-weight:600; letter-spacing:1px; cursor:pointer;
+      transition:all 0.2s; text-transform:uppercase;
+    }
+    .btn-nouveau:hover { background:rgba(124,77,255,0.08); border-color:var(--purple); box-shadow:0 0 12px var(--purple-dim); }
+
+    /* Empty state */
+    .empty { text-align:center; padding:60px 20px; color:var(--muted); animation:fadeUp 0.4s ease; }
+    .empty-icon { font-size:44px; margin-bottom:16px; }
+    .empty p { font-size:15px; line-height:1.7; }
+
+    /* ── Vue détail projet ── */
+    .detail-header { margin-bottom:20px; }
+    .detail-back {
+      display:flex; align-items:center; gap:8px; margin-bottom:16px;
+      background:none; border:none; color:var(--cyan-dim); cursor:pointer;
+      font-family:var(--font-display); font-size:11px; letter-spacing:0.5px;
+      padding:0; transition:color 0.2s;
+    }
+    .detail-back:hover { color:var(--cyan); }
+    .detail-nom {
+      font-family:var(--font-display); font-size:18px; font-weight:700;
+      color:var(--text); margin-bottom:6px; letter-spacing:0.5px;
+    }
+    .detail-desc { font-size:13px; color:var(--muted); margin-bottom:12px; line-height:1.5; }
+
+    /* Statut selector */
+    .statut-selector { display:flex; gap:6px; margin-bottom:20px; }
+    .statut-btn {
+      flex:1; padding:8px 4px; border-radius:8px; border:1px solid var(--cyan-border);
+      background:transparent; font-family:var(--font-display); font-size:9px;
+      font-weight:600; letter-spacing:0.8px; color:var(--muted);
+      cursor:pointer; transition:all 0.15s; text-align:center; text-transform:uppercase;
+    }
+    .statut-btn.active.s-en_cours  { background:rgba(0,229,160,0.1); border-color:var(--green); color:var(--green); }
+    .statut-btn.active.s-termine   { background:rgba(0,212,255,0.1); border-color:var(--cyan); color:var(--cyan); }
+    .statut-btn.active.s-en_pause  { background:rgba(255,180,0,0.1); border-color:#ffb400; color:#ffb400; }
+
+    /* Synthèse IA */
+    .synthese-card {
+      background:rgba(124,77,255,0.06); border:1px solid rgba(124,77,255,0.25);
+      border-radius:12px; padding:16px; margin-bottom:16px;
+    }
+    .synthese-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+    .synthese-label {
+      font-family:var(--font-display); font-size:9px; font-weight:700;
+      color:var(--purple); text-transform:uppercase; letter-spacing:1.5px;
+      display:flex; align-items:center; gap:6px;
+    }
+    .synthese-dot {
+      width:6px; height:6px; border-radius:50%; background:var(--purple);
+      box-shadow:0 0 6px var(--purple-dim); animation:pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+    .synthese-text { font-size:13px; line-height:1.7; color:var(--text); }
+    .synthese-loading { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
+    .spinner-sm { width:14px; height:14px; border-radius:50%; border:2px solid rgba(124,77,255,0.2); border-top-color:var(--purple); animation:spin 0.8s linear infinite; flex-shrink:0; }
+
+    /* Carousel réunions */
+    .carousel-wrap { margin-bottom:16px; }
+    .carousel-scroll {
+      display:flex; gap:10px; overflow-x:auto; padding-bottom:8px;
+      scrollbar-width:thin; scrollbar-color:rgba(0,212,255,0.2) transparent;
+    }
+    .carousel-scroll::-webkit-scrollbar { height:3px; }
+    .carousel-scroll::-webkit-scrollbar-thumb { background:rgba(0,212,255,0.2); border-radius:2px; }
+    .reunion-card {
+      min-width:200px; max-width:200px; background:var(--bg-card);
+      border:1px solid var(--cyan-border); border-radius:10px; padding:14px;
+      cursor:pointer; transition:all 0.15s; flex-shrink:0;
+    }
+    .reunion-card:hover { border-color:var(--cyan-border-hi); background:var(--bg-card2); }
+    .reunion-card:active { transform:scale(0.97); }
+    .reunion-card-date { font-size:10px; color:var(--muted); margin-bottom:4px; font-family:var(--font-display); letter-spacing:0.5px; }
+    .reunion-card-titre { font-size:12px; font-weight:600; color:var(--text); margin-bottom:6px; line-height:1.4; }
+    .reunion-card-resume { font-size:11px; color:var(--muted); line-height:1.5; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+    .reunion-card-empty { min-width:160px; display:flex; align-items:center; justify-content:center; padding:20px; color:var(--muted); font-size:12px; font-style:italic; border:1px dashed rgba(0,212,255,0.15); border-radius:10px; }
+
+    /* Actions consolidées */
+    .actions-section { margin-bottom:16px; }
+    .actions-label {
+      font-family:var(--font-display); font-size:9px; font-weight:700;
+      color:var(--cyan-dim); text-transform:uppercase; letter-spacing:2px;
+      margin-bottom:10px; display:flex; align-items:center; justify-content:space-between;
+    }
+    .actions-count { font-size:10px; color:var(--muted); font-weight:400; letter-spacing:0; font-family:var(--font-body); }
+    .action-item {
+      display:flex; align-items:flex-start; gap:12px;
+      padding:12px 14px; background:var(--bg-card); border:1px solid var(--cyan-border);
+      border-radius:10px; margin-bottom:6px; cursor:pointer;
+      transition:all 0.15s; -webkit-tap-highlight-color:transparent;
+    }
+    .action-item:hover { background:var(--bg-card2); border-color:var(--cyan-border-hi); }
+    .action-item.done { opacity:0.4; }
+    .action-cb {
+      width:20px; height:20px; border-radius:50%; flex-shrink:0;
+      border:1.5px solid var(--cyan-border); background:transparent;
+      display:flex; align-items:center; justify-content:center;
+      font-size:11px; transition:all 0.15s; margin-top:1px;
+    }
+    .action-item.done .action-cb { background:var(--green); border-color:var(--green); color:#050c1a; }
+    .action-body { flex:1; }
+    .action-quoi { font-size:13px; color:var(--text); line-height:1.4; }
+    .action-item.done .action-quoi { text-decoration:line-through; }
+    .action-meta { font-size:11px; color:var(--muted); margin-top:3px; display:flex; gap:8px; flex-wrap:wrap; }
+    .action-qui { color:var(--cyan); font-weight:500; }
+    .action-quand { color:#ffb400; }
+    .action-source { color:rgba(180,220,255,0.3); font-style:italic; }
+
+    /* Drawer réunion */
+    .drawer {
+      display:none; position:fixed; inset:0; z-index:200;
+      background:rgba(5,12,26,0.92); backdrop-filter:blur(20px);
+      align-items:flex-end; justify-content:center;
+    }
+    .drawer.active { display:flex; }
+    .drawer-card {
+      width:100%; max-width:520px; max-height:85vh;
+      background:rgba(8,15,32,0.98); border:1px solid var(--cyan-border);
+      border-radius:20px 20px 0 0; padding:24px 20px 32px;
+      overflow-y:auto; animation:fadeUp 0.3s ease;
+    }
+    .drawer-titre {
+      font-family:var(--font-display); font-size:14px; font-weight:600;
+      color:var(--text); margin-bottom:4px;
+    }
+    .drawer-date { font-size:12px; color:var(--muted); margin-bottom:16px; }
+    .drawer-section { margin-bottom:14px; }
+    .drawer-section-label {
+      font-family:var(--font-display); font-size:9px; font-weight:700;
+      color:var(--cyan-dim); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:8px;
+    }
+    .drawer-text { font-size:13px; color:var(--text); line-height:1.7; }
+    .drawer-item {
+      padding:8px 12px; background:rgba(0,212,255,0.04); border:1px solid var(--cyan-border);
+      border-radius:8px; font-size:13px; color:var(--text); margin-bottom:5px;
+      display:flex; gap:8px; align-items:flex-start; line-height:1.5;
+    }
+    .drawer-item::before { content:'›'; color:var(--cyan); flex-shrink:0; }
+    .drawer-decision { background:rgba(0,229,160,0.06); border-color:rgba(0,229,160,0.2); }
+    .drawer-decision::before { content:'✓'; color:var(--green); }
+    .modal-close-btn {
+      width:100%; padding:12px; border-radius:12px; border:none;
+      background:transparent; color:rgba(0,212,255,0.4);
+      font-family:var(--font-display); font-size:11px;
+      letter-spacing:1px; text-transform:uppercase;
+      cursor:pointer; margin-top:12px; transition:color 0.2s;
+    }
+    .modal-close-btn:hover { color:var(--cyan); }
+
+    /* Modal création projet */
+    .create-modal {
+      display:none; position:fixed; inset:0; z-index:300;
+      background:rgba(5,12,26,0.92); backdrop-filter:blur(20px);
+      align-items:flex-end; justify-content:center;
+    }
+    .create-modal.active { display:flex; }
+    .create-modal-card {
+      width:100%; max-width:520px;
+      background:rgba(8,15,32,0.98); border:1px solid rgba(124,77,255,0.3);
+      border-radius:20px 20px 0 0; padding:24px 20px 32px;
+      animation:fadeUp 0.3s ease;
+    }
+    .create-modal-title {
+      font-family:var(--font-display); font-size:13px; font-weight:700;
+      color:var(--purple); margin-bottom:16px; text-align:center;
+      letter-spacing:1px; text-transform:uppercase;
+    }
+    .create-input {
+      width:100%; padding:12px 14px; border-radius:10px; margin-bottom:10px;
+      background:rgba(124,77,255,0.06); border:1.5px solid rgba(124,77,255,0.25);
+      color:var(--text); font-family:var(--font-body); font-size:14px; outline:none;
+      transition:border-color 0.2s, background 0.2s;
+    }
+    .create-input:focus { border-color:var(--purple); background:rgba(124,77,255,0.1); }
+    .create-input::placeholder { color:rgba(180,220,255,0.3); }
+    .btn-creer {
+      width:100%; padding:14px; border-radius:12px; border:none; margin-top:4px;
+      background:linear-gradient(135deg, rgba(80,40,180,0.9), rgba(124,77,255,0.85));
+      color:#fff; font-family:var(--font-display); font-size:11px;
+      font-weight:600; letter-spacing:1px; cursor:pointer; text-transform:uppercase;
+      transition:opacity 0.15s, box-shadow 0.2s;
+      box-shadow:0 0 16px rgba(124,77,255,0.25);
+    }
+    .btn-creer:disabled { opacity:0.35; cursor:not-allowed; }
+    .btn-creer:hover:not(:disabled) { box-shadow:0 0 24px rgba(124,77,255,0.45); }
+
+    /* Danger zone */
+    .danger-zone { margin-top:24px; padding-top:20px; border-top:1px solid rgba(255,68,102,0.15); }
+    .btn-delete-projet {
+      width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,68,102,0.3);
+      background:transparent; color:var(--danger); font-family:var(--font-display);
+      font-size:10px; letter-spacing:1px; cursor:pointer; transition:all 0.2s;
+      text-transform:uppercase;
+    }
+    .btn-delete-projet:hover { background:rgba(255,68,102,0.08); border-color:rgba(255,68,102,0.6); }
+
+    /* Toast */
+    .toast {
+      position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+      background:rgba(8,15,32,0.96); border:1px solid var(--cyan-border);
+      border-radius:10px; padding:10px 20px; font-size:13px; color:var(--text);
+      z-index:500; opacity:0; transition:all 0.3s; white-space:nowrap;
+      backdrop-filter:blur(12px);
+    }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+<canvas id="neuroCanvas"></canvas>
+<div class="scanline"></div>
+
+<header>
+  <div class="header-inner">
+    <span class="logo">Ponk <span>Note</span></span>
+    <button class="back-btn" onclick="window.location.href='/'">← Retour</button>
+  </div>
+</header>
+
+<div class="content">
+
+  <!-- ── Vue liste ── -->
+  <div id="viewListe">
+    <div class="quota-wrap">
+      <div class="quota-header">
+        <span class="quota-label">Projets</span>
+        <span class="quota-count" id="quotaCount">0/3</span>
+      </div>
+      <div class="quota-dots" id="quotaDots">
+        <div class="quota-dot"></div>
+        <div class="quota-dot"></div>
+        <div class="quota-dot"></div>
+      </div>
+    </div>
+
+    <div class="section-title">Mes projets</div>
+    <div id="projetsList"><div style="text-align:center;padding:40px;color:var(--muted);font-family:var(--font-display);font-size:11px;letter-spacing:1px">Chargement…</div></div>
+  </div>
+
+  <!-- ── Vue détail ── -->
+  <div id="viewDetail">
+    <button class="detail-back" onclick="retourListe()">← Projets</button>
+    <div class="detail-header">
+      <div class="detail-nom" id="detailNom">—</div>
+      <div class="detail-desc" id="detailDesc"></div>
+      <div class="statut-selector" id="statutSelector">
+        <button class="statut-btn s-en_cours" data-statut="en_cours" onclick="changerStatut('en_cours')">En cours</button>
+        <button class="statut-btn s-termine"  data-statut="termine"  onclick="changerStatut('termine')">Terminé</button>
+        <button class="statut-btn s-en_pause" data-statut="en_pause" onclick="changerStatut('en_pause')">En pause</button>
+      </div>
+    </div>
+
+    <!-- Synthèse IA -->
+    <div class="synthese-card">
+      <div class="synthese-header">
+        <div class="synthese-label">
+          <div class="synthese-dot"></div>
+          Synthèse IA
+        </div>
+        <button onclick="regenererSynthese()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;font-family:var(--font-display);letter-spacing:0.3px" id="btnRegen">↻ Actualiser</button>
+      </div>
+      <div id="syntheseContent">
+        <div class="synthese-loading">
+          <div class="spinner-sm"></div>
+          <span>Génération en cours…</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Carousel réunions -->
+    <div class="carousel-wrap">
+      <div class="section-title">Réunions rattachées</div>
+      <div class="carousel-scroll" id="carouselScroll"></div>
+    </div>
+
+    <!-- Actions à faire -->
+    <div class="actions-section">
+      <div class="actions-label">
+        Actions
+        <span class="actions-count" id="actionsCount"></span>
+      </div>
+      <div id="actionsList"></div>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="danger-zone">
+      <button class="btn-delete-projet" onclick="supprimerProjet()">🗑 Supprimer ce projet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Drawer détail réunion -->
+<div class="drawer" id="reunionDrawer" onclick="if(event.target===this)fermerDrawer()">
+  <div class="drawer-card" id="reunionDrawerContent"></div>
+</div>
+
+<!-- Modal création projet -->
+<div class="create-modal" id="createModal" onclick="if(event.target===this)fermerCreateModal()">
+  <div class="create-modal-card">
+    <div class="create-modal-title">Nouveau projet</div>
+    <input class="create-input" id="createNom" placeholder="Nom du projet (ex: Chantier cuisine)" maxlength="60"
+      oninput="document.getElementById('btnCreerConfirm').disabled=!this.value.trim()">
+    <input class="create-input" id="createDesc" placeholder="Description courte (optionnel)" maxlength="120">
+    <button class="btn-creer" id="btnCreerConfirm" onclick="creerProjet()" disabled>Créer le projet</button>
+    <button class="modal-close-btn" onclick="fermerCreateModal()">Annuler</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Config ───────────────────────────────────────────────────────────────────
+const SUPABASE_URL_PUBLIC = 'https://nnppmsomwigihidjpwnp.supabase.co';
+
+const profile = localStorage.getItem('ponk_profile');
+const email   = localStorage.getItem('ponk_email');
+const uid     = email ? email.replace(/[^a-zA-Z0-9._-]/g, '_') : profile;
+if (!profile) { window.location.href = '/'; }
+
+let projets = [];
+let projetActif = null;
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+chargerProjets();
+
+async function chargerProjets() {
+  try {
+    const res = await fetch(`/api/project?action=list&uid=${encodeURIComponent(uid)}`);
+    const data = await res.json();
+    projets = data.projects || [];
+    renderListe();
+  } catch(e) {
+    document.getElementById('projetsList').innerHTML =
+      `<div style="text-align:center;padding:40px;color:var(--danger);font-size:13px">Erreur : ${e.message}</div>`;
+  }
+}
+
+// ── Vue liste ─────────────────────────────────────────────────────────────────
+function renderListe() {
+  updateQuota(projets.length);
+  const container = document.getElementById('projetsList');
+
+  if (!projets.length) {
+    container.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">📁</div>
+        <p>Aucun projet pour l'instant.<br>Créez-en un depuis une analyse.</p>
+      </div>`;
+  } else {
+    container.innerHTML = '';
+    projets.forEach((p, i) => {
+      const nb = p.reunions?.length || 0;
+      const date = p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}) : '';
+      const card = document.createElement('div');
+      card.className = 'projet-card';
+      card.style.animationDelay = `${i * 80}ms`;
+      card.innerHTML = `
+        <div class="projet-card-icon">📁</div>
+        <div class="projet-card-body">
+          <div class="projet-card-name">${p.nom}</div>
+          <div class="projet-card-meta">
+            <span class="statut-badge statut-${p.statut}">${labelStatut(p.statut)}</span>
+            <span>${nb} réunion${nb > 1 ? 's' : ''}</span>
+            ${date ? `<span>· ${date}</span>` : ''}
+          </div>
+        </div>
+        <div class="projet-card-arrow">›</div>`;
+      card.onclick = () => ouvrirProjet(p.id);
+      container.appendChild(card);
+    });
+  }
+
+  // Bouton créer (si quota dispo)
+  if (projets.length < 3) {
+    const btn = document.createElement('button');
+    btn.className = 'btn-nouveau';
+    btn.textContent = '+ Nouveau projet';
+    btn.onclick = ouvrirCreateModal;
+    document.getElementById('projetsList').appendChild(btn);
+  }
+}
+
+function updateQuota(count) {
+  document.getElementById('quotaCount').textContent = `${count}/3`;
+  document.querySelectorAll('.quota-dot').forEach((dot, i) => {
+    dot.classList.toggle('filled', i < count);
+  });
+}
+
+function labelStatut(s) {
+  return { en_cours:'En cours', termine:'Terminé', en_pause:'En pause' }[s] || s;
+}
+
+// ── Vue détail ────────────────────────────────────────────────────────────────
+async function ouvrirProjet(id) {
+  const res = await fetch(`/api/project?action=get&uid=${encodeURIComponent(uid)}&projectId=${id}`);
+  const { project } = await res.json();
+  if (!project) return;
+  projetActif = project;
+
+  document.getElementById('viewListe').style.display = 'none';
+  document.getElementById('viewDetail').style.display = 'block';
+  document.getElementById('viewDetail').style.animation = 'slideRight 0.3s ease';
+
+  document.getElementById('detailNom').textContent = project.nom;
+  document.getElementById('detailDesc').textContent = project.description || '';
+
+  // Statut
+  document.querySelectorAll('.statut-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.statut === project.statut);
+  });
+
+  // Carousel
+  renderCarousel(project.reunions || []);
+
+  // Actions
+  renderActions(project.reunions || []);
+
+  // Synthèse — cache intelligent
+  afficherSynthese(project);
+}
+
+function retourListe() {
+  projetActif = null;
+  document.getElementById('viewDetail').style.display = 'none';
+  document.getElementById('viewListe').style.display = 'block';
+  chargerProjets();
+}
+
+// ── Statut ────────────────────────────────────────────────────────────────────
+async function changerStatut(statut) {
+  if (!projetActif) return;
+  document.querySelectorAll('.statut-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.statut === statut);
+  });
+  try {
+    const res = await fetch(`/api/project?action=update&uid=${encodeURIComponent(uid)}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ uid, projectId: projetActif.id, changes: { statut } })
+    });
+    const { project } = await res.json();
+    projetActif = project;
+    showToast('Statut mis à jour');
+  } catch(e) { showToast('Erreur : ' + e.message); }
+}
+
+// ── Synthèse IA ───────────────────────────────────────────────────────────────
+async function afficherSynthese(project) {
+  const el = document.getElementById('syntheseContent');
+
+  // Cache : si synthèse existante et projet pas mis à jour depuis
+  if (project.synthese && project.syntheseGeneratedAt && project.updatedAt) {
+    const syntheseDate = new Date(project.syntheseGeneratedAt);
+    const updateDate   = new Date(project.updatedAt);
+    if (syntheseDate >= updateDate) {
+      el.innerHTML = `<div class="synthese-text">${project.synthese}</div>`;
+      return;
+    }
+  }
+
+  // Pas de réunions → pas de synthèse
+  if (!project.reunions || project.reunions.length === 0) {
+    el.innerHTML = `<div class="synthese-text" style="color:var(--muted);font-style:italic">Ajoutez des réunions pour générer une synthèse.</div>`;
+    return;
+  }
+
+  el.innerHTML = `<div class="synthese-loading"><div class="spinner-sm"></div><span>Génération en cours…</span></div>`;
+  await genererSynthese(project);
+}
+
+async function regenererSynthese() {
+  if (!projetActif || !projetActif.reunions?.length) return;
+  const el = document.getElementById('syntheseContent');
+  el.innerHTML = `<div class="synthese-loading"><div class="spinner-sm"></div><span>Régénération…</span></div>`;
+  // Forcer la régénération en effaçant le cache
+  projetActif.syntheseGeneratedAt = null;
+  await genererSynthese(projetActif);
+}
+
+async function genererSynthese(project) {
+  const el = document.getElementById('syntheseContent');
+  try {
+    const res = await fetch(`/api/project?action=synthese&uid=${encodeURIComponent(uid)}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ uid, projectId: project.id })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    const synthese = data.synthese || '';
+    el.innerHTML = `<div class="synthese-text">${synthese}</div>`;
+    projetActif.synthese = synthese;
+    projetActif.syntheseGeneratedAt = new Date().toISOString();
+
+  } catch(e) {
+    el.innerHTML = `<div class="synthese-text" style="color:var(--muted);font-style:italic">Synthèse indisponible. <button onclick="regenererSynthese()" style="background:none;border:none;color:var(--cyan);cursor:pointer;font-size:13px">Réessayer</button></div>`;
+  }
+}
+
+// ── Carousel réunions ─────────────────────────────────────────────────────────
+function renderCarousel(reunions) {
+  const scroll = document.getElementById('carouselScroll');
+  if (!reunions.length) {
+    scroll.innerHTML = `<div class="reunion-card-empty">Aucune réunion rattachée</div>`;
+    return;
+  }
+  scroll.innerHTML = reunions.map((r, i) => `
+    <div class="reunion-card" onclick="ouvrirDrawerReunion(${i})">
+      <div class="reunion-card-date">${formatDate(r.date)}</div>
+      <div class="reunion-card-titre">${r.titre || 'Réunion sans titre'}</div>
+      <div class="reunion-card-resume">${r.resume || ''}</div>
+    </div>`).join('');
+}
+
+function ouvrirDrawerReunion(index) {
+  const r = projetActif.reunions[index];
+  if (!r) return;
+
+  const decisionsHTML = (r.decisions || []).map(d =>
+    `<div class="drawer-item drawer-decision">${d}</div>`).join('') || '<div style="color:var(--muted);font-size:12px;font-style:italic">Aucune décision enregistrée</div>';
+
+  const pointsHTML = (r.points_discutes || []).map(p =>
+    `<div class="drawer-item">${p}</div>`).join('');
+
+  document.getElementById('reunionDrawerContent').innerHTML = `
+    <div class="drawer-titre">${r.titre || 'Réunion'}</div>
+    <div class="drawer-date">${formatDate(r.date)}</div>
+    ${r.resume ? `<div class="drawer-section">
+      <div class="drawer-section-label">Résumé</div>
+      <div class="drawer-text">${r.resume}</div>
+    </div>` : ''}
+    ${pointsHTML ? `<div class="drawer-section">
+      <div class="drawer-section-label">Points discutés</div>
+      ${pointsHTML}
+    </div>` : ''}
+    <div class="drawer-section">
+      <div class="drawer-section-label">Décisions</div>
+      ${decisionsHTML}
+    </div>
+    <button class="modal-close-btn" onclick="fermerDrawer()">Fermer</button>`;
+
+  document.getElementById('reunionDrawer').classList.add('active');
+}
+
+function fermerDrawer() {
+  document.getElementById('reunionDrawer').classList.remove('active');
+}
+
+// ── Actions consolidées ───────────────────────────────────────────────────────
+function renderActions(reunions) {
+  const container = document.getElementById('actionsList');
+  const toutes = [];
+
+  reunions.forEach(r => {
+    (r.actions || []).forEach((a, ai) => {
+      toutes.push({ ...a, _fileName: r.fileName, _reunionTitre: r.titre, _actionIndex: ai });
+    });
+  });
+
+  const todo = toutes.filter(a => !a.done);
+  const done = toutes.filter(a => a.done);
+  const count = `${done.length}/${toutes.length} faite${done.length > 1 ? 's' : ''}`;
+  document.getElementById('actionsCount').textContent = toutes.length ? count : '';
+
+  if (!toutes.length) {
+    container.innerHTML = `<div style="color:var(--muted);font-size:13px;font-style:italic;padding:10px 0">Aucune action extraite.</div>`;
+    return;
+  }
+
+  container.innerHTML = [...todo, ...done].map(a => `
+    <div class="action-item ${a.done ? 'done' : ''}" onclick="toggleAction('${a._fileName}', ${a._actionIndex})">
+      <div class="action-cb">${a.done ? '✓' : ''}</div>
+      <div class="action-body">
+        <div class="action-quoi">${a.quoi}</div>
+        <div class="action-meta">
+          ${a.qui  ? `<span class="action-qui">👤 ${a.qui}</span>` : ''}
+          ${a.quand ? `<span class="action-quand">📅 ${a.quand}</span>` : ''}
+          <span class="action-source">${a._reunionTitre || ''}</span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+async function toggleAction(fileName, actionIndex) {
+  if (!projetActif) return;
+  try {
+    const res = await fetch(`/api/project?action=update&uid=${encodeURIComponent(uid)}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ uid, projectId: projetActif.id, changes: { actionToggle: { fileName, actionIndex } } })
+    });
+    const { project } = await res.json();
+    projetActif = project;
+    renderActions(project.reunions || []);
+  } catch(e) { showToast('Erreur : ' + e.message); }
+}
+
+// ── Suppression projet ────────────────────────────────────────────────────────
+async function supprimerProjet() {
+  if (!projetActif) return;
+  if (!confirm(`Supprimer le projet "${projetActif.nom}" ? Cette action est irréversible.`)) return;
+  try {
+    await fetch(`/api/project?action=delete&uid=${encodeURIComponent(uid)}&projectId=${projetActif.id}`, { method:'GET' });
+    showToast('Projet supprimé');
+    setTimeout(retourListe, 800);
+  } catch(e) { showToast('Erreur : ' + e.message); }
+}
+
+// ── Création projet ───────────────────────────────────────────────────────────
+function ouvrirCreateModal() {
+  document.getElementById('createNom').value = '';
+  document.getElementById('createDesc').value = '';
+  document.getElementById('btnCreerConfirm').disabled = true;
+  document.getElementById('createModal').classList.add('active');
+  setTimeout(() => document.getElementById('createNom').focus(), 100);
+}
+
+function fermerCreateModal() {
+  document.getElementById('createModal').classList.remove('active');
+}
+
+async function creerProjet() {
+  const nom  = document.getElementById('createNom').value.trim();
+  const desc = document.getElementById('createDesc').value.trim();
+  if (!nom) return;
+
+  const btn = document.getElementById('btnCreerConfirm');
+  btn.disabled = true; btn.textContent = 'Création…';
+
+  try {
+    const res = await fetch(`/api/project?action=create&uid=${encodeURIComponent(uid)}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ uid, nom, description: desc })
+    });
+    const { project, error } = await res.json();
+    if (error) throw new Error(error);
+    fermerCreateModal();
+    showToast('Projet créé ✓');
+    await chargerProjets();
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Créer le projet';
+    showToast('Erreur : ' + e.message);
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function formatDate(str) {
+  if (!str) return '';
+  try { return new Date(str).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}); }
+  catch { return str; }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── NeuroCanvas ───────────────────────────────────────────────────────────────
+(function(){
+  const canvas = document.getElementById('neuroCanvas');
+  const ctx = canvas.getContext('2d');
+  const SIDE = 0.22;
+  function resize() { canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  const particles = [];
+  for(let i=0;i<40;i++){
+    const left=Math.random()<0.5;
+    particles.push({x:left?Math.random()*SIDE:(1-SIDE)+Math.random()*SIDE,y:Math.random(),vx:(Math.random()-0.5)*0.0005,vy:(Math.random()-0.5)*0.0005,size:0.8+Math.random()*2,opacity:0.3+Math.random()*0.6,pulse:Math.random()*Math.PI*2,pulseSpeed:0.015+Math.random()*0.025});
+  }
+  const lines=[];
+  for(let i=0;i<14;i++){
+    const left=Math.random()<0.5;const bx=left?0:(1-SIDE);
+    lines.push({x1:bx+Math.random()*SIDE,y1:Math.random(),x2:bx+Math.random()*SIDE,y2:Math.random(),vx:(Math.random()-0.5)*0.00015,vy:(Math.random()-0.5)*0.00015,phase:Math.random()*Math.PI*2,speed:0.002+Math.random()*0.003,left});
+  }
+  function clampSide(p){const bx=p.x<0.5?0:(1-SIDE);if(p.x<bx){p.x=bx;p.vx*=-1;}if(p.x>bx+SIDE){p.x=bx+SIDE;p.vx*=-1;}if(p.y<0){p.y=0;p.vy*=-1;}if(p.y>1){p.y=1;p.vy*=-1;}}
+  function animate(){
+    const w=canvas.width,h=canvas.height;ctx.clearRect(0,0,w,h);
+    lines.forEach(l=>{l.phase+=l.speed;l.x1+=l.vx;l.y1+=l.vy;l.x2-=l.vx;l.y2-=l.vy;const bx=l.left?0:(1-SIDE);if(l.x1<bx||l.x1>bx+SIDE)l.vx*=-1;if(l.x2<bx||l.x2>bx+SIDE)l.vx*=-1;if(l.y1<0||l.y1>1)l.vy*=-1;if(l.y2<0||l.y2>1)l.vy*=-1;const alpha=0.25+0.2*Math.sin(l.phase);ctx.beginPath();ctx.moveTo(l.x1*w,l.y1*h);ctx.lineTo(l.x2*w,l.y2*h);ctx.strokeStyle=`rgba(0,200,255,${alpha})`;ctx.lineWidth=0.7;ctx.stroke();});
+    for(let i=0;i<particles.length;i++){for(let j=i+1;j<particles.length;j++){const a=particles[i],b=particles[j];if((a.x<0.5)!==(b.x<0.5))continue;const dx=(a.x-b.x)*w,dy=(a.y-b.y)*h;const dist=Math.sqrt(dx*dx+dy*dy);const maxDist=w*SIDE*0.9;if(dist<maxDist){const alpha=0.3*(1-dist/maxDist);ctx.beginPath();ctx.moveTo(a.x*w,a.y*h);ctx.lineTo(b.x*w,b.y*h);ctx.strokeStyle=`rgba(0,180,255,${alpha})`;ctx.lineWidth=0.5;ctx.stroke();}}}
+    particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.pulse+=p.pulseSpeed;clampSide(p);const alpha=p.opacity*(0.5+0.5*Math.sin(p.pulse));const size=p.size*(0.8+0.2*Math.sin(p.pulse));const g=ctx.createRadialGradient(p.x*w,p.y*h,0,p.x*w,p.y*h,size*4);g.addColorStop(0,`rgba(255,255,255,${alpha*0.25})`);g.addColorStop(1,'transparent');ctx.beginPath();ctx.arc(p.x*w,p.y*h,size*4,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();ctx.beginPath();ctx.arc(p.x*w,p.y*h,size,0,Math.PI*2);ctx.fillStyle=`rgba(255,255,255,${alpha})`;ctx.shadowColor='#00dcff';ctx.shadowBlur=8;ctx.fill();ctx.shadowBlur=0;});
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+</script>
+</body>
+</html>
