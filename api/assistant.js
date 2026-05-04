@@ -44,12 +44,55 @@ module.exports = async function handler(req, res) {
       return null;
     }
 
-    // ── Mode traduction ──
+    // ── Mode traduction simple ──
     if (mode === 'translate') {
       const { sourceLang } = req.body;
       const prompt = `Tu es un traducteur instantané.
 Phrase source en ${sourceLang} : "${question}"
 Traduis UNIQUEMENT en français. Réponse : juste la traduction, rien d'autre, pas de guillemets, pas d'explication.`;
+      const translation = await callGemini(prompt);
+      if (!translation) return res.status(200).json({ translation: null });
+      return res.status(200).json({ translation: translation.trim() });
+    }
+
+    // ── Mode traduction + suggestions de réponse ──
+    if (mode === 'translate_suggest') {
+      const { sourceLang, targetLang, history } = req.body;
+      const historyText = (history || []).length > 0
+        ? '\nContexte des échanges précédents :\n' + history.map(h => `- "${h}"`).join('\n')
+        : '';
+
+      const prompt = `Tu es un interprète professionnel en temps réel.
+Phrase prononcée en ${sourceLang} : "${question}"${historyText}
+
+Fais les 3 choses suivantes :
+
+1. TRADUCTION : Traduis la phrase en français (pour que l'utilisateur comprenne ce qu'on lui dit).
+
+2. SUGGESTIONS : Propose 3 réponses courtes et naturelles en ${sourceLang} que l'utilisateur pourrait dire à son interlocuteur. Les suggestions doivent être :
+- Courtes (max 15 mots chacune)
+- Adaptées au contexte et à la phrase
+- Variées (une directe, une qui demande du temps/clarification, une alternative)
+
+3. Réponds UNIQUEMENT en JSON sans markdown :
+{"translation":"traduction en français","suggestions":["suggestion 1 en ${sourceLang}","suggestion 2 en ${sourceLang}","suggestion 3 en ${sourceLang}"]}`;
+
+      const raw = await callGemini(prompt);
+      if (!raw) return res.status(200).json({ translation: null, suggestions: [] });
+      try {
+        const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+        return res.status(200).json(parsed);
+      } catch(e) {
+        return res.status(200).json({ translation: null, suggestions: [] });
+      }
+    }
+
+    // ── Mode traduction libre FR → langue cible ──
+    if (mode === 'translate_free') {
+      const { targetLang } = req.body;
+      const prompt = `Tu es un traducteur instantané.
+Phrase en français : "${question}"
+Traduis UNIQUEMENT en ${targetLang}. Réponse : juste la traduction, rien d'autre, pas de guillemets, pas d'explication.`;
       const translation = await callGemini(prompt);
       if (!translation) return res.status(200).json({ translation: null });
       return res.status(200).json({ translation: translation.trim() });
