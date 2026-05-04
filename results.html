@@ -563,7 +563,7 @@
   <div id="cards"></div>
   <div class="action-btns">
     <button class="btn-action btn-projet" id="btnProjet" onclick="ouvrirModalProjet()" style="display:none">
-      📁 Ajouter à un projet
+      Ajouter à un projet
     </button>
     <button class="btn-action btn-pdf" onclick="exportPDF()">Exporter en PDF</button>
   </div>
@@ -2738,7 +2738,9 @@ showBtnProjetIfReady();
 setTimeout(showBtnProjetIfReady, 2000);
 
 function getUid() {
-  try { return JSON.parse(localStorage.getItem('ponk_profile') || '{}').uid || ''; } catch { return ''; }
+  const email   = localStorage.getItem('ponk_email');
+  const profile = localStorage.getItem('ponk_profile');
+  return email ? email.replace(/[^a-zA-Z0-9._-]/g, '_') : (profile || '');
 }
 
 async function ouvrirModalProjet() {
