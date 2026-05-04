@@ -708,6 +708,60 @@
       color:rgba(0,220,255,0.4); font-size:18px;
     }
 
+    /* ── Traducteur ── */
+    .trad-toggle {
+      display:flex; align-items:center; gap:7px;
+      padding:6px 12px; border-radius:100px;
+      border:1.5px solid rgba(0,220,255,0.3);
+      background:rgba(0,220,255,0.05);
+      font-size:12px; font-weight:500; color:rgba(0,220,255,0.6);
+      cursor:pointer; transition:all 0.2s; white-space:nowrap;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .trad-toggle:hover { border-color:rgba(0,220,255,0.6); color:#00dcff; background:rgba(0,220,255,0.1); }
+    .trad-toggle.active {
+      border-color:#00dcff; color:#00dcff;
+      background:rgba(0,220,255,0.15);
+      box-shadow:0 0 12px rgba(0,220,255,0.25);
+    }
+    .trad-toggle svg { width:14px; height:14px; flex-shrink:0; }
+
+    .trad-lang-select {
+      display:none; align-items:center; gap:6px;
+      animation:fadeIn 0.2s ease;
+    }
+    .trad-lang-select.visible { display:flex; }
+    .trad-lang-picker {
+      padding:5px 10px; border-radius:8px;
+      border:1.5px solid rgba(0,220,255,0.4);
+      background:rgba(0,10,30,0.8);
+      font-family:'Inter',sans-serif; font-size:12px;
+      color:#00dcff; outline:none; cursor:pointer;
+    }
+    .trad-lang-picker option { background:#0a1628; color:#fff; }
+
+    /* Panel traducteur (remplace le contenu assistant) */
+    #tradPanel { display:none; }
+    #tradPanel.visible { display:block; }
+    .trad-original {
+      font-size:12px; color:rgba(0,220,255,0.5);
+      margin-bottom:8px; line-height:1.5;
+      border-left:2px solid rgba(0,220,255,0.2);
+      padding-left:10px;
+    }
+    .trad-result {
+      font-size:16px; color:#fff; font-weight:500;
+      line-height:1.6;
+    }
+    .trad-loading {
+      display:flex; align-items:center; gap:8px;
+      font-size:13px; color:rgba(0,220,255,0.5);
+    }
+    .trad-dot {
+      width:6px; height:6px; border-radius:50%; background:#00dcff;
+      animation:blink .6s ease-in-out infinite;
+    }
+
     /* Maps mode buttons */
     .maps-mode-btn {
       flex:1; padding:7px 4px; border-radius:10px;
@@ -811,20 +865,33 @@
     <!-- Droite : zone assistant IA -->
     <div class="stage-right">
       <div class="assistant-title">
-        <span class="assistant-title-text">ASSISTANT IA</span>
+        <span class="assistant-title-text" id="assistantTitleText">ASSISTANT IA</span>
         <div class="listening-row">
           <div class="listening-dot"></div>
-          <span class="listening-text">En écoute…</span>
+          <span class="listening-text" id="listeningText">En écoute…</span>
         </div>
       </div>
 
       <div class="assistant-body" id="assistantBubble">
+        <!-- Mode assistant normal -->
         <div class="bubble-empty" id="bubbleEmpty">
           En attente d'une question pour générer un résumé complet et des idées connexes…
         </div>
         <div id="bubbleContent" style="display:none">
           <div class="bubble-me"><span>Moi</span> : "<span id="assistantQuestion"></span>"</div>
           <div class="bubble-ponk"><span>Ponk</span> : "<span id="assistantAnswer"></span>"</div>
+        </div>
+
+        <!-- Mode traducteur -->
+        <div id="tradPanel">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(0,220,255,0.4);margin-bottom:12px" id="tradLangLabel">🌐 TRADUCTION EN DIRECT</div>
+          <div class="trad-loading" id="tradLoading" style="display:none">
+            <div class="trad-dot"></div>
+            <span>Traduction…</span>
+          </div>
+          <div class="trad-original" id="tradOriginal" style="display:none"></div>
+          <div class="trad-result" id="tradResult" style="display:none"></div>
+          <div style="font-size:12px;color:rgba(0,220,255,0.35);margin-top:14px;font-style:italic" id="tradWaiting">Parle dans la langue sélectionnée…</div>
         </div>
       </div>
 
@@ -841,6 +908,29 @@
     </div>
     <div class="main-add-btn" id="manualMenuBtn" onclick="openManualMenu()">+</div>
     <div style="flex:1"></div>
+
+    <!-- Traducteur toggle + sélecteur langue -->
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <div class="trad-toggle" id="tradToggle" onclick="toggleTranslator()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
+        🌐 Traducteur
+      </div>
+      <div class="trad-lang-select" id="tradLangSelect">
+        <select class="trad-lang-picker" id="tradLangPicker" onchange="onLangChange()">
+          <option value="en">🇬🇧 Anglais</option>
+          <option value="es">🇪🇸 Espagnol</option>
+          <option value="de">🇩🇪 Allemand</option>
+          <option value="it">🇮🇹 Italien</option>
+          <option value="pt">🇵🇹 Portugais</option>
+          <option value="nl">🇳🇱 Néerlandais</option>
+          <option value="ja">🇯🇵 Japonais</option>
+          <option value="zh">🇨🇳 Mandarin</option>
+          <option value="ar">🇦🇪 Arabe</option>
+          <option value="ru">🇷🇺 Russe</option>
+        </select>
+      </div>
+    </div>
+
     <div class="bottom-ia">
       <div class="action-bubbles-wrap" id="actionBubblesWrap"></div>
       <div class="bubbles-slots" id="bubblesSlots">
@@ -1286,7 +1376,7 @@
         }
       }, SEGMENT_MS);
       window.addEventListener('beforeunload', confirmQuit);
-      if (assistantActive) startSpeechRecognition();
+      if (assistantActive || translatorActive) startSpeechRecognition();
       document.getElementById('recordBtn').classList.add('is-recording');
       document.getElementById('powerWrap').classList.add('is-recording');
       document.getElementById('manualMenuBtn').classList.add('active'); // active pendant rec
@@ -1563,6 +1653,99 @@
     document.getElementById('status').textContent = text;
   }
   let assistantActive = true;
+  let translatorActive = false;
+  let translatorLang = 'en';
+
+  const LANG_NAMES = {
+    'en':'Anglais','es':'Espagnol','de':'Allemand','it':'Italien',
+    'pt':'Portugais','nl':'Néerlandais','ja':'Japonais','zh':'Mandarin',
+    'ar':'Arabe','ru':'Russe'
+  };
+  const LANG_CODES_SR = {
+    'en':'en-GB','es':'es-ES','de':'de-DE','it':'it-IT',
+    'pt':'pt-PT','nl':'nl-NL','ja':'ja-JP','zh':'zh-CN',
+    'ar':'ar-SA','ru':'ru-RU'
+  };
+
+  function toggleTranslator() {
+    translatorActive = !translatorActive;
+    const toggle = document.getElementById('tradToggle');
+    const langSelect = document.getElementById('tradLangSelect');
+    const tradPanel = document.getElementById('tradPanel');
+    const bubbleEmpty = document.getElementById('bubbleEmpty');
+    const bubbleContent = document.getElementById('bubbleContent');
+    const titleText = document.getElementById('assistantTitleText');
+    const listeningText = document.getElementById('listeningText');
+
+    if (translatorActive) {
+      toggle.classList.add('active');
+      langSelect.classList.add('visible');
+      tradPanel.classList.add('visible');
+      bubbleEmpty.style.display = 'none';
+      bubbleContent.style.display = 'none';
+      titleText.textContent = '🌐 TRADUCTEUR';
+      listeningText.textContent = 'Parle en ' + LANG_NAMES[translatorLang] + '…';
+      // Redémarrer SR dans la bonne langue si on enregistre
+      if (recording) {
+        stopSpeechRecognition();
+        startSpeechRecognition();
+      }
+    } else {
+      toggle.classList.remove('active');
+      langSelect.classList.remove('visible');
+      tradPanel.classList.remove('visible');
+      bubbleEmpty.style.display = 'block';
+      bubbleContent.style.display = 'none';
+      titleText.textContent = 'ASSISTANT IA';
+      listeningText.textContent = 'En écoute…';
+      if (recording) {
+        stopSpeechRecognition();
+        startSpeechRecognition();
+      }
+    }
+  }
+
+  function onLangChange() {
+    translatorLang = document.getElementById('tradLangPicker').value;
+    document.getElementById('listeningText').textContent = 'Parle en ' + LANG_NAMES[translatorLang] + '…';
+    document.getElementById('tradWaiting').textContent = 'Parle en ' + LANG_NAMES[translatorLang] + '…';
+    // Redémarrer SR dans la nouvelle langue
+    if (recording && translatorActive) {
+      stopSpeechRecognition();
+      startSpeechRecognition();
+    }
+  }
+
+  async function translateChunk(text) {
+    const loading = document.getElementById('tradLoading');
+    const original = document.getElementById('tradOriginal');
+    const result = document.getElementById('tradResult');
+    const waiting = document.getElementById('tradWaiting');
+
+    waiting.style.display = 'none';
+    loading.style.display = 'flex';
+    original.style.display = 'none';
+    result.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/assistant', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ question: text, mode: 'translate', sourceLang: LANG_NAMES[translatorLang] })
+      });
+      const data = await res.json();
+      loading.style.display = 'none';
+      if (data.translation) {
+        original.textContent = text;
+        original.style.display = 'block';
+        result.textContent = data.translation;
+        result.style.display = 'block';
+      }
+    } catch(e) {
+      loading.style.display = 'none';
+      waiting.style.display = 'block';
+    }
+  }
   let speechRecognition = null;
   let assistantStream = null;
   let assistantHistory = [];
@@ -1585,23 +1768,29 @@
       speechRecognition = new SR();
       speechRecognition.continuous = false;
       speechRecognition.interimResults = false;
-      speechRecognition.lang = 'fr-FR';
+      speechRecognition.lang = translatorActive
+        ? (LANG_CODES_SR[translatorLang] || 'en-GB')
+        : 'fr-FR';
 
       speechRecognition.onresult = e => {
         const t = e.results[0][0].transcript.trim();
-        askAndDetect(t);
+        if (translatorActive) {
+          translateChunk(t);
+        } else {
+          askAndDetect(t);
+        }
         try { speechRecognition.stop(); } catch(err) {}
       };
 
       speechRecognition.onerror = e => {
         if (e.error === 'aborted') return;
         isRestarting = false;
-        if (assistantActive && recording) setTimeout(createAndStart, 500);
+        if ((assistantActive || translatorActive) && recording) setTimeout(createAndStart, 500);
       };
 
       speechRecognition.onend = () => {
         isRestarting = false;
-        if (assistantActive && recording) setTimeout(createAndStart, 300);
+        if ((assistantActive || translatorActive) && recording) setTimeout(createAndStart, 300);
       };
 
       try {
