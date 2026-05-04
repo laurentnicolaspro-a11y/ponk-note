@@ -123,7 +123,98 @@
       position:relative; z-index:2; gap:20px;
     }
 
-    
+
+    /* ── Profile screen dark tech ── */
+    .profile-screen {
+      position:fixed; inset:0; z-index:9999;
+      display:none; flex-direction:column;
+      align-items:center; justify-content:center;
+      gap:20px; padding:32px 28px;
+      background: radial-gradient(ellipse at 30% 20%, #1a1040 0%, #0d0820 40%, #070514 100%);
+      overflow:hidden;
+    }
+    .profile-screen.visible { display:flex; animation:fadeUp 0.5s ease; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+    #geoCanvas { position:absolute; inset:0; z-index:0; pointer-events:none; }
+    .profile-screen::before {
+      content:''; position:absolute; inset:0; z-index:0;
+      background-image:
+        linear-gradient(rgba(100,60,220,0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100,60,220,0.07) 1px, transparent 1px);
+      background-size:40px 40px;
+      mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+    }
+    .profile-screen::after {
+      content:''; position:absolute;
+      width:500px; height:500px;
+      top:50%; left:50%; transform:translate(-50%,-60%);
+      background: radial-gradient(circle, rgba(120,60,255,0.12) 0%, transparent 70%);
+      z-index:0; pointer-events:none;
+    }
+    .profile-content {
+      position:relative; z-index:2;
+      display:flex; flex-direction:column;
+      align-items:center; gap:20px;
+      width:100%; max-width:480px;
+    }
+    .profile-app-name {
+      font-family:'Audiowide', sans-serif;
+      font-size:28px; font-weight:400; letter-spacing:0.5px;
+      display:flex; gap:10px; justify-content:center;
+    }
+    .profile-app-name .ponk { color:#00dcff; text-shadow:0 0 20px rgba(0,220,255,0.8), 0 0 50px rgba(0,220,255,0.3); }
+    .profile-app-name .note { color:#fff; text-shadow:0 0 20px rgba(0,220,255,0.6), 0 0 40px rgba(0,220,255,0.2); }
+    .profile-welcome { text-align:center; }
+    .profile-welcome p:first-child { font-size:18px; font-weight:600; margin-bottom:4px; color:#fff; }
+    .profile-welcome p:last-child { font-size:13px; color:rgba(180,160,255,0.7); }
+    .profile-input-wrap { width:100%; display:flex; flex-direction:column; gap:10px; }
+    .profile-input {
+      width:100%; padding:13px 16px; border-radius:10px;
+      border:1.5px solid rgba(0,200,255,0.55);
+      background: rgba(0,180,255,0.12);
+      font-family:'Inter', sans-serif; font-size:15px; color:#fff;
+      outline:none; text-align:center;
+      transition:border-color 0.2s, box-shadow 0.2s;
+    }
+    .profile-input:focus { border-color:rgba(0,220,255,1); background:rgba(0,180,255,0.18); box-shadow:0 0 0 2px rgba(0,220,255,0.2); }
+    .profile-input::placeholder { color:rgba(160,220,255,0.55); }
+    .profile-input:-webkit-autofill,
+    .profile-input:-webkit-autofill:hover,
+    .profile-input:-webkit-autofill:focus {
+      -webkit-text-fill-color:#fff;
+      -webkit-box-shadow:0 0 0 1000px rgba(0,140,200,0.25) inset;
+      transition:background-color 5000s ease-in-out 0s;
+      caret-color:#fff;
+    }
+    .profile-prefs { width:100%; display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+    .pref-col { display:flex; flex-direction:column; align-items:center; gap:8px; }
+    .pref-col-label { font-family:'Audiowide',sans-serif; font-size:10px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:rgba(180,160,255,0.7); }
+    .pref-options { display:flex; flex-direction:column; gap:5px; width:100%; }
+    .pref-btn {
+      padding:7px 10px; border-radius:8px;
+      background:rgba(255,255,255,0.05); border:1px solid rgba(0,220,255,0.25);
+      font-family:'Inter',sans-serif; font-size:11px; font-weight:500;
+      color:rgba(200,190,255,0.75); cursor:pointer; text-align:center;
+      transition:all 0.15s;
+    }
+    .pref-btn.active { background:rgba(0,220,255,0.15); border-color:rgba(0,220,255,0.7); color:#00dcff; box-shadow:0 0 12px rgba(0,220,255,0.2); }
+    .profile-submit {
+      width:100%; padding:14px; border-radius:10px; border:none;
+      background:linear-gradient(90deg, rgba(100,40,220,0.9), rgba(0,160,255,0.9));
+      color:#fff; font-family:'Audiowide',sans-serif;
+      font-size:17px; font-weight:700; letter-spacing:2px;
+      cursor:pointer; text-transform:uppercase; position:relative; overflow:hidden;
+      box-shadow:0 0 24px rgba(0,180,255,0.3), 0 0 0 1px rgba(0,220,255,0.3);
+      transition:box-shadow 0.2s, transform 0.1s;
+    }
+    .profile-submit::before {
+      content:''; position:absolute; inset:0;
+      background:linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      transform:translateX(-100%); animation:shimmer 3s ease-in-out infinite;
+    }
+    @keyframes shimmer { 0%{transform:translateX(-100%)} 60%,100%{transform:translateX(100%)} }
+    .profile-submit:active { transform:scale(0.98); }
+
   </style>
 </head>
 <body>
