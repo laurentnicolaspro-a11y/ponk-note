@@ -9,6 +9,7 @@
     { "src": "/library.html", "dest": "/library.html" },
     { "src": "/settings.html", "dest": "/settings.html" },
     { "src": "/test.html", "dest": "/test.html" },
+    { "src": "/mobile.html", "dest": "/mobile.html" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
