@@ -2691,7 +2691,7 @@ function copyRappel() {
 <!-- ── Modale Projet ── -->
 <div class="projet-modal" id="projetModal" onclick="if(event.target===this)fermerModalProjet()">
   <div class="projet-modal-card">
-    <div class="projet-modal-title">📁 Ajouter à un projet</div>
+    <div class="projet-modal-title">Ajouter à un projet</div>
     <div id="projetModalContent"></div>
     <button class="modal-close-btn" onclick="fermerModalProjet()">Fermer</button>
   </div>
@@ -2794,11 +2794,17 @@ async function afficherListeProjets() {
 function afficherFormulaireProjet() {
   const el = document.getElementById('projetModalContent');
   el.innerHTML = `
-    <div style="margin-bottom:12px">
-      <input class="projet-input" id="projetNom" placeholder="Nom du projet (ex: Chantier cuisine)" maxlength="60"
-        oninput="document.getElementById('btnCreer').disabled=!this.value.trim()">
-      <input class="projet-input" id="projetDesc" placeholder="Description courte (optionnel)" maxlength="120">
-    </div>
+    <input class="projet-input" id="projetNom" placeholder="Nom du projet (ex: Chantier cuisine)" maxlength="60"
+      oninput="document.getElementById('btnCreer').disabled=!this.value.trim()">
+    <div style="font-size:10px;color:rgba(180,220,255,0.4);letter-spacing:0.5px;margin:2px 0 8px;text-transform:uppercase">Cadrage IA</div>
+    <div style="font-size:11px;color:rgba(0,212,255,0.6);margin-bottom:4px">Quel est le sujet de ce projet ?</div>
+    <textarea class="projet-input" id="projetSujet" placeholder="Ex: Rénovation cuisine, remplacement sol et cuisine équipée" maxlength="300" rows="2" style="resize:none;line-height:1.4"></textarea>
+    <div style="font-size:11px;color:rgba(0,212,255,0.6);margin-bottom:4px">Y a-t-il un budget ?</div>
+    <input class="projet-input" id="projetBudget" placeholder="Ex: 15 000€ / Non / À définir" maxlength="80">
+    <div style="font-size:11px;color:rgba(0,212,255,0.6);margin-bottom:4px">Y a-t-il une deadline ?</div>
+    <input class="projet-input" id="projetDeadline" placeholder="Ex: Juin 2026 / Non / Urgent" maxlength="80">
+    <div style="font-size:11px;color:rgba(0,212,255,0.6);margin-bottom:4px">Autre précision ? <span style="color:rgba(180,220,255,0.4)">(optionnel)</span></div>
+    <textarea class="projet-input" id="projetAutre" placeholder="Tout ce qui peut aider l'IA…" maxlength="300" rows="2" style="resize:none;line-height:1.4"></textarea>
     <button class="btn-creer-projet" id="btnCreer" onclick="creerEtAjouter()" disabled>Créer et ajouter</button>
     <button class="btn-nouveau-projet" style="margin-top:8px" onclick="afficherListeProjets()">← Retour</button>
   `;
@@ -2806,9 +2812,19 @@ function afficherFormulaireProjet() {
 }
 
 async function creerEtAjouter() {
-  const nom  = document.getElementById('projetNom')?.value.trim();
-  const desc = document.getElementById('projetDesc')?.value.trim();
+  const nom      = document.getElementById('projetNom')?.value.trim();
+  const sujet    = document.getElementById('projetSujet')?.value.trim();
+  const budget   = document.getElementById('projetBudget')?.value.trim();
+  const deadline = document.getElementById('projetDeadline')?.value.trim();
+  const autre    = document.getElementById('projetAutre')?.value.trim();
   if (!nom) return;
+
+  const cadrageLines = [];
+  if (sujet)    cadrageLines.push(`Sujet : ${sujet}`);
+  if (budget)   cadrageLines.push(`Budget : ${budget}`);
+  if (deadline) cadrageLines.push(`Deadline : ${deadline}`);
+  if (autre)    cadrageLines.push(`Précisions : ${autre}`);
+  const cadrage = cadrageLines.join('\n');
 
   const btn = document.getElementById('btnCreer');
   btn.disabled = true; btn.textContent = 'Création…';
@@ -2818,7 +2834,7 @@ async function creerEtAjouter() {
     const res = await fetch(`/api/project?action=create&uid=${encodeURIComponent(uid)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uid, nom, description: desc })
+      body: JSON.stringify({ uid, nom, description: sujet, cadrage })
     });
     const { project, error } = await res.json();
     if (error) throw new Error(error);
