@@ -10,6 +10,7 @@
     { "src": "/settings.html", "dest": "/settings.html" },
     { "src": "/test.html", "dest": "/test.html" },
     { "src": "/mobile.html", "dest": "/mobile.html" },
+    { "src": "/projects.html", "dest": "/projects.html" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
