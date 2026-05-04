@@ -762,6 +762,18 @@
       animation:blink .6s ease-in-out infinite;
     }
 
+    .trad-suggest-btn {
+      width:100%; margin-bottom:6px; padding:8px 12px;
+      border-radius:10px; border:1.5px solid rgba(0,220,255,0.2);
+      background:rgba(0,220,255,0.04); color:#fff;
+      font-family:inherit; font-size:13px; text-align:left;
+      cursor:pointer; display:flex; align-items:center; gap:10px;
+      transition:background 0.15s, border-color 0.15s;
+    }
+    .trad-suggest-btn:hover { background:rgba(0,220,255,0.1); border-color:rgba(0,220,255,0.45); }
+    .trad-suggest-btn:active { transform:scale(0.98); }
+    .trad-suggest-btn svg { flex-shrink:0; opacity:0.6; }
+
     /* Maps mode buttons */
     .maps-mode-btn {
       flex:1; padding:7px 4px; border-radius:10px;
@@ -906,14 +918,40 @@
 
         <!-- Mode traducteur -->
         <div id="tradPanel">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(0,220,255,0.4);margin-bottom:12px" id="tradLangLabel">🌐 TRADUCTION EN DIRECT</div>
+          <!-- Loading -->
           <div class="trad-loading" id="tradLoading" style="display:none">
             <div class="trad-dot"></div>
             <span>Traduction…</span>
           </div>
-          <div class="trad-original" id="tradOriginal" style="display:none"></div>
-          <div class="trad-result" id="tradResult" style="display:none"></div>
-          <div style="font-size:12px;color:rgba(0,220,255,0.35);margin-top:14px;font-style:italic" id="tradWaiting">Parle dans la langue sélectionnée…</div>
+
+          <!-- Ce que dit l'interlocuteur -->
+          <div id="tradInterlocuteur" style="display:none;margin-bottom:10px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(0,220,255,0.35);margin-bottom:5px">Il dit</div>
+            <div class="trad-original" id="tradOriginal"></div>
+            <div class="trad-result" id="tradResult"></div>
+          </div>
+
+          <!-- Suggestions de réponse -->
+          <div id="tradSuggestions" style="display:none;margin-bottom:12px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(0,220,255,0.35);margin-bottom:6px">Suggestions</div>
+            <div id="tradSuggestList"></div>
+          </div>
+
+          <!-- Séparateur -->
+          <div id="tradSepLine" style="display:none;border-top:1px solid rgba(0,220,255,0.1);margin-bottom:10px"></div>
+
+          <!-- Bulle libre -->
+          <div id="tradFreeZone">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(0,220,255,0.35);margin-bottom:6px">Ta réponse</div>
+            <textarea id="tradFreeInput" placeholder="Écris en français…" style="width:100%;padding:8px 12px;border-radius:10px;border:1.5px solid rgba(0,220,255,0.2);background:rgba(0,220,255,0.04);font-family:inherit;font-size:13px;color:#fff;outline:none;resize:none;min-height:52px;line-height:1.5" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+            <button onclick="tradFreeTranslateAndSpeak()" style="margin-top:6px;width:100%;padding:8px 14px;border-radius:10px;border:none;background:rgba(0,160,255,0.7);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              Traduire &amp; Lire
+            </button>
+          </div>
+
+          <!-- Message d'attente initial -->
+          <div style="font-size:12px;color:rgba(0,220,255,0.3);margin-top:10px;font-style:italic" id="tradWaiting">Parle dans la langue sélectionnée…</div>
         </div>
       </div>
 
@@ -1704,6 +1742,7 @@
       bubbleContent.style.display = 'none';
       titleText.textContent = 'ASSISTANT IA';
       listeningText.textContent = 'En ecoute...';
+      tradHistory = [];
       if (recording) { stopSpeechRecognition(); startSpeechRecognition(); }
     }
   }
@@ -1719,34 +1758,113 @@
     }
   }
 
+  let tradHistory = []; // historique des phrases pour contexte Gemini
+
   async function translateChunk(text) {
     const loading = document.getElementById('tradLoading');
+    const waiting = document.getElementById('tradWaiting');
+    const interlocuteur = document.getElementById('tradInterlocuteur');
     const original = document.getElementById('tradOriginal');
     const result = document.getElementById('tradResult');
-    const waiting = document.getElementById('tradWaiting');
+    const suggestionsZone = document.getElementById('tradSuggestions');
+    const suggestList = document.getElementById('tradSuggestList');
+    const sepLine = document.getElementById('tradSepLine');
 
     waiting.style.display = 'none';
     loading.style.display = 'flex';
-    original.style.display = 'none';
-    result.style.display = 'none';
+    interlocuteur.style.display = 'none';
+    suggestionsZone.style.display = 'none';
+    sepLine.style.display = 'none';
 
     try {
       const res = await fetch('/api/assistant', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ question: text, mode: 'translate', sourceLang: LANG_NAMES[translatorLang] })
+        body: JSON.stringify({
+          question: text,
+          mode: 'translate_suggest',
+          sourceLang: LANG_NAMES[translatorLang],
+          targetLang: LANG_NAMES[translatorLang],
+          history: tradHistory.slice(-4)
+        })
       });
       const data = await res.json();
       loading.style.display = 'none';
+
       if (data.translation) {
+        // Afficher ce que dit l'interlocuteur
         original.textContent = text;
-        original.style.display = 'block';
         result.textContent = data.translation;
-        result.style.display = 'block';
+        interlocuteur.style.display = 'block';
+
+        // Historique pour le contexte
+        tradHistory.push(text);
+        if (tradHistory.length > 6) tradHistory.shift();
+
+        // Afficher les suggestions
+        if (data.suggestions && data.suggestions.length > 0) {
+          suggestList.innerHTML = data.suggestions.map(s => `
+            <button class="trad-suggest-btn" onclick="speakText(${JSON.stringify(s)}, this)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00dcff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              ${s}
+            </button>
+          `).join('');
+          suggestionsZone.style.display = 'block';
+          sepLine.style.display = 'block';
+        }
       }
     } catch(e) {
       loading.style.display = 'none';
       waiting.style.display = 'block';
+    }
+  }
+
+  function speakText(text, btn) {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = LANG_CODES_SR[translatorLang] || 'en-GB';
+    utter.rate = 0.95;
+    if (btn) {
+      const orig = btn.innerHTML;
+      btn.style.borderColor = 'rgba(0,220,255,0.6)';
+      btn.style.background = 'rgba(0,220,255,0.12)';
+      utter.onend = () => {
+        btn.innerHTML = orig;
+        btn.style.borderColor = 'rgba(0,220,255,0.2)';
+        btn.style.background = 'rgba(0,220,255,0.04)';
+      };
+    }
+    window.speechSynthesis.speak(utter);
+  }
+
+  async function tradFreeTranslateAndSpeak() {
+    const input = document.getElementById('tradFreeInput');
+    const text = input.value.trim();
+    if (!text) return;
+    const btn = input.nextElementSibling;
+    const origText = btn.innerHTML;
+    btn.innerHTML = '<div style="width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;animation:spin 0.8s linear infinite;display:inline-block"></div>';
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/assistant', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ question: text, mode: 'translate_free', targetLang: LANG_NAMES[translatorLang] })
+      });
+      const data = await res.json();
+      if (data.translation) {
+        speakText(data.translation, null);
+        input.value = '';
+        input.style.height = 'auto';
+        // Feedback visuel court
+        btn.innerHTML = '✓ Lu !';
+        setTimeout(() => { btn.innerHTML = origText; btn.disabled = false; }, 1500);
+      } else {
+        btn.innerHTML = origText; btn.disabled = false;
+      }
+    } catch(e) {
+      btn.innerHTML = origText; btn.disabled = false;
     }
   }
   let speechRecognition = null;
