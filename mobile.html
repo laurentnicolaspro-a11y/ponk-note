@@ -576,7 +576,7 @@
       } catch(e) { console.warn('Quota check failed:', e.message); }
     }
 
-    const title = document.getElementById('title').value || 'enregistrement';
+    const title = 'enregistrement';
     const fd = new FormData();
     fd.append('audio', segBlob, 'rec.webm');
     fd.append('title', title);
@@ -747,7 +747,7 @@
     if(!uploadedFileName && segmentFileNames.length === 0) return;
     document.getElementById('btnAnalyze').disabled = true;
     showOverlay(seconds);
-    const title    = document.getElementById('title').value || '';
+    const title    = 'enregistrement';
     const duration = fmt(seconds);
     const now      = new Date();
     const datetime = now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) + ' à ' + now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
