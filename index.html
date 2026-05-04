@@ -1759,13 +1759,17 @@
 
 
 
+  let srSessionId = 0;
+
   async function startSpeechRecognition() {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     let isRestarting = false;
+    const mySession = ++srSessionId; // chaque appel a son propre ID
 
     function createAndStart() {
       if (isRestarting) return;
+      if (mySession !== srSessionId) return; // session obsolète → on abandonne
       isRestarting = true;
 
       speechRecognition = new SR();
@@ -1776,6 +1780,7 @@
         : 'fr-FR';
 
       speechRecognition.onresult = e => {
+        if (mySession !== srSessionId) return;
         const t = e.results[0][0].transcript.trim();
         if (translatorActive) {
           translateChunk(t);
@@ -1788,18 +1793,21 @@
       speechRecognition.onerror = e => {
         if (e.error === 'aborted') return;
         isRestarting = false;
-        if (speechRecognition !== null && (assistantActive || translatorActive) && recording) setTimeout(createAndStart, 500);
+        if (mySession !== srSessionId) return;
+        if ((assistantActive || translatorActive) && recording) setTimeout(createAndStart, 500);
       };
 
       speechRecognition.onend = () => {
         isRestarting = false;
-        if (speechRecognition !== null && (assistantActive || translatorActive) && recording) setTimeout(createAndStart, 300);
+        if (mySession !== srSessionId) return;
+        if ((assistantActive || translatorActive) && recording) setTimeout(createAndStart, 300);
       };
 
       try {
         speechRecognition.start();
       } catch(e) {
         isRestarting = false;
+        if (mySession !== srSessionId) return;
         if ((assistantActive || translatorActive) && recording) setTimeout(createAndStart, 500);
       }
     }
