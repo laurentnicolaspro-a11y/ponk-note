@@ -44,6 +44,17 @@ module.exports = async function handler(req, res) {
       return null;
     }
 
+    // ── Mode traduction ──
+    if (mode === 'translate') {
+      const { sourceLang } = req.body;
+      const prompt = `Tu es un traducteur instantané.
+Phrase source en ${sourceLang} : "${question}"
+Traduis UNIQUEMENT en français. Réponse : juste la traduction, rien d'autre, pas de guillemets, pas d'explication.`;
+      const translation = await callGemini(prompt);
+      if (!translation) return res.status(200).json({ translation: null });
+      return res.status(200).json({ translation: translation.trim() });
+    }
+
     // ── Mode fusionné : réponse + détection action en un seul appel ──
     if (!mode || mode === 'full') {
       const prompt = `Tu es un assistant vocal intégré dans une app d'enregistrement.
