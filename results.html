@@ -481,6 +481,68 @@
       color:var(--muted); cursor:pointer; transition:all 0.15s;
     }
     .maps-mode-btn.active { background:rgba(0,180,255,0.8); border-color:rgba(0,212,255,0.6); color:#fff; font-weight:600; }
+
+    /* ── Mode Projet ── */
+    .btn-projet {
+      background:linear-gradient(135deg, rgba(80,40,180,0.9), rgba(120,60,220,0.85));
+      color:#fff; border:1px solid rgba(120,80,255,0.5);
+      box-shadow:0 0 16px rgba(100,60,220,0.25);
+    }
+    .btn-projet:hover { box-shadow:0 0 24px rgba(120,60,220,0.45); }
+
+    .projet-modal {
+      display:none; position:fixed; inset:0; z-index:200;
+      background:rgba(5,12,26,0.92); backdrop-filter:blur(20px);
+      align-items:flex-end; justify-content:center;
+    }
+    .projet-modal.active { display:flex; }
+    .projet-modal-card {
+      width:100%; max-width:520px; max-height:85vh;
+      background:rgba(8,15,32,0.98); border:1px solid rgba(0,212,255,0.25);
+      border-radius:20px 20px 0 0; padding:24px 20px 32px;
+      overflow-y:auto; animation:fadeUp 0.3s ease;
+    }
+    .projet-modal-title {
+      font-family:Audiowide,sans-serif; font-size:14px;
+      color:#00d4ff; margin-bottom:16px; text-align:center;
+      text-shadow:0 0 12px rgba(0,212,255,0.4);
+    }
+    .projet-item {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 16px; border-radius:12px; margin-bottom:8px;
+      background:rgba(0,212,255,0.04); border:1px solid rgba(0,212,255,0.15);
+      cursor:pointer; transition:all 0.15s;
+    }
+    .projet-item:hover { background:rgba(0,212,255,0.1); border-color:rgba(0,212,255,0.35); }
+    .projet-item-name { font-size:14px; color:#e8f4ff; font-weight:500; }
+    .projet-item-meta { font-size:11px; color:rgba(0,212,255,0.5); margin-top:2px; }
+    .projet-item-arrow { color:#00d4ff; font-size:18px; }
+    .btn-nouveau-projet {
+      width:100%; padding:14px; border-radius:12px; margin-top:4px;
+      background:transparent; border:1px dashed rgba(0,212,255,0.3);
+      color:#00d4ff; font-family:Audiowide,sans-serif; font-size:12px;
+      cursor:pointer; transition:all 0.15s; letter-spacing:0.5px;
+    }
+    .btn-nouveau-projet:hover { background:rgba(0,212,255,0.06); border-color:rgba(0,212,255,0.6); }
+    .projet-input {
+      width:100%; padding:12px 14px; border-radius:10px; margin-bottom:8px;
+      background:rgba(0,212,255,0.06); border:1.5px solid rgba(0,212,255,0.3);
+      color:#e8f4ff; font-family:inherit; font-size:14px; outline:none;
+    }
+    .projet-input:focus { border-color:#00d4ff; background:rgba(0,212,255,0.1); }
+    .projet-input::placeholder { color:rgba(180,220,255,0.35); }
+    .btn-creer-projet {
+      width:100%; padding:14px; border-radius:12px;
+      background:linear-gradient(135deg, rgba(80,40,180,0.9), rgba(120,60,220,0.85));
+      border:none; color:#fff; font-family:Audiowide,sans-serif;
+      font-size:12px; cursor:pointer; letter-spacing:0.5px;
+      transition:opacity 0.15s; margin-top:4px;
+    }
+    .btn-creer-projet:disabled { opacity:0.35; cursor:not-allowed; }
+    .projet-success {
+      text-align:center; padding:20px; color:#00e5a0;
+      font-size:14px; line-height:1.6;
+    }
 </style>
 </head>
 <body>
@@ -500,7 +562,9 @@
   <div id="meta" class="meta" style="display:none"></div>
   <div id="cards"></div>
   <div class="action-btns">
-
+    <button class="btn-action btn-projet" id="btnProjet" onclick="ouvrirModalProjet()" style="display:none">
+      📁 Ajouter à un projet
+    </button>
     <button class="btn-action btn-pdf" onclick="exportPDF()">Exporter en PDF</button>
   </div>
 </div>
@@ -2624,6 +2688,15 @@ function copyRappel() {
     </div>
 </div>
 </div>
+<!-- ── Modale Projet ── -->
+<div class="projet-modal" id="projetModal" onclick="if(event.target===this)fermerModalProjet()">
+  <div class="projet-modal-card">
+    <div class="projet-modal-title">📁 Ajouter à un projet</div>
+    <div id="projetModalContent"></div>
+    <button class="modal-close-btn" onclick="fermerModalProjet()">Fermer</button>
+  </div>
+</div>
+
 </body>
 <script>
 
@@ -2650,6 +2723,150 @@ function saveActionsIA() {
   localStorage.setItem('ponk_result', JSON.stringify(data));
 }
 function declencherRebond() {} // pas de rebond dans results
+
+// ── Mode Projet ───────────────────────────────────────────────────────────────
+
+function showBtnProjetIfReady() {
+  const btn = document.getElementById('btnProjet');
+  if (!btn) return;
+  const fileName = (driveFile.fileName || '').split('/').pop();
+  if (fileName && localStorage.getItem(`ponk_analyzed_${fileName}`)) {
+    btn.style.display = 'block';
+  }
+}
+showBtnProjetIfReady();
+setTimeout(showBtnProjetIfReady, 2000);
+
+function getUid() {
+  try { return JSON.parse(localStorage.getItem('ponk_profile') || '{}').uid || ''; } catch { return ''; }
+}
+
+async function ouvrirModalProjet() {
+  document.getElementById('projetModal').classList.add('active');
+  await afficherListeProjets();
+}
+
+function fermerModalProjet() {
+  document.getElementById('projetModal').classList.remove('active');
+}
+
+async function afficherListeProjets() {
+  const el = document.getElementById('projetModalContent');
+  el.innerHTML = '<div class="modal-loading-text" style="padding:20px 0">Chargement…</div>';
+
+  const uid = getUid();
+  if (!uid) { el.innerHTML = '<div class="projet-success">Profil introuvable.</div>'; return; }
+
+  try {
+    const res = await fetch(`/api/project?action=list&uid=${encodeURIComponent(uid)}`);
+    const { projects = [] } = await res.json();
+
+    let html = '';
+    if (projects.length === 0) {
+      html += '<div style="font-size:13px;color:rgba(180,220,255,0.5);text-align:center;padding:12px 0 16px">Aucun projet pour l\'instant.</div>';
+    } else {
+      for (const p of projects) {
+        const nb = p.reunions?.length || 0;
+        html += `<div class="projet-item" onclick="ajouterAuProjet('${p.id}')">
+          <div>
+            <div class="projet-item-name">${p.nom}</div>
+            <div class="projet-item-meta">${nb} réunion${nb > 1 ? 's' : ''} · ${p.statut === 'en_cours' ? 'En cours' : p.statut}</div>
+          </div>
+          <div class="projet-item-arrow">›</div>
+        </div>`;
+      }
+    }
+
+    if (projects.length < 3) {
+      html += `<button class="btn-nouveau-projet" onclick="afficherFormulaireProjet()">+ Créer un nouveau projet</button>`;
+    } else {
+      html += `<div style="font-size:11px;color:rgba(180,220,255,0.4);text-align:center;padding:8px 0">Limite de 3 projets atteinte.</div>`;
+    }
+
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = `<div class="projet-success" style="color:var(--danger)">Erreur : ${e.message}</div>`;
+  }
+}
+
+function afficherFormulaireProjet() {
+  const el = document.getElementById('projetModalContent');
+  el.innerHTML = `
+    <div style="margin-bottom:12px">
+      <input class="projet-input" id="projetNom" placeholder="Nom du projet (ex: Chantier cuisine)" maxlength="60"
+        oninput="document.getElementById('btnCreer').disabled=!this.value.trim()">
+      <input class="projet-input" id="projetDesc" placeholder="Description courte (optionnel)" maxlength="120">
+    </div>
+    <button class="btn-creer-projet" id="btnCreer" onclick="creerEtAjouter()" disabled>Créer et ajouter</button>
+    <button class="btn-nouveau-projet" style="margin-top:8px" onclick="afficherListeProjets()">← Retour</button>
+  `;
+  setTimeout(() => document.getElementById('projetNom')?.focus(), 100);
+}
+
+async function creerEtAjouter() {
+  const nom  = document.getElementById('projetNom')?.value.trim();
+  const desc = document.getElementById('projetDesc')?.value.trim();
+  if (!nom) return;
+
+  const btn = document.getElementById('btnCreer');
+  btn.disabled = true; btn.textContent = 'Création…';
+
+  const uid = getUid();
+  try {
+    const res = await fetch(`/api/project?action=create&uid=${encodeURIComponent(uid)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid, nom, description: desc })
+    });
+    const { project, error } = await res.json();
+    if (error) throw new Error(error);
+    await ajouterAuProjet(project.id);
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Créer et ajouter';
+    document.getElementById('projetModalContent').innerHTML +=
+      `<div style="color:var(--danger);font-size:12px;text-align:center;margin-top:8px">${e.message}</div>`;
+  }
+}
+
+async function ajouterAuProjet(projectId) {
+  const el = document.getElementById('projetModalContent');
+  el.innerHTML = '<div class="modal-loading-text" style="padding:20px 0">Ajout en cours…</div>';
+
+  const uid = getUid();
+  const fileName = (driveFile.fileName || '').split('/').pop();
+  const analyzed = JSON.parse(localStorage.getItem(`ponk_analyzed_${fileName}`) || '{}');
+  const meta = JSON.parse(localStorage.getItem('ponk_meta') || '{}');
+
+  const reunion = {
+    fileName,
+    date:      meta.datetime || new Date().toISOString(),
+    titre:     meta.title    || fileName.replace('.webm', ''),
+    resume:    analyzed.summary?.resume    || '',
+    decisions: analyzed.summary?.decisions || [],
+    actions:   analyzed.summary?.actions   || []
+  };
+
+  try {
+    const res = await fetch(`/api/project?action=add&uid=${encodeURIComponent(uid)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid, projectId, reunion })
+    });
+    const { project, alreadyAdded, error } = await res.json();
+    if (error) throw new Error(error);
+
+    el.innerHTML = `<div class="projet-success">
+      ${alreadyAdded
+        ? '⚠️ Déjà dans ce projet.'
+        : `✅ Réunion ajoutée au projet<br><strong>${project.nom}</strong>`}
+    </div>`;
+
+    localStorage.setItem(`ponk_project_${fileName}`, projectId);
+    setTimeout(fermerModalProjet, 2000);
+  } catch(e) {
+    el.innerHTML = `<div class="projet-success" style="color:var(--danger)">Erreur : ${e.message}</div>`;
+  }
+}
 function fermerRebond() {}
 function fermerCalendrier() { document.getElementById('calendrierModal').classList.add('hidden'); }
 function fermerCommande()   { document.getElementById('commandeModal').classList.add('hidden'); }
