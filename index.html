@@ -1218,8 +1218,10 @@
 
   async function checkQuota() {
     const profile = localStorage.getItem('ponk_profile') || 'user';
+    const _email  = localStorage.getItem('ponk_email') || '';
+    const _uid    = _email ? _email.replace(/[^a-zA-Z0-9._-]/g, '_') : profile;
     try {
-      const res = await fetch('/api/list?uid=' + encodeURIComponent(profile));
+      const res = await fetch('/api/list?uid=' + encodeURIComponent(_uid));
       const data = await res.json();
       const count = (data.files || []).filter(f => f.name && f.name !== '.emptyFolderPlaceholder').length;
       return count;
@@ -1318,11 +1320,13 @@
   async function uploadSegment(segBlob, isFinal) {
     if (!segBlob) return;
     const profile = localStorage.getItem('ponk_profile') || 'user';
+    const _email2 = localStorage.getItem('ponk_email') || '';
+    const _uid2   = _email2 ? _email2.replace(/[^a-zA-Z0-9._-]/g, '_') : profile;
 
     // Quota check uniquement sur le premier segment
     if (segmentIndex === 0) {
       try {
-        const checkRes = await fetch('/api/list?uid=' + encodeURIComponent(profile));
+        const checkRes = await fetch('/api/list?uid=' + encodeURIComponent(_uid2));
         const checkData = await checkRes.json();
         const count = (checkData.files || []).filter(f => f.name && f.name !== '.emptyFolderPlaceholder').length;
         if (count >= 5) {
