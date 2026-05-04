@@ -195,7 +195,7 @@ module.exports = async function handler(req, res) {
       if (!project) return res.status(404).json({ error: 'Projet introuvable' });
 
       // Champs racine modifiables
-      const rootFields = ['nom', 'description', 'statut', 'cadrage'];
+      const rootFields = ['nom', 'description', 'statut', 'cadrage', 'synthese', 'syntheseGeneratedAt'];
       for (const field of rootFields) {
         if (changes[field] !== undefined) project[field] = changes[field];
       }
@@ -218,6 +218,53 @@ module.exports = async function handler(req, res) {
       project.updatedAt = new Date().toISOString();
       await supabasePut(path, project);
       return res.status(200).json({ project });
+    }
+
+    // ── SYNTHESE — générer et cacher la synthèse IA ──────────────────────────
+    if (action === 'synthese') {
+      const projectId = body.projectId;
+      if (!projectId) return res.status(400).json({ error: 'projectId requis' });
+
+      const path = `${projectsPrefix}proj-${projectId}.json`;
+      const project = await supabaseGet(path);
+      if (!project) return res.status(404).json({ error: 'Projet introuvable' });
+
+      if (!project.reunions || project.reunions.length === 0) {
+        return res.status(200).json({ synthese: '' });
+      }
+
+      const contexte = project.reunions.map((r, i) =>
+        `Réunion ${i+1} (${r.date ? new Date(r.date).toLocaleDateString('fr-FR') : ''}) — ${r.titre} :\n${r.resume}${r.decisions?.length ? '\nDécisions : ' + r.decisions.join(', ') : ''}`
+      ).join('\n\n');
+
+      const prompt = `Tu es un assistant de gestion de projet. Voici les résumés des réunions du projet "${project.nom}"${project.description ? ' (' + project.description + ')' : ''} :\n\n${contexte}\n\nRédige une synthèse concise (3-5 phrases) de l'état d'avancement du projet : ce qui a été accompli, ce qui est en cours, et les points d'attention. Réponds en français, directement, sans titre.`;
+
+      const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+      let synthese = '';
+
+      for (const model of GEMINI_MODELS) {
+        try {
+          const geminiRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,
+            { method:'POST', headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] }) }
+          );
+          if (!geminiRes.ok) continue;
+          const gData = await geminiRes.json();
+          synthese = gData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+          if (synthese) break;
+        } catch {}
+      }
+
+      if (!synthese) return res.status(500).json({ error: 'Synthèse indisponible' });
+
+      // Sauvegarder dans le projet
+      project.synthese = synthese;
+      project.syntheseGeneratedAt = new Date().toISOString();
+      project.updatedAt = new Date().toISOString();
+      await supabasePut(path, project);
+
+      return res.status(200).json({ synthese });
     }
 
     // ── DELETE — supprimer un projet ─────────────────────────────────────────
