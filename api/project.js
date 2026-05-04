@@ -237,7 +237,11 @@ module.exports = async function handler(req, res) {
         `Réunion ${i+1} (${r.date ? new Date(r.date).toLocaleDateString('fr-FR') : ''}) — ${r.titre} :\n${r.resume}${r.decisions?.length ? '\nDécisions : ' + r.decisions.join(', ') : ''}`
       ).join('\n\n');
 
-      const prompt = `Tu es un assistant de gestion de projet. Voici les résumés des réunions du projet "${project.nom}"${project.description ? ' (' + project.description + ')' : ''} :\n\n${contexte}\n\nRédige une synthèse concise (3-5 phrases) de l'état d'avancement du projet : ce qui a été accompli, ce qui est en cours, et les points d'attention. Réponds en français, directement, sans titre.`;
+      const cadrageBlock = project.cadrage
+        ? `\nContexte du projet (fourni par l'utilisateur) :\n${project.cadrage}\n`
+        : '';
+
+      const prompt = `Tu es un assistant de gestion de projet. Voici les informations sur le projet "${project.nom}" :\n${cadrageBlock}\nRésumés des réunions :\n\n${contexte}\n\nRédige une synthèse concise (3-5 phrases) de l'état d'avancement du projet : ce qui a été accompli, ce qui est en cours, et les points d'attention. Réponds en français, directement, sans titre.`;
 
       const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
       let synthese = '';
