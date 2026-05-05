@@ -395,8 +395,7 @@
     .action-item:hover { background:var(--bg-card2); border-color:var(--cyan-border-hi); }
     .action-item.done { opacity:0.4; }
     .action-item { position:relative; }
-    .action-btns { display:flex; gap:6px; flex-shrink:0; opacity:0; transition:opacity 0.15s; }
-    .action-item:hover .action-btns { opacity:1; }
+    .action-btns { display:none; } /* masqué — dans le détail maintenant */
     .action-btn-sm {
       background:none; border:1px solid var(--cyan-border); border-radius:6px;
       color:var(--muted); font-size:10px; padding:3px 7px; cursor:pointer;
@@ -446,16 +445,24 @@
     }
     .btn-add-action:hover { border-color:var(--cyan); color:var(--cyan); background:rgba(0,212,255,0.05); }
     .action-cb {
-      width:20px; height:20px; border-radius:50%; flex-shrink:0;
-      border:1.5px solid var(--cyan-border); background:transparent;
+      width:24px; height:24px; border-radius:50%; flex-shrink:0;
+      border:2px solid rgba(0,212,255,0.5); background:rgba(0,212,255,0.05);
       display:flex; align-items:center; justify-content:center;
-      font-size:11px; transition:all 0.15s; margin-top:1px;
+      font-size:12px; transition:all 0.2s; margin-top:1px; cursor:pointer;
+      box-shadow:0 0 8px rgba(0,212,255,0.15);
     }
-    .action-item.done .action-cb { background:var(--green); border-color:var(--green); color:#050c1a; }
-    .action-body { flex:1; }
-    .action-quoi { font-size:13px; color:var(--text); line-height:1.4; }
+    .action-cb:hover { border-color:var(--cyan); background:rgba(0,212,255,0.12); box-shadow:0 0 12px rgba(0,212,255,0.3); }
+    .action-item.done .action-cb { background:var(--green); border-color:var(--green); color:#050c1a; box-shadow:0 0 8px rgba(0,229,160,0.3); }
+    .action-body { flex:1; min-width:0; }
+    .action-quoi { font-size:13px; color:var(--text); line-height:1.4; cursor:pointer; }
+    .action-quoi:hover { color:var(--cyan); }
     .action-item.done .action-quoi { text-decoration:line-through; }
     .action-meta { font-size:11px; color:var(--muted); margin-top:3px; display:flex; gap:8px; flex-wrap:wrap; }
+    /* Action étendue */
+    .action-detail { display:none; margin-top:10px; padding-top:10px; border-top:1px solid rgba(0,212,255,0.1); }
+    .action-item.expanded .action-detail { display:block; }
+    .action-item.expanded { border-color:rgba(0,212,255,0.25); background:rgba(0,212,255,0.04); }
+    .action-btns-detail { display:flex; gap:6px; margin-top:8px; }
     .action-qui { color:var(--cyan); font-weight:500; }
     .action-quand { color:#ffb400; }
     .action-source { color:rgba(180,220,255,0.3); font-style:italic; }
@@ -1437,25 +1444,34 @@ function renderActions(reunions) {
           </div>`).join('')}
       </div>
       <div class="st-count">${stDone}/${sts.length} sous-tâche${sts.length > 1 ? 's' : ''}</div>` : '';
+    const aId = 'act_' + a._fileName.replace(/[^a-z0-9]/gi,'_') + '_' + a._actionIndex;
     return `
-    <div class="action-item ${a.done ? 'done' : ''}">
-      <div class="action-cb" onclick="toggleAction('${a._fileName}', ${a._actionIndex})" style="cursor:pointer">${a.done ? '✓' : ''}</div>
-      <div class="action-body" style="flex:1">
-        <div class="action-quoi" onclick="toggleAction('${a._fileName}', ${a._actionIndex})" style="cursor:pointer">${a.quoi}</div>
-        <div class="action-meta">
-          ${a.qui   ? `<span class="action-qui">👤 ${a.qui}</span>` : ''}
-          ${a.quand ? `<span class="action-quand">📅 ${a.quand}</span>` : ''}
-          <span class="action-source">${a._reunionTitre || ''}</span>
+    <div class="action-item ${a.done ? 'done' : ''}" id="${aId}">
+      <div class="action-cb" onclick="event.stopPropagation();toggleAction('${a._fileName}', ${a._actionIndex})">${a.done ? '✓' : ''}</div>
+      <div class="action-body" onclick="toggleExpandAction('${aId}')">
+        <div class="action-quoi">${a.quoi}</div>
+        <div class="action-detail">
+          <div class="action-meta">
+            ${a.qui   ? `<span class="action-qui">👤 ${a.qui}</span>` : ''}
+            ${a.quand ? `<span class="action-quand">📅 ${a.quand}</span>` : ''}
+            ${a._reunionTitre ? `<span class="action-source">${a._reunionTitre}</span>` : ''}
+          </div>
+          ${stHtml}
+          <div class="action-btns-detail">
+            <button class="btn-ia" onclick="event.stopPropagation();ouvrirIAModal('${a._fileName}', ${a._actionIndex})">✦ IA</button>
+            <button class="action-btn-sm" onclick="event.stopPropagation();ouvrirActionModal('${a._fileName}', ${a._actionIndex})">Éditer</button>
+            <button class="action-btn-sm danger" onclick="event.stopPropagation();supprimerAction('${a._fileName}', ${a._actionIndex})">✕</button>
+          </div>
         </div>
-        ${stHtml}
-      </div>
-      <div class="action-btns">
-        <button class="btn-ia" onclick="ouvrirIAModal('${a._fileName}', ${a._actionIndex})">✦ IA</button>
-        <button class="action-btn-sm" onclick="ouvrirActionModal('${a._fileName}', ${a._actionIndex})">Éditer</button>
-        <button class="action-btn-sm danger" onclick="supprimerAction('${a._fileName}', ${a._actionIndex})">✕</button>
       </div>
     </div>`;
   }).join('') + btnAdd;
+}
+
+function toggleExpandAction(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('expanded');
 }
 
 async function toggleAction(fileName, actionIndex) {
