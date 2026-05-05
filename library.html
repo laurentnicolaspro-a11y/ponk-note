@@ -417,13 +417,37 @@ async function toggleAudio(fileName, e) {
 const fileSegmentMap = {};
 
 async function handleAnalyze(fileName, btn) {
-  const analyzed = localStorage.getItem(`ponk_analyzed_${fileName}`);
-  if (analyzed) {
-    localStorage.setItem('ponk_result', analyzed);
+  // 1. Cache localStorage (rapide)
+  const lsKey = `ponk_analyzed_${fileName}`;
+  const cached = localStorage.getItem(lsKey);
+  if (cached) {
+    localStorage.setItem('ponk_result', cached);
     window.location.href = '/results.html';
     return;
   }
+
   btn.disabled = true;
+  btn.textContent = 'Chargement…';
+
+  // 2. Tenter de lire le cache Supabase Storage (évite de relancer Gemini)
+  try {
+    const baseName = fileName.replace('.webm', '');
+    const analysisUrl = `https://nnppmsomwigihidjpwnp.supabase.co/storage/v1/object/public/audio/${encodeURIComponent(uid||profile)}/${baseName}-analysis.json`;
+    const r = await fetch(analysisUrl);
+    if (r.ok) {
+      const data = await r.json();
+      if (data && !data.error) {
+        localStorage.setItem('ponk_result', JSON.stringify(data));
+        localStorage.setItem(lsKey, JSON.stringify(data)); // repeupler le cache local
+        window.location.href = '/results.html';
+        return;
+      }
+    }
+  } catch(e) {
+    console.warn('[library] Supabase cache miss:', e.message);
+  }
+
+  // 3. Fallback : lancer Gemini
   btn.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:8px"><div class="spinner-sm"><svg viewBox="0 0 24 24" width="16" height="16"><circle class="spinner-arc-sm" cx="12" cy="12" r="9"/></svg></div><span>Analyse…</span></div>';
   try {
     const fullFileName = `${uid||profile}/${fileName}`;
