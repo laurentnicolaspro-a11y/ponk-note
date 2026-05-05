@@ -663,3 +663,254 @@ async function exportPDF() {
     if (pdfBtn) { pdfBtn.textContent = '↓ Exporter en PDF'; pdfBtn.disabled = false; }
   }
 }
+
+// ── downloadProjetPDF — Export PDF d'un projet ────────────────────────────────
+async function downloadProjetPDF(projet) {
+  const jsPDF = await loadJsPDF();
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const C = PDF_C;
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const M = 16, maxW = pageW - M * 2;
+  let y = M;
+
+  const checkPage = (n = 10) => {
+    if (y + n > pageH - 14) { doc.addPage(); y = M; }
+  };
+
+  const sectionHeader = (titre) => {
+    checkPage(14);
+    doc.setFillColor(230, 230, 230); doc.rect(M, y, maxW, 10, 'F');
+    doc.setFillColor(0, 0, 0); doc.rect(M, y, 3, 10, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
+    doc.setTextColor(0, 0, 0);
+    doc.text(titre.toUpperCase(), M + 7, y + 6.5);
+    y += 10 + 5;
+  };
+
+  const dateStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const titrePDF = projet.nom || 'Projet';
+
+  // ── Bandeau ──
+  pdfBandeau(doc, titrePDF, pageW, M, C);
+  y = 38;
+
+  // ── Bloc en-tête projet ──
+  const statutLabel = { en_cours: 'En cours', termine: 'Terminé', en_pause: 'En pause' }[projet.statut] || projet.statut || '';
+
+  // Calculer avancement
+  const toutes = (projet.reunions || []).flatMap(r => r.actions || []);
+  const done = toutes.filter(a => a.done).length;
+  const total = toutes.length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+
+  // Deadline depuis cadrage
+  let deadlineStr = '';
+  if (projet.cadrage) {
+    const m = projet.cadrage.match(/Deadline\s*:\s*(.+)/i);
+    if (m) deadlineStr = m[1].trim();
+  }
+
+  const metaItems = [
+    { label: 'Statut', val: statutLabel },
+    { label: 'Avancement', val: total ? pct + '% — ' + done + '/' + total + ' actions' : 'Aucune action' },
+    { label: 'Deadline', val: deadlineStr || 'Non définie' },
+    { label: 'Export', val: dateStr },
+  ];
+
+  const colW2 = maxW / 2;
+  const metaH = 26;
+  doc.setFillColor(245, 245, 245); doc.setDrawColor(210, 210, 210); doc.setLineWidth(0.3);
+  doc.rect(M, y, maxW, metaH, 'FD');
+  doc.setFillColor(0, 0, 0); doc.rect(M, y, 3, metaH, 'F');
+  metaItems.forEach((item, i) => {
+    const cx = M + (i % 2) * colW2 + 8, cy = y + 7 + Math.floor(i / 2) * 11;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(150, 150, 150);
+    doc.text(item.label.toUpperCase(), cx, cy);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(20, 20, 20);
+    doc.text(String(item.val), cx, cy + 5);
+  });
+  y += metaH + 8;
+
+  if (projet.description) {
+    checkPage(12);
+    const dL = doc.splitTextToSize(projet.description, maxW - 8);
+    const dH = dL.length * 5 + 6;
+    doc.setFillColor(252, 252, 252); doc.setDrawColor(210, 210, 210); doc.setLineWidth(0.2);
+    doc.rect(M, y, maxW, dH, 'FD');
+    doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(80, 80, 80);
+    doc.text(dL, M + 4, y + 5);
+    y += dH + 6;
+  }
+
+  // ── Synthèse IA ──
+  if (projet.synthese) {
+    sectionHeader('Synthèse IA');
+    const sL = doc.splitTextToSize(projet.synthese, maxW - 8);
+    const sH = sL.length * 5 + 6;
+    checkPage(sH + 4);
+    doc.setFillColor(252, 252, 252); doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.2);
+    doc.rect(M, y, maxW, sH, 'FD');
+    doc.setFillColor(40, 40, 40); doc.rect(M, y, 3, sH, 'F');
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(30, 30, 30);
+    doc.text(sL, M + 6, y + 5);
+    y += sH + 8;
+  }
+
+  // ── Actions — à faire ──
+  const reunions = projet.reunions || [];
+  const actTodo = reunions.flatMap(r =>
+    (r.actions || []).filter(a => !a.done).map(a => ({ ...a, _source: r.titre }))
+  );
+  const actDone = reunions.flatMap(r =>
+    (r.actions || []).filter(a => a.done).map(a => ({ ...a, _source: r.titre }))
+  );
+
+  if (actTodo.length) {
+    sectionHeader('Actions à faire (' + actTodo.length + ')');
+    for (const a of actTodo) {
+      const tL = doc.splitTextToSize('☐ ' + a.quoi, maxW - 10);
+      const meta = [a.qui ? '👤 ' + a.qui : '', a.quand ? '📅 ' + a.quand : '', a._source ? a._source : ''].filter(Boolean).join('   ');
+      const mL = meta ? doc.splitTextToSize(meta, maxW - 14) : [];
+
+      // Sous-tâches
+      const sts = (a.sousTaches || []);
+      const stLines = sts.flatMap(st => doc.splitTextToSize((st.done ? '✓ ' : '◦ ') + st.quoi, maxW - 20));
+
+      const totH = tL.length * 5.2 + (mL.length ? mL.length * 4.5 + 3 : 0) + (stLines.length ? stLines.length * 4.5 + 5 : 0) + 8;
+      checkPage(totH + 4);
+
+      doc.setFillColor(252, 252, 252); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
+      doc.rect(M, y, maxW, totH, 'FD');
+      doc.setFillColor(180, 180, 180); doc.rect(M, y, 3, totH, 'F');
+
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(20, 20, 20);
+      doc.text(tL, M + 6, y + 6);
+
+      let yy = y + 6 + tL.length * 5.2;
+      if (mL.length) {
+        doc.setFont('helvetica', 'italic'); doc.setFontSize(7.5); doc.setTextColor(100, 100, 100);
+        doc.text(mL, M + 8, yy + 3);
+        yy += mL.length * 4.5 + 3;
+      }
+      if (stLines.length) {
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(80, 80, 80);
+        doc.text(stLines, M + 10, yy + 5);
+      }
+      y += totH + 3;
+    }
+    y += 4;
+  }
+
+  // ── Actions faites ──
+  if (actDone.length) {
+    sectionHeader('Actions réalisées (' + actDone.length + ')');
+    for (const a of actDone) {
+      const tL = doc.splitTextToSize('✓ ' + a.quoi, maxW - 10);
+      const totH = tL.length * 5 + 7;
+      checkPage(totH + 3);
+      doc.setFillColor(248, 248, 248); doc.setDrawColor(210, 210, 210); doc.setLineWidth(0.2);
+      doc.rect(M, y, maxW, totH, 'FD');
+      doc.setFillColor(120, 120, 120); doc.rect(M, y, 3, totH, 'F');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(100, 100, 100);
+      doc.text(tL, M + 6, y + 5);
+      y += totH + 3;
+    }
+    y += 4;
+  }
+
+  // ── Par personne ──
+  const ANON = '_anon_';
+  const persMap = {};
+  toutes.forEach(a => {
+    const key = (a.qui && a.qui.trim()) ? a.qui.trim() : ANON;
+    if (!persMap[key]) persMap[key] = { total: 0, done: 0 };
+    persMap[key].total++;
+    if (a.done) persMap[key].done++;
+  });
+  const persEntries = Object.entries(persMap).sort((a, b) => {
+    if (a[0] === ANON) return 1;
+    if (b[0] === ANON) return -1;
+    return b[1].total - a[1].total;
+  });
+
+  if (persEntries.length) {
+    sectionHeader('Par personne');
+    const colW3 = maxW / 3;
+    const rowH = 10;
+    persEntries.forEach(([ nom, v ], i) => {
+      const label = nom === ANON ? 'Non assigné' : nom;
+      const pctD = v.total ? Math.round((v.done / v.total) * 100) : 0;
+      const cx = M + (i % 3) * colW3;
+
+      if (i % 3 === 0) {
+        checkPage(rowH + 4);
+        if (i > 0) y += rowH + 4;
+      }
+
+      doc.setFillColor(245, 245, 245); doc.setDrawColor(210, 210, 210); doc.setLineWidth(0.2);
+      doc.rect(cx, y, colW3 - 2, rowH, 'FD');
+
+      // Avatar initiale
+      doc.setFillColor(40, 40, 40);
+      doc.circle(cx + 5, y + 5, 3, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(255, 255, 255);
+      doc.text(label[0].toUpperCase(), cx + 5, y + 6.5, { align: 'center' });
+
+      // Nom
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(20, 20, 20);
+      doc.text(doc.splitTextToSize(label, colW3 - 22)[0], cx + 10, y + 4.5);
+
+      // Ratio
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(80, 80, 80);
+      doc.text(v.done + '/' + v.total + ' (' + pctD + '%)', cx + 10, y + 8.5);
+    });
+    y += rowH + 8;
+  }
+
+  // ── Historique réunions ──
+  const vraiReunions = reunions.filter(r => r.fileName !== '_manual');
+  if (vraiReunions.length) {
+    sectionHeader('Historique des réunions');
+    const colWR = [40, maxW - 40 - 30, 30];
+    const hdrH = 7;
+    checkPage(hdrH + 4);
+
+    // En-tête tableau
+    doc.setFillColor(40, 40, 40);
+    doc.rect(M, y, maxW, hdrH, 'F');
+    ['Date', 'Titre', 'Actions'].forEach((h, i) => {
+      const cx = M + colWR.slice(0, i).reduce((a, b) => a + b, 0);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(255, 255, 255);
+      doc.text(h.toUpperCase(), cx + 3, y + 5);
+    });
+    y += hdrH;
+
+    vraiReunions.forEach((r, ri) => {
+      const rowH2 = 8;
+      checkPage(rowH2 + 2);
+      const bg = ri % 2 === 0 ? [252, 252, 252] : [245, 245, 245];
+      doc.setFillColor(...bg); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.1);
+      doc.rect(M, y, maxW, rowH2, 'FD');
+
+      const rowData = [
+        r.date ? new Date(r.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: '2-digit' }) : '—',
+        r.titre || 'Réunion sans titre',
+        String((r.actions || []).length)
+      ];
+      rowData.forEach((txt, i) => {
+        const cx = M + colWR.slice(0, i).reduce((a, b) => a + b, 0);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(30, 30, 30);
+        doc.text(doc.splitTextToSize(txt, colWR[i] - 4)[0], cx + 3, y + 5.5);
+      });
+      y += rowH2;
+    });
+    y += 6;
+  }
+
+  // ── Footer ──
+  pdfFooter(doc, pageW, pageH, M, C, 'Ponk Note — ' + dateStr);
+
+  const filename = titrePDF.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_' + new Date().toISOString().slice(0, 10) + '.pdf';
+  doc.save(filename);
+}
