@@ -220,7 +220,7 @@
     /* Metric dans col-right */
     .metric-right { margin-bottom:14px; }
     .metric-right-label { font-family:var(--font-display); font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan-dim); margin-bottom:4px; }
-    .metric-right-val { font-family:var(--font-display); font-size:16px; font-weight:700; color:var(--text); line-height:1; white-space:nowrap; }
+    .metric-right-val { font-family:var(--font-display); font-size:13px; font-weight:700; color:var(--text); line-height:1.3; white-space:normal; word-break:keep-all; }
     .metric-right-val.green { color:var(--green); }
     .metric-right-val.amber { color:#ffb400; }
     .metric-right-val.red   { color:var(--danger); }
@@ -1216,7 +1216,9 @@ function renderMetrics(project) {
       const d = new Date(m[1].trim());
       if (!isNaN(d)) {
         const jours = Math.ceil((d - new Date()) / 86400000);
-        deadlineVal = d.toLocaleDateString('fr-FR', {day:'numeric', month:'short'});
+        const dl = d.toLocaleDateString('fr-FR', {day:'numeric', month:'short'});
+        const dy = d.getFullYear();
+        deadlineVal = dl + ' ' + dy;
         deadlineSub = jours > 0 ? `${jours} j restants` : jours === 0 ? "Aujourd'hui" : `${Math.abs(jours)} j dépassés`;
       } else {
         deadlineVal = m[1].trim().slice(0, 10);
