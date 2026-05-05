@@ -220,7 +220,7 @@
     /* Metric dans col-right */
     .metric-right { margin-bottom:14px; }
     .metric-right-label { font-family:var(--font-display); font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan-dim); margin-bottom:4px; }
-    .metric-right-val { font-family:var(--font-display); font-size:19px; font-weight:700; color:var(--text); line-height:1; }
+    .metric-right-val { font-family:var(--font-display); font-size:16px; font-weight:700; color:var(--text); line-height:1; white-space:nowrap; }
     .metric-right-val.green { color:var(--green); }
     .metric-right-val.amber { color:#ffb400; }
     .metric-right-val.red   { color:var(--danger); }
@@ -272,8 +272,8 @@
       font-size:11px; font-weight:700; font-family:var(--font-display);
       background:rgba(0,212,255,0.1); color:var(--cyan); border:1px solid var(--cyan-border);
     }
-    .pers-name { font-size:13px; color:var(--text); font-weight:500; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .pers-track { flex:1; height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden; min-width:40px; }
+    .pers-name { font-size:12px; color:var(--text); font-weight:500; width:70px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pers-track { flex:1; height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden; min-width:0; }
     .pers-fill  { height:100%; border-radius:3px; background:var(--cyan); transition:width 0.4s ease; }
     .pers-fill.done-full { background:var(--green); }
     .pers-count { font-size:11px; color:var(--muted); white-space:nowrap; }
