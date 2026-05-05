@@ -542,7 +542,7 @@
       cursor:pointer; transition:all 0.15s; text-align:left;
     }
     .ia-choix-btn:hover { background:rgba(124,77,255,0.15); border-color:rgba(124,77,255,0.4); }
-    .ia-choix-icon { font-size:20px; flex-shrink:0; }
+    .ia-choix-icon { font-size:18px; flex-shrink:0; color:var(--purple); opacity:0.8; }
     .ia-choix-body { flex:1; }
     .ia-choix-titre { font-size:13px; font-weight:600; color:var(--text); margin-bottom:2px; }
     .ia-choix-desc { font-size:11px; color:var(--muted); }
@@ -1480,21 +1480,21 @@ function afficherChoixIA() {
   body.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:8px;margin:4px 0">
       <button class="ia-choix-btn" onclick="choisirTypeIA('sous_taches')">
-        <span class="ia-choix-icon">📋</span>
+        <span class="ia-choix-icon">◈</span>
         <div class="ia-choix-body">
           <div class="ia-choix-titre">Décomposer en sous-tâches</div>
           <div class="ia-choix-desc">Diviser en étapes concrètes et actionnables</div>
         </div>
       </button>
       <button class="ia-choix-btn" onclick="choisirTypeIA('redaction')">
-        <span class="ia-choix-icon">✍️</span>
+        <span class="ia-choix-icon">✦</span>
         <div class="ia-choix-body">
           <div class="ia-choix-titre">Rédiger un contenu</div>
           <div class="ia-choix-desc">Email, brief, message, compte-rendu…</div>
         </div>
       </button>
       <button class="ia-choix-btn" onclick="choisirTypeIA('questions')">
-        <span class="ia-choix-icon">❓</span>
+        <span class="ia-choix-icon">⬡</span>
         <div class="ia-choix-body">
           <div class="ia-choix-titre">Questions à préparer</div>
           <div class="ia-choix-desc">Liste de points à aborder ou à valider</div>
