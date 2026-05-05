@@ -1150,16 +1150,17 @@ function renderParPersonne(reunions) {
 
   const rows = entries.map(([nom, v]) => {
     const isAnon = nom === ANON;
-    const pct = Math.round((v.total / maxTotal) * 100);
+    const pctDone = v.total > 0 ? Math.round((v.done / v.total) * 100) : 0;
     const doneFull = v.done === v.total && v.total > 0;
     const color = isAnon ? '#444860' : COLORS[ci++ % COLORS.length];
+    const barColor = doneFull ? 'var(--green)' : color;
     const initiale = isAnon ? '?' : nom[0].toUpperCase();
     const label = isAnon ? 'Non assigné' : nom;
     const isActive = _filtrePersonne === nom;
     return `<div class="pers-row" style="${isAnon ? 'opacity:0.55' : ''};cursor:pointer;${isActive ? 'border-color:' + color + ';background:' + color + '11' : ''}" onclick="filtrerParPersonne('${nom.replace(/'/g,"\\'")}')">
       <div class="pers-avatar" style="background:${color}22;color:${color};border-color:${color}44">${initiale}</div>
       <div class="pers-name" style="${isAnon ? 'font-style:italic' : ''}${isActive ? ';color:' + color + ';font-weight:600' : ''}">${label}</div>
-      <div class="pers-track"><div class="pers-fill ${doneFull ? 'done-full' : ''}" style="width:${pct}%;background:${doneFull ? 'var(--green)' : color}"></div></div>
+      <div class="pers-track"><div class="pers-fill" style="width:${pctDone}%;background:${barColor}"></div></div>
       <div class="pers-count">${v.done}/${v.total}</div>
     </div>`;
   }).join('');
