@@ -1442,11 +1442,13 @@ async function toggleAction(fileName, actionIndex) {
 let _iaFileName = null;
 let _iaActionIndex = null;
 let _iaSousTachesEnAttente = []; // sous-tâches sélectionnées à confirmer
+let _iaReponseDejaFournie = false;
 
 function ouvrirIAModal(fileName, actionIndex) {
   _iaFileName = fileName;
   _iaActionIndex = actionIndex;
   _iaSousTachesEnAttente = [];
+  _iaReponseDejaFournie = false;
 
   const r = projetActif.reunions.find(r => r.fileName === fileName);
   const a = r ? r.actions[actionIndex] : null;
@@ -1462,7 +1464,7 @@ function ouvrirIAModal(fileName, actionIndex) {
 
 function fermerIAModal() {
   document.getElementById('iaModal').classList.remove('active');
-  _iaFileName = null; _iaActionIndex = null; _iaSousTachesEnAttente = [];
+  _iaFileName = null; _iaActionIndex = null; _iaSousTachesEnAttente = []; _iaReponseDejaFournie = false;
 }
 
 async function lancerAnalyseIA(action, reponseUtilisateur) {
@@ -1514,6 +1516,11 @@ function afficherResultatIA(result, action) {
   const btnRow = document.querySelector('#iaModal .ia-btn-row');
 
   if (result.besoin_info) {
+    // Si _iaReponseDejaFournie est set, Gemini boucle — on force sous-tâches vides avec message
+    if (_iaReponseDejaFournie) {
+      body.innerHTML = '<div style="color:var(--muted);font-size:13px;font-style:italic">L'IA n'a pas pu générer de résultat avec les informations fournies. Essayez de reformuler l'action.</div>';
+      return;
+    }
     // Afficher la question
     body.innerHTML = `
       <div class="ia-question">${result.question}</div>
@@ -1562,6 +1569,7 @@ function toggleIASt(i) {
 async function envoyerReponseIA() {
   const reponse = document.getElementById('iaReponse')?.value.trim();
   if (!reponse) return;
+  _iaReponseDejaFournie = true; // bloquer toute nouvelle question
   const body = document.getElementById('iaModalBody');
   body.innerHTML = '<div class="ia-loading"><div class="spinner-purple"></div><span>Génération…</span></div>';
   const r = projetActif.reunions.find(r => r.fileName === _iaFileName);
