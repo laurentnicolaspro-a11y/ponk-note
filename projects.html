@@ -162,7 +162,7 @@
     .detail-back:hover { color:var(--cyan); }
     .detail-3col {
       display:grid;
-      grid-template-columns: 260px 1fr 220px;
+      grid-template-columns: 300px 1fr 280px;
       gap:0;
       min-height:calc(100vh - 120px);
       margin:0 -20px;
@@ -643,12 +643,6 @@
           </div>
         </div>
 
-        <!-- Actions par personne -->
-        <div class="pers-section" id="persSection" style="display:none">
-          <div class="actions-label">Par personne</div>
-          <div id="persList"></div>
-        </div>
-
         <!-- Actions -->
         <div class="actions-section">
           <div class="actions-label">
@@ -670,6 +664,12 @@
         <div class="col-sep"></div>
         <div class="section-title" style="margin-bottom:10px">Réunions</div>
         <div id="reunionsList"></div>
+        <div class="col-sep" id="persSep" style="display:none"></div>
+        <!-- Par personne -->
+        <div class="pers-section" id="persSection" style="display:none">
+          <div class="section-title" style="margin-bottom:10px">Par personne</div>
+          <div id="persList"></div>
+        </div>
       </div>
 
     </div>
@@ -816,7 +816,7 @@ async function ouvrirProjet(id) {
 
   document.getElementById('viewListe').style.display = 'none';
   document.getElementById('viewDetail').style.display = 'block';
-  document.getElementById('viewDetail').style.animation = 'slideRight 0.3s ease';
+  document.getElementById('viewDetail').style.animation = 'none';
   document.querySelector('.content')?.classList.add('detail-active');
 
   document.getElementById('detailNom').textContent = project.nom;
@@ -1109,7 +1109,12 @@ function renderParPersonne(reunions) {
   const section = document.getElementById('persSection');
   const container = document.getElementById('persList');
   const toutes = reunions.flatMap(r => r.actions || []);
-  if (!toutes.length) { section.style.display = 'none'; return; }
+  if (!toutes.length) {
+    section.style.display = 'none';
+    const sep = document.getElementById('persSep');
+    if (sep) sep.style.display = 'none';
+    return;
+  }
 
   // Grouper par personne
   const map = {};
@@ -1141,6 +1146,8 @@ function renderParPersonne(reunions) {
 
   container.innerHTML = rows;
   section.style.display = 'block';
+  const sep = document.getElementById('persSep');
+  if (sep) sep.style.display = 'block';
 }
 
 function renderReunionsList(reunions) {
