@@ -294,6 +294,14 @@
     }
     @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
     .synthese-text { font-size:13px; line-height:1.7; color:var(--text); }
+    .synthese-header { cursor:pointer; user-select:none; }
+    .synthese-arrow {
+      font-size:11px; color:var(--muted); transition:transform 0.2s ease;
+      display:inline-block; margin-left:6px;
+    }
+    .synthese-arrow.collapsed { transform:rotate(-90deg); }
+    #syntheseContent { overflow:hidden; transition:opacity 0.2s ease; }
+    #syntheseContent.collapsed { display:none; }
     .synthese-loading { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
     .spinner-sm { width:14px; height:14px; border-radius:50%; border:2px solid rgba(124,77,255,0.2); border-top-color:var(--purple); animation:spin 0.8s linear infinite; flex-shrink:0; }
 
@@ -628,12 +636,13 @@
 
         <!-- Synthèse IA -->
         <div class="synthese-card">
-          <div class="synthese-header">
+          <div class="synthese-header" onclick="toggleSynthese(event)">
             <div class="synthese-label">
               <div class="synthese-dot"></div>
               Synthèse IA
+              <span class="synthese-arrow" id="syntheseArrow">▾</span>
             </div>
-            <button onclick="regenererSynthese()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;font-family:var(--font-display);letter-spacing:0.3px" id="btnRegen">↻ Actualiser</button>
+            <button onclick="regenererSynthese(event)" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;font-family:var(--font-display);letter-spacing:0.3px" id="btnRegen">↻ Actualiser</button>
           </div>
           <div id="syntheseContent">
             <div class="synthese-loading">
@@ -931,7 +940,7 @@ async function genererSynthese(project) {
     projetActif.syntheseGeneratedAt = new Date().toISOString();
 
   } catch(e) {
-    el.innerHTML = `<div class="synthese-text" style="color:var(--muted);font-style:italic">Synthèse indisponible. <button onclick="regenererSynthese()" style="background:none;border:none;color:var(--cyan);cursor:pointer;font-size:13px">Réessayer</button></div>`;
+    el.innerHTML = `<div class="synthese-text" style="color:var(--muted);font-style:italic">Synthèse indisponible. <button onclick="regenererSynthese(event)" style="background:none;border:none;color:var(--cyan);cursor:pointer;font-size:13px">Réessayer</button></div>`;
   }
 }
 
@@ -1299,6 +1308,17 @@ async function toggleAction(fileName, actionIndex) {
     renderParPersonne(project.reunions || []);
     renderMetrics(project);
   } catch(e) { showToast('Erreur : ' + e.message); }
+}
+
+// ── Toggle synthèse ──────────────────────────────────────────────────────────
+function toggleSynthese(e) {
+  // Ne pas déclencher si clic sur le bouton Actualiser
+  if (e.target.closest('#btnRegen')) return;
+  const body = document.getElementById('syntheseContent');
+  const arrow = document.getElementById('syntheseArrow');
+  if (!body) return;
+  const collapsed = body.classList.toggle('collapsed');
+  if (arrow) arrow.classList.toggle('collapsed', collapsed);
 }
 
 // ── Filtre par personne ──────────────────────────────────────────────────────
