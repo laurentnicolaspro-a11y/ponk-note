@@ -653,6 +653,13 @@
 
     /* Danger zone */
     .danger-zone { margin-top:24px; padding-top:20px; border-top:1px solid rgba(255,68,102,0.15); }
+    .btn-export-pdf {
+      width:100%; padding:11px; border-radius:8px; margin-bottom:10px;
+      background:rgba(0,212,255,0.08); border:1px solid rgba(0,212,255,0.3);
+      color:var(--cyan); font-family:var(--font-display); font-size:10px;
+      font-weight:700; letter-spacing:1px; cursor:pointer; transition:all 0.15s; text-transform:uppercase;
+    }
+    .btn-export-pdf:hover { background:rgba(0,212,255,0.15); border-color:var(--cyan); }
     .btn-delete-projet {
       width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,68,102,0.3);
       background:transparent; color:var(--danger); font-family:var(--font-display);
@@ -671,6 +678,7 @@
     }
     .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
   </style>
+  <script src="/public/pdf.js"></script>
 </head>
 <body>
 
@@ -776,6 +784,7 @@
 
         <!-- Danger zone -->
         <div class="danger-zone">
+          <button class="btn-export-pdf" id="btnExportPDF" onclick="exporterProjetPDF()">↓ Exporter en PDF</button>
           <button class="btn-delete-projet" onclick="supprimerProjet()">🗑 Supprimer ce projet</button>
         </div>
       </div>
@@ -783,6 +792,17 @@
       <!-- ── Colonne droite : métriques + réunions ── -->
       <div class="col-right">
         <div id="metricsRight"></div>
+
+        <!-- Edit deadline inline -->
+        <div id="deadlineEditBox" style="display:none;margin:6px 0 10px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:8px;padding:10px 12px">
+          <div style="font-size:9px;font-family:var(--font-display);color:var(--cyan-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Modifier la deadline</div>
+          <input type="date" id="deadlineInput" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--cyan-border);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font-body);font-size:12px;outline:none;box-sizing:border-box">
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <button onclick="sauvegarderDeadline()" style="flex:1;padding:7px;border-radius:6px;background:rgba(0,212,255,0.12);border:1px solid var(--cyan);color:var(--cyan);font-family:var(--font-display);font-size:9px;font-weight:700;cursor:pointer;letter-spacing:0.5px">Enregistrer</button>
+            <button onclick="annulerEditDeadline()" style="padding:7px 10px;border-radius:6px;background:none;border:1px solid var(--cyan-border);color:var(--muted);font-family:var(--font-display);font-size:9px;cursor:pointer">✕</button>
+          </div>
+        </div>
+
         <div class="col-sep"></div>
         <div class="section-title" style="margin-bottom:10px">Réunions</div>
         <div id="reunionsList"></div>
@@ -1711,6 +1731,68 @@ function toggleSynthese(e) {
   if (!body) return;
   const collapsed = body.classList.toggle('collapsed');
   if (arrow) arrow.classList.toggle('collapsed', collapsed);
+}
+
+// ── Edit deadline ────────────────────────────────────────────────────────────
+function ouvrirEditDeadline() {
+  const box = document.getElementById('deadlineEditBox');
+  const input = document.getElementById('deadlineInput');
+  // Pré-remplir avec la date existante
+  if (projetActif && projetActif.cadrage) {
+    const m = projetActif.cadrage.match(/Deadline\s*:\s*(.+)/i);
+    if (m) {
+      const d = new Date(m[1].trim());
+      if (!isNaN(d)) input.value = d.toISOString().slice(0, 10);
+    }
+  }
+  box.style.display = 'block';
+  setTimeout(() => input.focus(), 50);
+}
+
+function annulerEditDeadline() {
+  document.getElementById('deadlineEditBox').style.display = 'none';
+}
+
+async function sauvegarderDeadline() {
+  const val = document.getElementById('deadlineInput').value;
+  if (!projetActif) return;
+
+  // Mettre à jour le cadrage : remplacer ou ajouter la ligne Deadline
+  let cadrage = projetActif.cadrage || '';
+  if (/Deadline\s*:/i.test(cadrage)) {
+    cadrage = cadrage.replace(/Deadline\s*:.*(
+|$)/i, val ? 'Deadline : ' + val + '\n' : '');
+  } else {
+    cadrage = cadrage + (cadrage ? '\n' : '') + (val ? 'Deadline : ' + val : '');
+  }
+  cadrage = cadrage.trim();
+
+  try {
+    const res = await fetch(`/api/project?action=update&uid=${encodeURIComponent(uid)}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid, projectId: projetActif.id, changes: { cadrage } })
+    });
+    const { project, error } = await res.json();
+    if (error) throw new Error(error);
+    projetActif = project;
+    annulerEditDeadline();
+    renderMetrics(project);
+    showToast(val ? 'Deadline mise à jour' : 'Deadline supprimée');
+  } catch(e) { showToast('Erreur : ' + e.message); }
+}
+
+// ── Export PDF projet ────────────────────────────────────────────────────────
+async function exporterProjetPDF() {
+  if (!projetActif) return;
+  const btn = document.getElementById('btnExportPDF');
+  if (btn) { btn.disabled = true; btn.textContent = 'Génération…'; }
+  try {
+    await downloadProjetPDF(projetActif);
+  } catch(e) {
+    showToast('Erreur PDF : ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '↓ Exporter en PDF'; }
+  }
 }
 
 // ── Filtre par personne ──────────────────────────────────────────────────────
