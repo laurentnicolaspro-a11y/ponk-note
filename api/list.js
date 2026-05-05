@@ -30,7 +30,7 @@ module.exports = async function handler(req, res) {
     const singles = [];
 
     for (const f of (files || [])) {
-      if (!f.name || f.name === '.emptyFolderPlaceholder') continue;
+      if (!f.name || f.name === '.emptyFolderPlaceholder' || !f.name.endsWith('.webm')) continue;
 
       const segMatch = f.name.match(/^(.+)-seg(\d{3})\.webm$/);
       if (segMatch) {
