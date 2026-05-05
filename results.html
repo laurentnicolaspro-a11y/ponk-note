@@ -2729,8 +2729,7 @@ function declencherRebond() {} // pas de rebond dans results
 function showBtnProjetIfReady() {
   const btn = document.getElementById('btnProjet');
   if (!btn) return;
-  const fileName = (driveFile.fileName || '').split('/').pop();
-  if (fileName && localStorage.getItem(`ponk_analyzed_${fileName}`)) {
+  if (rawResult) {
     btn.style.display = 'block';
   }
 }
