@@ -1760,8 +1760,7 @@ async function sauvegarderDeadline() {
   // Mettre à jour le cadrage : remplacer ou ajouter la ligne Deadline
   let cadrage = projetActif.cadrage || '';
   if (/Deadline\s*:/i.test(cadrage)) {
-    cadrage = cadrage.replace(/Deadline\s*:.*(
-|$)/i, val ? 'Deadline : ' + val + '\n' : '');
+    cadrage = cadrage.replace(/Deadline\s*:.*?(\n|$)/i, val ? 'Deadline : ' + val + '\n' : '');
   } else {
     cadrage = cadrage + (cadrage ? '\n' : '') + (val ? 'Deadline : ' + val : '');
   }
