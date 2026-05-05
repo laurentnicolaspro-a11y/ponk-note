@@ -581,6 +581,83 @@
     .sous-tache-item.done .sous-tache-text { text-decoration:line-through; opacity:0.5; }
     .st-count { font-size:10px; color:rgba(124,77,255,0.6); margin-top:4px; }
 
+    /* Drawer action plein écran */
+    .action-drawer {
+      display:none; position:fixed; inset:0; z-index:300;
+      background:rgba(5,12,26,0.96); backdrop-filter:blur(24px);
+      align-items:center; justify-content:center;
+    }
+    .action-drawer.active { display:flex; }
+    .action-drawer-card {
+      width:100%; max-width:640px; max-height:90vh;
+      background:rgba(8,15,32,0.99); border:1px solid rgba(0,212,255,0.2);
+      border-radius:16px; padding:28px 28px 24px;
+      overflow-y:auto; animation:fadeUp 0.25s ease;
+      display:flex; flex-direction:column; gap:16px;
+    }
+    .ad-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    .ad-titre {
+      font-size:16px; font-weight:600; color:var(--text); line-height:1.4; flex:1;
+    }
+    .ad-close {
+      background:none; border:1px solid var(--cyan-border); border-radius:8px;
+      color:var(--muted); font-size:12px; padding:5px 10px; cursor:pointer;
+      flex-shrink:0; transition:all 0.15s; font-family:var(--font-display);
+    }
+    .ad-close:hover { border-color:var(--cyan); color:var(--cyan); }
+    .ad-meta { display:flex; gap:12px; flex-wrap:wrap; }
+    .ad-cb-row { display:flex; align-items:center; gap:12px; }
+    .ad-cb {
+      width:28px; height:28px; border-radius:50%; border:2px solid rgba(0,212,255,0.5);
+      background:rgba(0,212,255,0.05); display:flex; align-items:center; justify-content:center;
+      font-size:14px; cursor:pointer; transition:all 0.2s; flex-shrink:0;
+      box-shadow:0 0 10px rgba(0,212,255,0.15);
+    }
+    .ad-cb:hover { border-color:var(--cyan); background:rgba(0,212,255,0.15); }
+    .ad-cb.done { background:var(--green); border-color:var(--green); color:#050c1a; box-shadow:0 0 10px rgba(0,229,160,0.3); }
+    .ad-statut { font-size:11px; color:var(--muted); }
+    .ad-section-label {
+      font-family:var(--font-display); font-size:8px; font-weight:700;
+      color:var(--cyan-dim); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:8px;
+    }
+    .ad-st-item {
+      display:flex; align-items:center; gap:10px;
+      padding:9px 12px; margin-bottom:5px;
+      background:rgba(124,77,255,0.06); border:1px solid rgba(124,77,255,0.15);
+      border-left:2px solid rgba(124,77,255,0.4); border-radius:0 8px 8px 0;
+      cursor:pointer; transition:all 0.15s;
+    }
+    .ad-st-item:hover { background:rgba(124,77,255,0.12); }
+    .ad-st-cb {
+      width:16px; height:16px; border-radius:50%; border:1px solid rgba(124,77,255,0.4);
+      flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:9px;
+      transition:all 0.15s;
+    }
+    .ad-st-cb.done { background:var(--purple); border-color:var(--purple); color:#fff; }
+    .ad-st-text { font-size:12px; color:var(--text); flex:1; line-height:1.4; }
+    .ad-st-item.done .ad-st-text { opacity:0.45; text-decoration:line-through; }
+    .ad-btns { display:flex; gap:8px; padding-top:8px; border-top:1px solid rgba(0,212,255,0.08); }
+    .ad-btn-primary {
+      flex:1; padding:11px; border-radius:8px; background:rgba(124,77,255,0.12);
+      border:1px solid rgba(124,77,255,0.3); color:var(--purple);
+      font-family:var(--font-display); font-size:10px; font-weight:700;
+      letter-spacing:0.8px; cursor:pointer; transition:all 0.15s; text-transform:uppercase;
+    }
+    .ad-btn-primary:hover { background:rgba(124,77,255,0.22); }
+    .ad-btn-edit {
+      padding:11px 16px; border-radius:8px; background:transparent;
+      border:1px solid var(--cyan-border); color:var(--muted);
+      font-family:var(--font-display); font-size:10px; font-weight:700;
+      letter-spacing:0.8px; cursor:pointer; transition:all 0.15s; text-transform:uppercase;
+    }
+    .ad-btn-edit:hover { border-color:var(--cyan); color:var(--cyan); }
+    .ad-btn-del {
+      padding:11px 14px; border-radius:8px; background:transparent;
+      border:1px solid rgba(255,68,102,0.2); color:rgba(255,68,102,0.5);
+      font-size:12px; cursor:pointer; transition:all 0.15s;
+    }
+    .ad-btn-del:hover { border-color:var(--danger); color:var(--danger); }
+
     /* Drawer réunion */
     .drawer {
       display:none; position:fixed; inset:0; z-index:200;
@@ -850,6 +927,11 @@
       <button class="ia-btn ia-btn-secondary" onclick="fermerIAModal()">Fermer</button>
     </div>
   </div>
+</div>
+
+<!-- Drawer action plein écran -->
+<div class="action-drawer" id="actionDrawer" onclick="if(event.target===this)fermerActionDrawer()">
+  <div class="action-drawer-card" id="actionDrawerContent"></div>
 </div>
 
 <!-- Drawer détail réunion -->
@@ -1451,21 +1533,16 @@ function renderActions(reunions) {
       <div class="st-count">${stDone}/${sts.length} sous-tâche${sts.length > 1 ? 's' : ''}</div>` : '';
     const aId = 'act_' + a._fileName.replace(/[^a-z0-9]/gi,'_') + '_' + a._actionIndex;
     return `
-    <div class="action-item ${a.done ? 'done' : ''}" id="${aId}">
+    <div class="action-item ${a.done ? 'done' : ''}" id="${aId}" style="cursor:pointer" onclick="ouvrirActionDrawer('${a._fileName}', ${a._actionIndex})">
       <div class="action-cb" onclick="event.stopPropagation();toggleAction('${a._fileName}', ${a._actionIndex})">${a.done ? '✓' : ''}</div>
       <div class="action-body">
         <div class="action-quoi">${a.quoi}</div>
         <div class="action-meta">
           ${a.qui   ? `<span class="action-qui">👤 ${a.qui}</span>` : ''}
           ${a.quand ? `<span class="action-quand">📅 ${a.quand}</span>` : ''}
+          ${sts.length ? `<span style="font-size:10px;color:rgba(124,77,255,0.6)">${stDone}/${sts.length} sous-tâche${sts.length > 1 ? 's' : ''}</span>` : ''}
         </div>
         ${a._reunionTitre ? `<div class="action-source-line">${a._reunionTitre}</div>` : ''}
-        <div class="action-detail">${stHtml}</div>
-      </div>
-      <div class="action-btns-hover">
-        <button class="btn-ia" onclick="ouvrirIAModal('${a._fileName}', ${a._actionIndex})">✦ IA</button>
-        <button class="action-btn-sm" onclick="ouvrirActionModal('${a._fileName}', ${a._actionIndex})">Éditer</button>
-        <button class="action-btn-sm danger" onclick="supprimerAction('${a._fileName}', ${a._actionIndex})">✕</button>
       </div>
     </div>`;
   }).join('') + btnAdd;
@@ -1758,6 +1835,85 @@ function toggleSynthese(e) {
   if (!body) return;
   const collapsed = body.classList.toggle('collapsed');
   if (arrow) arrow.classList.toggle('collapsed', collapsed);
+}
+
+// ── Drawer action plein écran ─────────────────────────────────────────────────
+let _drawerFileName = null;
+let _drawerActionIndex = null;
+
+function ouvrirActionDrawer(fileName, actionIndex) {
+  _drawerFileName = fileName;
+  _drawerActionIndex = actionIndex;
+  renderActionDrawer();
+  document.getElementById('actionDrawer').classList.add('active');
+}
+
+function fermerActionDrawer() {
+  document.getElementById('actionDrawer').classList.remove('active');
+  _drawerFileName = null;
+  _drawerActionIndex = null;
+}
+
+function renderActionDrawer() {
+  const r = projetActif.reunions.find(r => r.fileName === _drawerFileName);
+  const a = r ? r.actions[_drawerActionIndex] : null;
+  if (!a) return;
+  const sts = a.sousTaches || [];
+  const stDone = sts.filter(s => s.done).length;
+
+  const stHtml = sts.length ? `
+    <div>
+      <div class="ad-section-label">Sous-tâches — ${stDone}/${sts.length}</div>
+      ${sts.map((st, si) => `
+        <div class="ad-st-item ${st.done ? 'done' : ''}" onclick="toggleSousTacheDrawer(${si})">
+          <div class="ad-st-cb ${st.done ? 'done' : ''}">${st.done ? '✓' : ''}</div>
+          <div class="ad-st-text">${st.quoi}</div>
+        </div>`).join('')}
+    </div>` : '';
+
+  document.getElementById('actionDrawerContent').innerHTML = `
+    <div class="ad-header">
+      <div class="ad-titre">${a.quoi}</div>
+      <button class="ad-close" onclick="fermerActionDrawer()">✕ Fermer</button>
+    </div>
+    <div class="ad-cb-row">
+      <div class="ad-cb ${a.done ? 'done' : ''}" onclick="toggleActionDrawer()">${a.done ? '✓' : ''}</div>
+      <div class="ad-statut">${a.done ? 'Terminée' : 'À faire'}</div>
+    </div>
+    <div class="ad-meta">
+      ${a.qui   ? `<span class="action-qui">👤 ${a.qui}</span>` : ''}
+      ${a.quand ? `<span class="action-quand">📅 ${a.quand}</span>` : ''}
+      ${r.titre ? `<span class="action-source">${r.titre}</span>` : ''}
+    </div>
+    ${stHtml}
+    <div class="ad-btns">
+      <button class="ad-btn-primary" onclick="fermerActionDrawer();ouvrirIAModal('${_drawerFileName}', ${_drawerActionIndex})">✦ Aide IA</button>
+      <button class="ad-btn-edit" onclick="fermerActionDrawer();ouvrirActionModal('${_drawerFileName}', ${_drawerActionIndex})">Éditer</button>
+      <button class="ad-btn-del" onclick="fermerActionDrawer();supprimerAction('${_drawerFileName}', ${_drawerActionIndex})">🗑</button>
+    </div>`;
+}
+
+async function toggleActionDrawer() {
+  await toggleAction(_drawerFileName, _drawerActionIndex);
+  renderActionDrawer();
+}
+
+async function toggleSousTacheDrawer(sousTacheIndex) {
+  try {
+    const res = await fetch('/api/project?action=update&uid=' + encodeURIComponent(uid), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid, projectId: projetActif.id, changes: {
+        sousTacheToggle: { fileName: _drawerFileName, actionIndex: _drawerActionIndex, sousTacheIndex }
+      }})
+    });
+    const { project, error } = await res.json();
+    if (error) throw new Error(error);
+    projetActif = project;
+    renderActionDrawer();
+    renderActions(project.reunions || []);
+    renderParPersonne(project.reunions || []);
+    renderMetrics(project);
+  } catch(e) { showToast('Erreur : ' + e.message); }
 }
 
 // ── Edit deadline ────────────────────────────────────────────────────────────
