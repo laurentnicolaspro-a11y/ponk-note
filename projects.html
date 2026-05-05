@@ -1533,7 +1533,7 @@ function renderActions(reunions) {
       <div class="st-count">${stDone}/${sts.length} sous-tâche${sts.length > 1 ? 's' : ''}</div>` : '';
     const aId = 'act_' + a._fileName.replace(/[^a-z0-9]/gi,'_') + '_' + a._actionIndex;
     return `
-    <div class="action-item ${a.done ? 'done' : ''}" id="${aId}" style="cursor:pointer" onclick="ouvrirActionDrawer('${a._fileName}', ${a._actionIndex})">
+    <div class="action-item ${a.done ? 'done' : ''}" id="${aId}">
       <div class="action-cb" onclick="event.stopPropagation();toggleAction('${a._fileName}', ${a._actionIndex})">${a.done ? '✓' : ''}</div>
       <div class="action-body">
         <div class="action-quoi">${a.quoi}</div>
@@ -1543,6 +1543,12 @@ function renderActions(reunions) {
           ${sts.length ? `<span style="font-size:10px;color:rgba(124,77,255,0.6)">${stDone}/${sts.length} sous-tâche${sts.length > 1 ? 's' : ''}</span>` : ''}
         </div>
         ${a._reunionTitre ? `<div class="action-source-line">${a._reunionTitre}</div>` : ''}
+        <div class="action-detail">${stHtml}</div>
+      </div>
+      <div class="action-btns-hover">
+        <button class="btn-ia" onclick="ouvrirIAModal('${a._fileName}', ${a._actionIndex})">✦ IA</button>
+        <button class="action-btn-sm" onclick="ouvrirActionModal('${a._fileName}', ${a._actionIndex})">Éditer</button>
+        <button class="action-btn-sm danger" onclick="supprimerAction('${a._fileName}', ${a._actionIndex})">✕</button>
       </div>
     </div>`;
   }).join('') + btnAdd;
