@@ -15,9 +15,9 @@ async function supabaseGet(path) {
       'apikey': SUPABASE_KEY
     }
   });
-  if (res.status === 404) return null;
+  if (res.status === 404 || res.status === 400) return null;
   if (!res.ok) throw new Error(`Supabase GET failed ${res.status}: ${await res.text()}`);
-  return res.json();
+  try { return await res.json(); } catch { return null; }
 }
 
 async function supabasePut(path, data) {
@@ -77,8 +77,11 @@ async function supabaseList(prefix) {
     },
     body: JSON.stringify({ prefix, limit: 100, offset: 0 })
   });
-  if (!res.ok) throw new Error(`Supabase LIST failed ${res.status}`);
-  return res.json();
+  // Supabase renvoie 400 si le préfixe n'existe pas encore → tableau vide, pas une erreur
+  if (res.status === 400 || res.status === 404) return [];
+  if (!res.ok) throw new Error(`Supabase LIST failed ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
 }
 
 // ── Générer un ID court ──────────────────────────────────────────────────────
@@ -118,14 +121,17 @@ module.exports = async function handler(req, res) {
 
     // ── LIST — lister tous les projets ──────────────────────────────────────
     if (action === 'list') {
-      const files = await supabaseList(projectsPrefix);
+      let files = [];
+      try { files = await supabaseList(projectsPrefix); } catch(e) {
+        console.warn('[project/list] supabaseList failed (prefix inexistant?):', e.message);
+      }
       const projects = [];
 
       for (const f of (files || [])) {
         if (!f.name || !f.name.endsWith('.json')) continue;
         try {
           const proj = await supabaseGet(`${projectsPrefix}${f.name}`);
-          if (proj) projects.push(proj);
+          if (proj && proj.id) projects.push(proj);
         } catch {}
       }
 
@@ -343,59 +349,34 @@ module.exports = async function handler(req, res) {
       const reunions = (project.reunions || []).filter(r => r.fileName !== '_manual');
       if (!reunions.length) return res.status(200).json({ suggestions: [] });
 
-      // Contexte : résumés + actions existantes + décisions
       const actionsExistantes = (project.reunions || [])
         .flatMap(r => r.actions || [])
         .map(a => a.quoi)
         .filter(Boolean);
 
-      const contexteReunions = reunions.map((r, i) =>
-        `Réunion ${i+1} (${r.date ? new Date(r.date).toLocaleDateString('fr-FR') : ''}) — ${r.titre}:
-` +
-        `${r.resume || ''}
-` +
-        (r.decisions?.length ? `Décisions : ${r.decisions.join(', ')}
-` : '') +
-        (r.actions?.length   ? `Actions déjà identifiées : ${r.actions.map(a => a.quoi).join(', ')}` : '')
-      ).join('
+      const lignesReunions = reunions.map((r, i) => {
+        const date = r.date ? new Date(r.date).toLocaleDateString('fr-FR') : '';
+        let ligne = 'Reunion ' + (i + 1) + ' (' + date + ') — ' + r.titre + ':\n';
+        ligne += (r.resume || '') + '\n';
+        if (r.decisions && r.decisions.length) ligne += 'Decisions : ' + r.decisions.join(', ') + '\n';
+        if (r.actions && r.actions.length) ligne += 'Actions identifiees : ' + r.actions.map(a => a.quoi).join(', ');
+        return ligne;
+      }).join('\n\n');
 
-');
+      const cadrageBlock = project.cadrage ? 'Cadrage du projet :\n' + project.cadrage + '\n\n' : '';
+      const actionsBlock = actionsExistantes.length
+        ? 'Actions deja presentes (ne pas redire) :\n' + actionsExistantes.map(a => '- ' + a).join('\n') + '\n\n'
+        : '';
 
-      const cadrageBlock = project.cadrage ? `Cadrage du projet :
-${project.cadrage}
-
-` : '';
-
-      const prompt = `Tu es un assistant de gestion de projet. Analyse ce projet et ses réunions, puis suggère des actions concrètes manquantes.
-
-Projet : "${project.nom}"
-${cadrageBlock}Réunions :
-${contexteReunions}
-
-${actionsExistantes.length ? `Actions déjà présentes (ne pas redire) :
-${actionsExistantes.map(a => '- ' + a).join('
-')}
-
-` : ''}
-
-Génère 3 à 5 suggestions d'actions concrètes et spécifiques qui semblent manquantes ou nécessaires pour faire avancer ce projet. Chaque suggestion doit avoir une raison claire.
-
-Réponds UNIQUEMENT avec un JSON valide :
-[
-  {
-    "quoi": "Action concrète à faire",
-    "qui": "Prénom si évident sinon chaîne vide",
-    "quand": "Délai si évident sinon chaîne vide",
-    "pourquoi": "Courte explication (1 phrase) pourquoi cette action est nécessaire"
-  }
-]
-
-Règles :
-- Actions concrètes et actionnables, pas des généralités
-- Ne pas répéter les actions déjà existantes
-- Maximum 5 suggestions
-- Tout en français
-- JSON uniquement, sans markdown`;
+      const prompt = 'Tu es un assistant de gestion de projet. Analyse ce projet et ses reunions, puis suggere des actions concretes manquantes.\n\n'
+        + 'Projet : "' + project.nom + '"\n'
+        + cadrageBlock
+        + 'Reunions :\n' + lignesReunions + '\n\n'
+        + actionsBlock
+        + 'Genere 3 a 5 suggestions d\'actions concretes et specifiques qui semblent manquantes ou necessaires pour faire avancer ce projet. Chaque suggestion doit avoir une raison claire.\n\n'
+        + 'Reponds UNIQUEMENT avec un JSON valide :\n'
+        + '[\n  {\n    "quoi": "Action concrete a faire",\n    "qui": "Prenom si evident sinon chaine vide",\n    "quand": "Delai si evident sinon chaine vide",\n    "pourquoi": "Courte explication (1 phrase) pourquoi cette action est necessaire"\n  }\n]\n\n'
+        + 'Regles :\n- Actions concretes et actionnables, pas des generalites\n- Ne pas repeter les actions deja existantes\n- Maximum 5 suggestions\n- Tout en francais\n- JSON uniquement, sans markdown';
 
       const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
       let suggestions = [];
@@ -403,13 +384,13 @@ Règles :
       for (const model of GEMINI_MODELS) {
         try {
           const geminiRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,
-            { method:'POST', headers:{'Content-Type':'application/json'},
-              body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] }) }
+            'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + process.env.GEMINI_API_KEY,
+            { method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
           );
           if (!geminiRes.ok) continue;
           const gData = await geminiRes.json();
-          const raw = gData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+          const raw = (gData.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
           const clean = raw.replace(/```json|```/g, '').trim();
           suggestions = JSON.parse(clean);
           if (Array.isArray(suggestions) && suggestions.length) break;
@@ -420,7 +401,6 @@ Règles :
 
       if (!Array.isArray(suggestions)) suggestions = [];
 
-      // Sauvegarder dans le projet
       project.suggestions = suggestions;
       project.suggestionsGeneratedAt = new Date().toISOString();
       project.updatedAt = new Date().toISOString();
