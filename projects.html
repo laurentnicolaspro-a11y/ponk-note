@@ -34,7 +34,7 @@
       content:''; position:fixed; inset:0; z-index:0;
       background: radial-gradient(ellipse at 20% 30%, #1a3060 0%, #101e40 40%, #080f28 100%);
     }
-    #neuroCanvas { position:fixed; inset:0; z-index:0; pointer-events:none; }
+    #neuroCanvas { display:none; }
     .scanline {
       position:fixed; inset:0; z-index:0; pointer-events:none;
       background:linear-gradient(transparent 50%, rgba(0,212,255,0.03) 50%);
@@ -552,7 +552,7 @@
   </style>
 </head>
 <body>
-<canvas id="neuroCanvas"></canvas>
+
 
 <header>
   <div class="header-inner">
