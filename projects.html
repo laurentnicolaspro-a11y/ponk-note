@@ -460,6 +460,106 @@
     .action-quand { color:#ffb400; }
     .action-source { color:rgba(180,220,255,0.3); font-style:italic; }
 
+    /* Modale IA action */
+    .ia-modal {
+      position:fixed; inset:0; z-index:400; background:rgba(5,12,26,0.85);
+      backdrop-filter:blur(16px); display:flex; align-items:center; justify-content:center;
+      opacity:0; pointer-events:none; transition:opacity 0.2s;
+    }
+    .ia-modal.active { opacity:1; pointer-events:all; }
+    .ia-modal-card {
+      background:rgba(8,15,32,0.98); border:1px solid rgba(124,77,255,0.3);
+      border-radius:16px; padding:24px 22px 20px; width:100%; max-width:520px;
+      margin:0 20px; max-height:80vh; overflow-y:auto;
+    }
+    .ia-modal-titre {
+      font-family:var(--font-display); font-size:10px; font-weight:700;
+      color:var(--purple); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:6px;
+    }
+    .ia-modal-action {
+      font-size:13px; color:var(--text); line-height:1.4; margin-bottom:16px;
+      padding:10px 12px; background:rgba(124,77,255,0.07);
+      border:1px solid rgba(124,77,255,0.15); border-radius:8px;
+    }
+    .ia-question {
+      font-size:13px; color:var(--text); margin-bottom:10px; line-height:1.5;
+    }
+    .ia-input {
+      width:100%; background:rgba(255,255,255,0.04); border:1px solid var(--cyan-border);
+      border-radius:8px; padding:10px 12px; color:var(--text); font-family:var(--font-body);
+      font-size:13px; margin-bottom:12px; outline:none; box-sizing:border-box;
+      transition:border-color 0.15s;
+    }
+    .ia-input:focus { border-color:var(--purple); }
+    .ia-input::placeholder { color:var(--muted); }
+    .ia-result-section { margin-bottom:14px; }
+    .ia-result-label {
+      font-family:var(--font-display); font-size:9px; font-weight:700;
+      color:var(--purple); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:10px;
+    }
+    .ia-st-item {
+      display:flex; align-items:center; gap:10px;
+      padding:9px 12px; margin-bottom:5px;
+      background:rgba(124,77,255,0.06); border:1px solid rgba(124,77,255,0.15);
+      border-left:2px solid rgba(124,77,255,0.4); border-radius:0 8px 8px 0;
+    }
+    .ia-st-check {
+      width:16px; height:16px; border-radius:50%; border:1px solid rgba(124,77,255,0.4);
+      flex-shrink:0; cursor:pointer; display:flex; align-items:center; justify-content:center;
+      font-size:9px; transition:all 0.15s;
+    }
+    .ia-st-check.checked { background:var(--purple); border-color:var(--purple); color:#fff; }
+    .ia-st-text { font-size:12px; color:var(--text); flex:1; line-height:1.4; }
+    .ia-redaction-area {
+      width:100%; background:rgba(255,255,255,0.04); border:1px solid rgba(124,77,255,0.2);
+      border-radius:8px; padding:12px; color:var(--text); font-family:var(--font-body);
+      font-size:13px; line-height:1.6; min-height:120px; resize:vertical;
+      box-sizing:border-box; outline:none;
+    }
+    .ia-redaction-area:focus { border-color:var(--purple); }
+    .ia-btn-row { display:flex; gap:8px; margin-top:14px; }
+    .ia-btn {
+      flex:1; padding:10px; border-radius:8px; font-family:var(--font-display);
+      font-size:10px; font-weight:700; letter-spacing:0.8px; cursor:pointer;
+      transition:all 0.15s; text-transform:uppercase;
+    }
+    .ia-btn-primary {
+      background:var(--purple); border:none; color:#fff;
+      box-shadow:0 0 12px var(--purple-dim);
+    }
+    .ia-btn-primary:hover { background:#9060ff; }
+    .ia-btn-secondary {
+      background:transparent; border:1px solid var(--cyan-border); color:var(--muted);
+    }
+    .ia-btn-secondary:hover { border-color:var(--cyan); color:var(--cyan); }
+    .ia-loading { display:flex; align-items:center; gap:10px; padding:16px 0; color:var(--muted); font-size:13px; }
+    .spinner-purple { width:16px; height:16px; border-radius:50%; border:2px solid rgba(124,77,255,0.2); border-top-color:var(--purple); animation:spin 0.8s linear infinite; flex-shrink:0; }
+    /* Bouton IA sur action */
+    .btn-ia {
+      background:rgba(124,77,255,0.15); border:1px solid rgba(124,77,255,0.3);
+      border-radius:6px; color:var(--purple); font-size:9px; padding:3px 8px;
+      cursor:pointer; font-family:var(--font-display); font-weight:700;
+      letter-spacing:0.5px; transition:all 0.15s; white-space:nowrap;
+    }
+    .btn-ia:hover { background:rgba(124,77,255,0.28); border-color:var(--purple); }
+    /* Sous-tâches dans la liste actions */
+    .sous-taches { margin-top:8px; padding-left:4px; }
+    .sous-tache-item {
+      display:flex; align-items:center; gap:8px; padding:5px 8px; margin-bottom:3px;
+      border-left:2px solid rgba(124,77,255,0.25); cursor:pointer;
+      transition:border-color 0.15s;
+    }
+    .sous-tache-item:hover { border-left-color:var(--purple); }
+    .sous-tache-cb {
+      width:13px; height:13px; border-radius:50%; border:1px solid rgba(124,77,255,0.35);
+      flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:8px;
+      transition:all 0.15s;
+    }
+    .sous-tache-item.done .sous-tache-cb { background:var(--purple); border-color:var(--purple); color:#fff; }
+    .sous-tache-text { font-size:11px; color:var(--muted); line-height:1.4; }
+    .sous-tache-item.done .sous-tache-text { text-decoration:line-through; opacity:0.5; }
+    .st-count { font-size:10px; color:rgba(124,77,255,0.6); margin-top:4px; }
+
     /* Drawer réunion */
     .drawer {
       display:none; position:fixed; inset:0; z-index:200;
@@ -695,6 +795,18 @@
         <button class="btn-save-action" id="btnSaveAction" onclick="sauvegarderAction()">Enregistrer</button>
         <button class="modal-close-btn" onclick="fermerActionModal()">Annuler</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modale IA action -->
+<div class="ia-modal" id="iaModal" onclick="if(event.target===this)fermerIAModal()">
+  <div class="ia-modal-card">
+    <div class="ia-modal-titre">Assistant IA</div>
+    <div class="ia-modal-action" id="iaModalAction"></div>
+    <div id="iaModalBody"></div>
+    <div class="ia-btn-row">
+      <button class="ia-btn ia-btn-secondary" onclick="fermerIAModal()">Fermer</button>
     </div>
   </div>
 </div>
@@ -1278,22 +1390,37 @@ function renderActions(reunions) {
     return;
   }
 
-  container.innerHTML = [...todo, ...done].map(a => `
+  container.innerHTML = [...todo, ...done].map(a => {
+    const sts = a.sousTaches || [];
+    const stDone = sts.filter(s => s.done).length;
+    const stHtml = sts.length ? `
+      <div class="sous-taches">
+        ${sts.map((st, si) => `
+          <div class="sous-tache-item ${st.done ? 'done' : ''}" onclick="toggleSousTache('${a._fileName}', ${a._actionIndex}, ${si})">
+            <div class="sous-tache-cb">${st.done ? '✓' : ''}</div>
+            <div class="sous-tache-text">${st.quoi}</div>
+          </div>`).join('')}
+      </div>
+      <div class="st-count">${stDone}/${sts.length} sous-tâche${sts.length > 1 ? 's' : ''}</div>` : '';
+    return `
     <div class="action-item ${a.done ? 'done' : ''}">
       <div class="action-cb" onclick="toggleAction('${a._fileName}', ${a._actionIndex})" style="cursor:pointer">${a.done ? '✓' : ''}</div>
-      <div class="action-body" onclick="toggleAction('${a._fileName}', ${a._actionIndex})" style="cursor:pointer;flex:1">
-        <div class="action-quoi">${a.quoi}</div>
+      <div class="action-body" style="flex:1">
+        <div class="action-quoi" onclick="toggleAction('${a._fileName}', ${a._actionIndex})" style="cursor:pointer">${a.quoi}</div>
         <div class="action-meta">
           ${a.qui   ? `<span class="action-qui">👤 ${a.qui}</span>` : ''}
           ${a.quand ? `<span class="action-quand">📅 ${a.quand}</span>` : ''}
           <span class="action-source">${a._reunionTitre || ''}</span>
         </div>
+        ${stHtml}
       </div>
       <div class="action-btns">
+        <button class="btn-ia" onclick="ouvrirIAModal('${a._fileName}', ${a._actionIndex})">✦ IA</button>
         <button class="action-btn-sm" onclick="ouvrirActionModal('${a._fileName}', ${a._actionIndex})">Éditer</button>
         <button class="action-btn-sm danger" onclick="supprimerAction('${a._fileName}', ${a._actionIndex})">✕</button>
       </div>
-    </div>`).join('') + btnAdd;
+    </div>`;
+  }).join('') + btnAdd;
 }
 
 async function toggleAction(fileName, actionIndex) {
@@ -1304,6 +1431,211 @@ async function toggleAction(fileName, actionIndex) {
       body: JSON.stringify({ uid, projectId: projetActif.id, changes: { actionToggle: { fileName, actionIndex } } })
     });
     const { project } = await res.json();
+    projetActif = project;
+    renderActions(project.reunions || []);
+    renderParPersonne(project.reunions || []);
+    renderMetrics(project);
+  } catch(e) { showToast('Erreur : ' + e.message); }
+}
+
+// ── IA Action ────────────────────────────────────────────────────────────────
+let _iaFileName = null;
+let _iaActionIndex = null;
+let _iaSousTachesEnAttente = []; // sous-tâches sélectionnées à confirmer
+
+function ouvrirIAModal(fileName, actionIndex) {
+  _iaFileName = fileName;
+  _iaActionIndex = actionIndex;
+  _iaSousTachesEnAttente = [];
+
+  const r = projetActif.reunions.find(r => r.fileName === fileName);
+  const a = r ? r.actions[actionIndex] : null;
+  if (!a) return;
+
+  document.getElementById('iaModalAction').textContent = a.quoi;
+  document.getElementById('iaModalBody').innerHTML = `
+    <div class="ia-loading"><div class="spinner-purple"></div><span>Analyse en cours…</span></div>`;
+  document.getElementById('iaModal').classList.add('active');
+
+  lancerAnalyseIA(a);
+}
+
+function fermerIAModal() {
+  document.getElementById('iaModal').classList.remove('active');
+  _iaFileName = null; _iaActionIndex = null; _iaSousTachesEnAttente = [];
+}
+
+async function lancerAnalyseIA(action, reponseUtilisateur) {
+  const body = document.getElementById('iaModalBody');
+  const btnRow = document.querySelector('.ia-btn-row');
+
+  // Contexte projet complet
+  const reunions = (projetActif.reunions || []).filter(r => r.fileName !== '_manual');
+  const contexte = 'Projet : "' + projetActif.nom + '"
+'
+    + (projetActif.description ? 'Description : ' + projetActif.description + '
+' : '')
+    + (projetActif.cadrage ? 'Cadrage : ' + projetActif.cadrage + '
+' : '')
+    + (reunions.length ? 'Réunions :
+' + reunions.map(r =>
+        r.titre + ' : ' + r.resume
+      ).join('
+') : '');
+
+  const prompt = 'Tu es un assistant de gestion de projet. Analyse cette action et aide l'utilisateur.
+
+'
+    + 'Contexte du projet :
+' + contexte + '
+
+'
+    + 'Action à traiter : "' + action.quoi + '"
+'
+    + (action.qui ? 'Responsable : ' + action.qui + '
+' : '')
+    + (action.quand ? 'Échéance : ' + action.quand + '
+' : '')
+    + (reponseUtilisateur ? 'Information complémentaire fournie par l'utilisateur : ' + reponseUtilisateur + '
+' : '')
+    + '
+Tu dois décider comment aider :
+'
+    + '1. Si tu as besoin d'une information précise pour être vraiment utile (technologie, destinataire, contexte spécifique), pose UNE seule question courte.
+'
+    + '2. Si l'action implique de rédiger un document, email, message, brief ou contenu textuel → propose une rédaction.
+'
+    + '3. Si l'action est une tâche complexe à réaliser → décompose en 3-5 sous-tâches concrètes et actionnables.
+'
+    + (reponseUtilisateur ? 'L'utilisateur a déjà répondu à ta question, donc NE pose PAS de nouvelle question — génère directement le résultat.
+' : '')
+    + '
+Réponds UNIQUEMENT avec un JSON valide :
+'
+    + '{ "besoin_info": false, "type": "sous_taches", "items": [{"quoi": "Sous-tâche 1"}, ...] }
+'
+    + 'OU { "besoin_info": false, "type": "redaction", "label": "Email au client", "contenu": "Texte rédigé..." }
+'
+    + 'OU { "besoin_info": true, "question": "Ta question courte ici ?" }
+'
+    + 'Tout en français. JSON uniquement, sans markdown.';
+
+  try {
+    const res = await fetch('/api/project?action=ia_action&uid=' + encodeURIComponent(uid), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid, prompt })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    afficherResultatIA(data.result, action);
+  } catch(e) {
+    body.innerHTML = '<div style="color:var(--danger);font-size:13px">Erreur : ' + e.message + '</div>';
+  }
+}
+
+function afficherResultatIA(result, action) {
+  const body = document.getElementById('iaModalBody');
+  const btnRow = document.querySelector('#iaModal .ia-btn-row');
+
+  if (result.besoin_info) {
+    // Afficher la question
+    body.innerHTML = `
+      <div class="ia-question">${result.question}</div>
+      <input class="ia-input" id="iaReponse" placeholder="Votre réponse…" maxlength="200">`;
+    btnRow.innerHTML = `
+      <button class="ia-btn ia-btn-secondary" onclick="fermerIAModal()">Annuler</button>
+      <button class="ia-btn ia-btn-primary" onclick="envoyerReponseIA()">Continuer →</button>`;
+    setTimeout(() => document.getElementById('iaReponse')?.focus(), 100);
+    return;
+  }
+
+  if (result.type === 'sous_taches') {
+    _iaSousTachesEnAttente = result.items.map((st, i) => ({ ...st, selected: true, idx: i }));
+    body.innerHTML = `
+      <div class="ia-result-label">Sous-tâches proposées</div>
+      <div class="ia-result-section" id="iaStList">
+        ${_iaSousTachesEnAttente.map((st, i) => `
+          <div class="ia-st-item" id="ia_st_${i}" onclick="toggleIASt(${i})">
+            <div class="ia-st-check checked" id="ia_st_cb_${i}">✓</div>
+            <div class="ia-st-text">${st.quoi}</div>
+          </div>`).join('')}
+      </div>`;
+    btnRow.innerHTML = `
+      <button class="ia-btn ia-btn-secondary" onclick="fermerIAModal()">Annuler</button>
+      <button class="ia-btn ia-btn-primary" onclick="confirmerSousTaches()">Ajouter les sélectionnées</button>`;
+    return;
+  }
+
+  if (result.type === 'redaction') {
+    body.innerHTML = `
+      <div class="ia-result-label">${result.label || 'Rédaction'}</div>
+      <textarea class="ia-redaction-area" id="iaRedactionText">${result.contenu || ''}</textarea>`;
+    btnRow.innerHTML = `
+      <button class="ia-btn ia-btn-secondary" onclick="fermerIAModal()">Fermer</button>
+      <button class="ia-btn ia-btn-primary" onclick="copierRedaction()">Copier</button>`;
+    return;
+  }
+}
+
+function toggleIASt(i) {
+  _iaSousTachesEnAttente[i].selected = !_iaSousTachesEnAttente[i].selected;
+  const cb = document.getElementById('ia_st_cb_' + i);
+  if (cb) cb.className = 'ia-st-check' + (_iaSousTachesEnAttente[i].selected ? ' checked' : '');
+}
+
+async function envoyerReponseIA() {
+  const reponse = document.getElementById('iaReponse')?.value.trim();
+  if (!reponse) return;
+  const body = document.getElementById('iaModalBody');
+  body.innerHTML = '<div class="ia-loading"><div class="spinner-purple"></div><span>Génération…</span></div>';
+  const r = projetActif.reunions.find(r => r.fileName === _iaFileName);
+  const a = r ? r.actions[_iaActionIndex] : null;
+  if (a) await lancerAnalyseIA(a, reponse);
+}
+
+async function confirmerSousTaches() {
+  const selected = _iaSousTachesEnAttente.filter(st => st.selected);
+  if (!selected.length) { fermerIAModal(); return; }
+
+  const btn = document.querySelector('#iaModal .ia-btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
+
+  try {
+    const res = await fetch('/api/project?action=update&uid=' + encodeURIComponent(uid), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid, projectId: projetActif.id, changes: {
+        sousTachesAdd: { fileName: _iaFileName, actionIndex: _iaActionIndex, items: selected }
+      }})
+    });
+    const { project, error } = await res.json();
+    if (error) throw new Error(error);
+    projetActif = project;
+    fermerIAModal();
+    renderActions(project.reunions || []);
+    renderParPersonne(project.reunions || []);
+    showToast(selected.length + ' sous-tâche' + (selected.length > 1 ? 's' : '') + ' ajoutée' + (selected.length > 1 ? 's' : ''));
+  } catch(e) { showToast('Erreur : ' + e.message); }
+}
+
+function copierRedaction() {
+  const text = document.getElementById('iaRedactionText')?.value || '';
+  navigator.clipboard.writeText(text).then(() => showToast('Copié !')).catch(() => {
+    document.getElementById('iaRedactionText')?.select();
+    document.execCommand('copy');
+    showToast('Copié !');
+  });
+}
+
+async function toggleSousTache(fileName, actionIndex, sousTacheIndex) {
+  try {
+    const res = await fetch('/api/project?action=update&uid=' + encodeURIComponent(uid), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid, projectId: projetActif.id, changes: {
+        sousTacheToggle: { fileName, actionIndex, sousTacheIndex }
+      }})
+    });
+    const { project, error } = await res.json();
+    if (error) throw new Error(error);
     projetActif = project;
     renderActions(project.reunions || []);
     renderParPersonne(project.reunions || []);
