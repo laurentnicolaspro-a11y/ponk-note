@@ -15,7 +15,8 @@ module.exports = async function handler(req, res) {
     const {
       fileName, segmentFileNames = [], title = '', duration = '', datetime = '', bubbles = [],
       transcript_only = false, transcript: transcriptPassed = '',
-      rewrite = false, summary: summaryToRewrite = null
+      rewrite = false, summary: summaryToRewrite = null,
+      profile = 'user'
     } = body;
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -319,6 +320,42 @@ Règles STRICTES pour les actions_ia :
     }
 
     parsed.transcript = transcript;
+
+    // ── Sauvegarder l'analyse dans Supabase Storage (non bloquant) ──
+    try {
+      const baseFile = (segmentFileNames.length > 0 ? segmentFileNames[0] : fileName)
+        .split('/').pop()
+        .replace(/-seg\d{3}\.webm$/, '.webm')
+        .replace('.webm', '');
+      const analysisPath = `${profile}/${baseFile}-analysis.json`;
+      const putRes = await fetch(`${process.env.SUPABASE_URL}/storage/v1/object/audio/${analysisPath}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
+          'apikey': process.env.SUPABASE_SERVICE_KEY,
+          'Content-Type': 'application/json',
+          'x-upsert': 'true',
+          'cache-control': 'no-cache'
+        },
+        body: JSON.stringify(parsed)
+      });
+      if (!putRes.ok) {
+        await fetch(`${process.env.SUPABASE_URL}/storage/v1/object/audio/${analysisPath}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
+            'apikey': process.env.SUPABASE_SERVICE_KEY,
+            'Content-Type': 'application/json',
+            'cache-control': 'no-cache'
+          },
+          body: JSON.stringify(parsed)
+        });
+      }
+      console.log('[analyze] cache Supabase sauvegardé:', analysisPath);
+    } catch(e) {
+      console.warn('[analyze] cache Supabase échoué (non bloquant):', e.message);
+    }
+
     return res.status(200).json(parsed);
 
   } catch (err) {
