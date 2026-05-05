@@ -655,11 +655,11 @@
     .danger-zone { margin-top:24px; padding-top:20px; border-top:1px solid rgba(255,68,102,0.15); }
     .btn-export-pdf {
       width:100%; padding:11px; border-radius:8px; margin-bottom:10px;
-      background:rgba(0,212,255,0.08); border:1px solid rgba(0,212,255,0.3);
-      color:var(--cyan); font-family:var(--font-display); font-size:10px;
+      background:rgba(0,229,160,0.1); border:1px solid rgba(0,229,160,0.4);
+      color:var(--green); font-family:var(--font-display); font-size:10px;
       font-weight:700; letter-spacing:1px; cursor:pointer; transition:all 0.15s; text-transform:uppercase;
     }
-    .btn-export-pdf:hover { background:rgba(0,212,255,0.15); border-color:var(--cyan); }
+    .btn-export-pdf:hover { background:rgba(0,229,160,0.18); border-color:var(--green); }
     .btn-delete-projet {
       width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,68,102,0.3);
       background:transparent; color:var(--danger); font-family:var(--font-display);
@@ -784,7 +784,7 @@
 
         <!-- Danger zone -->
         <div class="danger-zone">
-          <button class="btn-export-pdf" id="btnExportPDF" onclick="exporterProjetPDF()">↓ Exporter en PDF</button>
+          <button class="btn-export-pdf" id="btnExportPDF" onclick="exporterProjetPDF()">Exporter en PDF</button>
           <button class="btn-delete-projet" onclick="supprimerProjet()">🗑 Supprimer ce projet</button>
         </div>
       </div>
@@ -1252,10 +1252,10 @@ function renderMetrics(project) {
       <div class="metric-right-val ${accentPct}">${total ? pct + '%' : '—'}</div>
       <div class="metric-right-sub">${total ? done + ' / ' + total + ' actions' : 'Aucune action'}</div>
     </div>
-    <div class="metric-right">
-      <div class="metric-right-label">Deadline</div>
+    <div class="metric-right" style="cursor:pointer" onclick="ouvrirEditDeadline()" title="Modifier la deadline">
+      <div class="metric-right-label">Deadline <span style="color:rgba(0,212,255,0.4);font-size:8px;margin-left:4px">✎</span></div>
       <div class="metric-right-val ${deadlineSub.includes('dépassés') ? 'red' : 'amber'}">${deadlineVal}</div>
-      <div class="metric-right-sub">${deadlineSub || 'Non définie'}</div>
+      <div class="metric-right-sub">${deadlineSub || 'Cliquer pour définir'}</div>
     </div>`;
 }
 
