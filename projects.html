@@ -172,6 +172,44 @@
     .statut-btn.active.s-termine   { background:rgba(0,212,255,0.1); border-color:var(--cyan); color:var(--cyan); }
     .statut-btn.active.s-en_pause  { background:rgba(255,180,0,0.1); border-color:#ffb400; color:#ffb400; }
 
+    /* Métriques */
+    .metrics-grid {
+      display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px;
+    }
+    .metric-card {
+      background:var(--bg-card); border:1px solid var(--cyan-border);
+      border-radius:10px; padding:12px 14px;
+    }
+    .metric-label {
+      font-family:var(--font-display); font-size:8px; font-weight:700;
+      color:var(--cyan-dim); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:6px;
+    }
+    .metric-val {
+      font-family:var(--font-display); font-size:20px; font-weight:700;
+      color:var(--text); line-height:1;
+    }
+    .metric-sub { font-size:11px; color:var(--muted); margin-top:4px; }
+    .metric-val.accent-green { color:var(--green); }
+    .metric-val.accent-amber { color:#ffb400; }
+    .metric-val.accent-red   { color:var(--danger); }
+    /* Actions par personne */
+    .pers-section { margin-bottom:16px; }
+    .pers-row {
+      display:flex; align-items:center; gap:10px;
+      padding:10px 14px; background:var(--bg-card); border:1px solid var(--cyan-border);
+      border-radius:10px; margin-bottom:6px;
+    }
+    .pers-avatar {
+      width:28px; height:28px; border-radius:50%; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:11px; font-weight:700; font-family:var(--font-display);
+      background:rgba(0,212,255,0.1); color:var(--cyan); border:1px solid var(--cyan-border);
+    }
+    .pers-name { font-size:13px; color:var(--text); font-weight:500; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pers-track { flex:1; height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden; min-width:40px; }
+    .pers-fill  { height:100%; border-radius:3px; background:var(--cyan); transition:width 0.4s ease; }
+    .pers-fill.done-full { background:var(--green); }
+    .pers-count { font-size:11px; color:var(--muted); white-space:nowrap; }
     /* Synthèse IA */
     .synthese-card {
       background:rgba(124,77,255,0.06); border:1px solid rgba(124,77,255,0.25);
@@ -191,6 +229,47 @@
     .synthese-text { font-size:13px; line-height:1.7; color:var(--text); }
     .synthese-loading { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
     .spinner-sm { width:14px; height:14px; border-radius:50%; border:2px solid rgba(124,77,255,0.2); border-top-color:var(--purple); animation:spin 0.8s linear infinite; flex-shrink:0; }
+
+    /* Suggestions IA */
+    .suggestions-card {
+      background:rgba(0,212,255,0.04); border:1px solid rgba(0,212,255,0.2);
+      border-radius:12px; padding:16px; margin-bottom:16px;
+    }
+    .suggestions-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .suggestions-label {
+      font-family:var(--font-display); font-size:9px; font-weight:700;
+      color:var(--cyan-dim); text-transform:uppercase; letter-spacing:1.5px;
+      display:flex; align-items:center; gap:6px;
+    }
+    .suggestions-dot {
+      width:6px; height:6px; border-radius:50%; background:var(--cyan);
+      box-shadow:0 0 6px rgba(0,212,255,0.5);
+    }
+    .suggestion-item {
+      display:flex; align-items:flex-start; gap:10px;
+      padding:10px 12px; margin-bottom:6px;
+      background:rgba(0,212,255,0.06); border:1px solid rgba(0,212,255,0.15);
+      border-radius:9px; transition:all 0.15s;
+    }
+    .suggestion-item.dismissed { display:none; }
+    .suggestion-body { flex:1; min-width:0; }
+    .suggestion-quoi { font-size:13px; color:var(--text); line-height:1.4; margin-bottom:3px; }
+    .suggestion-why { font-size:11px; color:var(--muted); line-height:1.4; }
+    .suggestion-actions { display:flex; gap:6px; flex-shrink:0; }
+    .btn-suggestion-add {
+      background:rgba(0,212,255,0.12); border:1px solid var(--cyan);
+      color:var(--cyan); border-radius:6px; font-size:10px; padding:4px 10px;
+      cursor:pointer; font-family:var(--font-display); font-weight:700;
+      letter-spacing:0.5px; white-space:nowrap; transition:all 0.15s;
+    }
+    .btn-suggestion-add:hover { background:rgba(0,212,255,0.22); }
+    .btn-suggestion-add.added { background:rgba(0,229,160,0.1); border-color:var(--green); color:var(--green); cursor:default; }
+    .btn-suggestion-dismiss {
+      background:none; border:1px solid var(--cyan-border); border-radius:6px;
+      color:var(--muted); font-size:10px; padding:4px 8px; cursor:pointer;
+      transition:all 0.15s; line-height:1;
+    }
+    .btn-suggestion-dismiss:hover { border-color:var(--danger); color:var(--danger); }
 
     /* Carousel réunions */
     .carousel-wrap { margin-bottom:16px; }
@@ -228,6 +307,57 @@
     }
     .action-item:hover { background:var(--bg-card2); border-color:var(--cyan-border-hi); }
     .action-item.done { opacity:0.4; }
+    .action-item { position:relative; }
+    .action-btns { display:flex; gap:6px; flex-shrink:0; opacity:0; transition:opacity 0.15s; }
+    .action-item:hover .action-btns { opacity:1; }
+    .action-btn-sm {
+      background:none; border:1px solid var(--cyan-border); border-radius:6px;
+      color:var(--muted); font-size:10px; padding:3px 7px; cursor:pointer;
+      font-family:var(--font-display); letter-spacing:0.3px; transition:all 0.15s;
+    }
+    .action-btn-sm:hover { border-color:var(--cyan); color:var(--cyan); }
+    .action-btn-sm.danger:hover { border-color:var(--danger); color:var(--danger); }
+    /* Modal action */
+    .action-modal {
+      position:fixed; inset:0; z-index:100; background:rgba(0,0,0,0.7);
+      display:flex; align-items:flex-end; justify-content:center;
+      opacity:0; pointer-events:none; transition:opacity 0.2s;
+    }
+    .action-modal.active { opacity:1; pointer-events:all; }
+    .action-modal-card {
+      background:var(--bg-mid); border:1px solid var(--cyan-border);
+      border-radius:16px 16px 0 0; padding:24px 20px 32px; width:100%; max-width:520px;
+      transform:translateY(20px); transition:transform 0.2s;
+    }
+    .action-modal.active .action-modal-card { transform:translateY(0); }
+    .action-modal-title {
+      font-family:var(--font-display); font-size:12px; font-weight:700;
+      color:var(--cyan); text-transform:uppercase; letter-spacing:1px; margin-bottom:16px;
+    }
+    .action-input {
+      width:100%; background:rgba(255,255,255,0.04); border:1px solid var(--cyan-border);
+      border-radius:8px; padding:10px 12px; color:var(--text); font-family:var(--font-body);
+      font-size:13px; margin-bottom:10px; outline:none; transition:border-color 0.15s;
+      box-sizing:border-box;
+    }
+    .action-input:focus { border-color:var(--cyan); }
+    .action-input::placeholder { color:var(--muted); }
+    .action-modal-row { display:flex; gap:8px; margin-bottom:10px; }
+    .action-modal-row .action-input { margin-bottom:0; }
+    .btn-save-action {
+      width:100%; padding:12px; border-radius:8px; margin-top:6px;
+      background:rgba(0,212,255,0.1); border:1px solid var(--cyan);
+      color:var(--cyan); font-family:var(--font-display); font-size:11px;
+      font-weight:700; letter-spacing:1px; cursor:pointer; transition:all 0.15s;
+    }
+    .btn-save-action:hover { background:rgba(0,212,255,0.18); }
+    .btn-add-action {
+      width:100%; padding:11px; border-radius:8px; margin-top:4px;
+      background:transparent; border:1px dashed rgba(0,212,255,0.25);
+      color:var(--cyan-dim); font-family:var(--font-display); font-size:10px;
+      font-weight:600; letter-spacing:1px; cursor:pointer; transition:all 0.15s; text-transform:uppercase;
+    }
+    .btn-add-action:hover { border-color:var(--cyan); color:var(--cyan); background:rgba(0,212,255,0.05); }
     .action-cb {
       width:20px; height:20px; border-radius:50%; flex-shrink:0;
       border:1.5px solid var(--cyan-border); background:transparent;
@@ -385,6 +515,9 @@
       </div>
     </div>
 
+    <!-- Métriques -->
+    <div class="metrics-grid" id="metricsGrid"></div>
+
     <!-- Carousel réunions -->
     <div class="carousel-wrap">
       <div class="section-title">Réunions rattachées</div>
@@ -408,6 +541,31 @@
       </div>
     </div>
 
+    <!-- Suggestions IA -->
+    <div class="suggestions-card" id="suggestionsCard" style="display:none">
+      <div class="suggestions-header">
+        <div class="suggestions-label">
+          <div class="suggestions-dot"></div>
+          Suggestions IA
+        </div>
+        <button onclick="regenererSuggestions()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;font-family:var(--font-display);letter-spacing:0.3px" id="btnRegenSugg">↻ Actualiser</button>
+      </div>
+      <div id="suggestionsContent">
+        <div class="synthese-loading">
+          <div class="spinner-sm" style="border-color:rgba(0,212,255,0.2);border-top-color:var(--cyan)"></div>
+          <span>Analyse en cours…</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions par personne -->
+    <div class="pers-section" id="persSection" style="display:none">
+      <div class="actions-label">
+        Par personne
+      </div>
+      <div id="persList"></div>
+    </div>
+
     <!-- Actions à faire -->
     <div class="actions-section">
       <div class="actions-label">
@@ -415,6 +573,20 @@
         <span class="actions-count" id="actionsCount"></span>
       </div>
       <div id="actionsList"></div>
+    </div>
+
+    <!-- Modal ajout/edit action -->
+    <div class="action-modal" id="actionModal" onclick="if(event.target===this)fermerActionModal()">
+      <div class="action-modal-card">
+        <div class="action-modal-title" id="actionModalTitle">Nouvelle action</div>
+        <input class="action-input" id="actionQuoi" placeholder="Description de l'action *" maxlength="200">
+        <div class="action-modal-row">
+          <input class="action-input" id="actionQui" placeholder="Qui (optionnel)" maxlength="60">
+          <input class="action-input" id="actionQuand" placeholder="Échéance (optionnel)" maxlength="60">
+        </div>
+        <button class="btn-save-action" id="btnSaveAction" onclick="sauvegarderAction()">Enregistrer</button>
+        <button class="modal-close-btn" onclick="fermerActionModal()">Annuler</button>
+      </div>
     </div>
 
     <!-- Danger zone -->
@@ -560,14 +732,23 @@ async function ouvrirProjet(id) {
     btn.classList.toggle('active', btn.dataset.statut === project.statut);
   });
 
+  // Métriques
+  renderMetrics(project);
+
   // Carousel
   renderCarousel(project.reunions || []);
+
+  // Actions par personne
+  renderParPersonne(project.reunions || []);
 
   // Actions
   renderActions(project.reunions || []);
 
   // Synthèse — cache intelligent
   afficherSynthese(project);
+
+  // Suggestions IA — cache intelligent
+  afficherSuggestions(project);
 }
 
 function retourListe() {
@@ -647,7 +828,202 @@ async function genererSynthese(project) {
   }
 }
 
+// ── Suggestions IA ───────────────────────────────────────────────────────────
+async function afficherSuggestions(project) {
+  const card = document.getElementById('suggestionsCard');
+  const el   = document.getElementById('suggestionsContent');
+
+  if (!project.reunions || !project.reunions.filter(r => r.fileName !== '_manual').length) {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = 'block';
+
+  // Cache : suggestions valides si générées après la dernière mise à jour
+  if (project.suggestions && project.suggestionsGeneratedAt && project.updatedAt) {
+    const suggDate   = new Date(project.suggestionsGeneratedAt);
+    const updateDate = new Date(project.updatedAt);
+    if (suggDate >= updateDate) {
+      renderSuggestions(project.suggestions);
+      return;
+    }
+  }
+
+  // Pas de cache valide → générer
+  el.innerHTML = `<div class="synthese-loading"><div class="spinner-sm" style="border-color:rgba(0,212,255,0.2);border-top-color:var(--cyan)"></div><span>Analyse en cours…</span></div>`;
+  await genererSuggestions(project);
+}
+
+async function regenererSuggestions() {
+  const el = document.getElementById('suggestionsContent');
+  el.innerHTML = `<div class="synthese-loading"><div class="spinner-sm" style="border-color:rgba(0,212,255,0.2);border-top-color:var(--cyan)"></div><span>Régénération…</span></div>`;
+  projetActif.suggestionsGeneratedAt = null;
+  await genererSuggestions(projetActif);
+}
+
+async function genererSuggestions(project) {
+  const el = document.getElementById('suggestionsContent');
+  try {
+    const res = await fetch(`/api/project?action=suggestions&uid=${encodeURIComponent(uid)}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ uid, projectId: project.id })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    projetActif.suggestions = data.suggestions || [];
+    projetActif.suggestionsGeneratedAt = new Date().toISOString();
+    renderSuggestions(projetActif.suggestions);
+  } catch(e) {
+    el.innerHTML = `<div style="color:var(--muted);font-size:13px;font-style:italic">Suggestions indisponibles. <button onclick="regenererSuggestions()" style="background:none;border:none;color:var(--cyan);cursor:pointer;font-size:13px">Réessayer</button></div>`;
+  }
+}
+
+function renderSuggestions(suggestions) {
+  const el = document.getElementById('suggestionsContent');
+  if (!suggestions || !suggestions.length) {
+    el.innerHTML = `<div style="color:var(--muted);font-size:13px;font-style:italic">Aucune suggestion — le projet semble complet.</div>`;
+    return;
+  }
+  el.innerHTML = suggestions.map((s, i) => `
+    <div class="suggestion-item" id="sugg_${i}">
+      <div class="suggestion-body">
+        <div class="suggestion-quoi">${s.quoi}</div>
+        ${s.pourquoi ? `<div class="suggestion-why">${s.pourquoi}</div>` : ''}
+      </div>
+      <div class="suggestion-actions">
+        <button class="btn-suggestion-add" id="sugg_btn_${i}" onclick="ajouterSuggestion(${i})">+ Ajouter</button>
+        <button class="btn-suggestion-dismiss" onclick="ignorerSuggestion(${i})" title="Ignorer">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+async function ajouterSuggestion(index) {
+  const s = projetActif.suggestions[index];
+  if (!s) return;
+  const btn = document.getElementById(`sugg_btn_${index}`);
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const res = await fetch(`/api/project?action=update&uid=${encodeURIComponent(uid)}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ uid, projectId: projetActif.id, changes: {
+        actionAdd: { quoi: s.quoi, qui: s.qui || '', quand: s.quand || '' }
+      }})
+    });
+    const { project, error } = await res.json();
+    if (error) throw new Error(error);
+    projetActif = project;
+    btn.textContent = '✓ Ajouté'; btn.classList.add('added'); btn.disabled = true;
+    renderActions(project.reunions || []);
+    renderParPersonne(project.reunions || []);
+    renderMetrics(project);
+    showToast('Action ajoutée');
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '+ Ajouter';
+    showToast('Erreur : ' + e.message);
+  }
+}
+
+function ignorerSuggestion(index) {
+  const el = document.getElementById(`sugg_${index}`);
+  if (el) el.classList.add('dismissed');
+}
+
 // ── Carousel réunions ─────────────────────────────────────────────────────────
+// ── Métriques ────────────────────────────────────────────────────────────────
+function renderMetrics(project) {
+  const reunions = project.reunions || [];
+  const toutes = reunions.flatMap(r => r.actions || []);
+  const done = toutes.filter(a => a.done).length;
+  const total = toutes.length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+
+  // Couleur avancement
+  const accentPct = pct >= 80 ? 'accent-green' : pct >= 40 ? 'accent-amber' : total ? 'accent-red' : '';
+
+  // Deadline
+  let deadlineVal = '—';
+  let deadlineSub = '';
+  if (project.cadrage) {
+    const m = project.cadrage.match(/Deadline\s*:\s*(.+)/i);
+    if (m) {
+      const d = new Date(m[1].trim());
+      if (!isNaN(d)) {
+        const jours = Math.ceil((d - new Date()) / 86400000);
+        deadlineVal = d.toLocaleDateString('fr-FR', {day:'numeric', month:'short'});
+        deadlineSub = jours > 0 ? `${jours} j restants` : jours === 0 ? "Aujourd'hui" : `${Math.abs(jours)} j dépassés`;
+      } else {
+        deadlineVal = m[1].trim().slice(0, 10);
+      }
+    }
+  }
+
+  // Dernière réunion
+  let derniereStr = '';
+  if (reunions.length) {
+    const dates = reunions.map(r => new Date(r.date)).filter(d => !isNaN(d));
+    if (dates.length) {
+      const max = new Date(Math.max(...dates));
+      derniereStr = 'Dernière : ' + max.toLocaleDateString('fr-FR', {day:'numeric', month:'short'});
+    }
+  }
+
+  document.getElementById('metricsGrid').innerHTML = `
+    <div class="metric-card">
+      <div class="metric-label">Avancement</div>
+      <div class="metric-val ${accentPct}">${total ? pct + '%' : '—'}</div>
+      <div class="metric-sub">${total ? done + ' action' + (done > 1 ? 's' : '') + ' sur ' + total : 'Aucune action'}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Réunions</div>
+      <div class="metric-val">${reunions.length}</div>
+      <div class="metric-sub">${derniereStr || 'Aucune encore'}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Deadline</div>
+      <div class="metric-val" style="font-size:15px">${deadlineVal}</div>
+      <div class="metric-sub">${deadlineSub || 'Non définie'}</div>
+    </div>`;
+}
+
+// ── Actions par personne ──────────────────────────────────────────────────────
+function renderParPersonne(reunions) {
+  const section = document.getElementById('persSection');
+  const container = document.getElementById('persList');
+  const toutes = reunions.flatMap(r => r.actions || []);
+  if (!toutes.length) { section.style.display = 'none'; return; }
+
+  // Grouper par personne
+  const map = {};
+  toutes.forEach(a => {
+    const key = (a.qui && a.qui.trim()) ? a.qui.trim() : '—';
+    if (!map[key]) map[key] = { total: 0, done: 0 };
+    map[key].total++;
+    if (a.done) map[key].done++;
+  });
+
+  const maxTotal = Math.max(...Object.values(map).map(v => v.total));
+
+  const COLORS = ['#4a7fd4','#00dcff','#3db87a','#e07a30','#8a55d4','#d45580','#30a8d4'];
+  let ci = 0;
+  const rows = Object.entries(map)
+    .sort((a, b) => b[1].total - a[1].total)
+    .map(([nom, v]) => {
+      const pct = Math.round((v.total / maxTotal) * 100);
+      const doneFull = v.done === v.total && v.total > 0;
+      const color = COLORS[ci++ % COLORS.length];
+      const initiale = nom !== '—' ? nom[0].toUpperCase() : '?';
+      return `<div class="pers-row">
+        <div class="pers-avatar" style="background:${color}22;color:${color};border-color:${color}44">${initiale}</div>
+        <div class="pers-name">${nom}</div>
+        <div class="pers-track"><div class="pers-fill ${doneFull ? 'done-full' : ''}" style="width:${pct}%;background:${doneFull ? 'var(--green)' : color}"></div></div>
+        <div class="pers-count">${v.done}/${v.total}</div>
+      </div>`;
+    }).join('');
+
+  container.innerHTML = rows;
+  section.style.display = 'block';
+}
+
 function renderCarousel(reunions) {
   const scroll = document.getElementById('carouselScroll');
   if (!reunions.length) {
@@ -712,23 +1088,29 @@ function renderActions(reunions) {
   const count = `${done.length}/${toutes.length} faite${done.length > 1 ? 's' : ''}`;
   document.getElementById('actionsCount').textContent = toutes.length ? count : '';
 
+  const btnAdd = `<button class="btn-add-action" onclick="ouvrirActionModal()">+ Ajouter une action</button>`;
+
   if (!toutes.length) {
-    container.innerHTML = `<div style="color:var(--muted);font-size:13px;font-style:italic;padding:10px 0">Aucune action extraite.</div>`;
+    container.innerHTML = `<div style="color:var(--muted);font-size:13px;font-style:italic;padding:10px 0">Aucune action extraite.</div>${btnAdd}`;
     return;
   }
 
   container.innerHTML = [...todo, ...done].map(a => `
-    <div class="action-item ${a.done ? 'done' : ''}" onclick="toggleAction('${a._fileName}', ${a._actionIndex})">
-      <div class="action-cb">${a.done ? '✓' : ''}</div>
-      <div class="action-body">
+    <div class="action-item ${a.done ? 'done' : ''}">
+      <div class="action-cb" onclick="toggleAction('${a._fileName}', ${a._actionIndex})" style="cursor:pointer">${a.done ? '✓' : ''}</div>
+      <div class="action-body" onclick="toggleAction('${a._fileName}', ${a._actionIndex})" style="cursor:pointer;flex:1">
         <div class="action-quoi">${a.quoi}</div>
         <div class="action-meta">
-          ${a.qui  ? `<span class="action-qui">👤 ${a.qui}</span>` : ''}
+          ${a.qui   ? `<span class="action-qui">👤 ${a.qui}</span>` : ''}
           ${a.quand ? `<span class="action-quand">📅 ${a.quand}</span>` : ''}
           <span class="action-source">${a._reunionTitre || ''}</span>
         </div>
       </div>
-    </div>`).join('');
+      <div class="action-btns">
+        <button class="action-btn-sm" onclick="ouvrirActionModal('${a._fileName}', ${a._actionIndex})">Éditer</button>
+        <button class="action-btn-sm danger" onclick="supprimerAction('${a._fileName}', ${a._actionIndex})">✕</button>
+      </div>
+    </div>`).join('') + btnAdd;
 }
 
 async function toggleAction(fileName, actionIndex) {
@@ -741,6 +1123,94 @@ async function toggleAction(fileName, actionIndex) {
     const { project } = await res.json();
     projetActif = project;
     renderActions(project.reunions || []);
+    renderParPersonne(project.reunions || []);
+    renderMetrics(project);
+  } catch(e) { showToast('Erreur : ' + e.message); }
+}
+
+// ── Modal action (ajout / édition) ────────────────────────────────────────────
+let _editFileName = null;
+let _editActionIndex = null;
+
+function ouvrirActionModal(fileName, actionIndex) {
+  _editFileName = fileName ?? null;
+  _editActionIndex = actionIndex ?? null;
+  const isEdit = _editFileName !== null;
+
+  document.getElementById('actionModalTitle').textContent = isEdit ? 'Modifier l'action' : 'Nouvelle action';
+  document.getElementById('actionQuoi').value = '';
+  document.getElementById('actionQui').value = '';
+  document.getElementById('actionQuand').value = '';
+
+  if (isEdit) {
+    const r = projetActif.reunions.find(r => r.fileName === fileName);
+    const a = r ? r.actions[actionIndex] : null;
+    if (a) {
+      document.getElementById('actionQuoi').value = a.quoi || '';
+      document.getElementById('actionQui').value = a.qui || '';
+      document.getElementById('actionQuand').value = a.quand || '';
+    }
+  }
+
+  document.getElementById('actionModal').classList.add('active');
+  setTimeout(() => document.getElementById('actionQuoi').focus(), 150);
+}
+
+function fermerActionModal() {
+  document.getElementById('actionModal').classList.remove('active');
+  _editFileName = null;
+  _editActionIndex = null;
+}
+
+async function sauvegarderAction() {
+  const quoi  = document.getElementById('actionQuoi').value.trim();
+  const qui   = document.getElementById('actionQui').value.trim();
+  const quand = document.getElementById('actionQuand').value.trim();
+  if (!quoi) { document.getElementById('actionQuoi').focus(); return; }
+
+  const btn = document.getElementById('btnSaveAction');
+  btn.disabled = true; btn.textContent = 'Enregistrement…';
+
+  const isEdit = _editFileName !== null;
+  const changes = isEdit
+    ? { actionEdit: { fileName: _editFileName, actionIndex: _editActionIndex, quoi, qui, quand } }
+    : { actionAdd: { quoi, qui, quand } };
+
+  try {
+    const res = await fetch(`/api/project?action=update&uid=${encodeURIComponent(uid)}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ uid, projectId: projetActif.id, changes })
+    });
+    const { project, error } = await res.json();
+    if (error) throw new Error(error);
+    projetActif = project;
+    fermerActionModal();
+    renderActions(project.reunions || []);
+    renderParPersonne(project.reunions || []);
+    renderMetrics(project);
+    showToast(isEdit ? 'Action modifiée' : 'Action ajoutée');
+  } catch(e) {
+    showToast('Erreur : ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Enregistrer';
+  }
+}
+
+async function supprimerAction(fileName, actionIndex) {
+  if (!confirm('Supprimer cette action ?')) return;
+  try {
+    const res = await fetch(`/api/project?action=update&uid=${encodeURIComponent(uid)}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ uid, projectId: projetActif.id, changes: { actionDelete: { fileName, actionIndex } } })
+    });
+    const { project, error } = await res.json();
+    if (error) throw new Error(error);
+    projetActif = project;
+    renderActions(project.reunions || []);
+    renderParPersonne(project.reunions || []);
+    renderMetrics(project);
+    showToast('Action supprimée');
   } catch(e) { showToast('Erreur : ' + e.message); }
 }
 
