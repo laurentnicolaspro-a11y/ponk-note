@@ -1675,7 +1675,7 @@
       const data = await analyzeRes.json();
       localStorage.setItem('ponk_result', JSON.stringify(data));
       localStorage.setItem('ponk_meta', JSON.stringify({title, duration, datetime}));
-      localStorage.setItem(`ponk_analyzed_${fileName.split('/').pop()}`, JSON.stringify(data));
+      const _libKey = fileName.split('/').pop().replace(/-seg\d{3}.webm$/, '.webm'); localStorage.setItem(`ponk_analyzed_${_libKey}`, JSON.stringify(data));
       saveBubbles();
       window.location.href = '/results.html';
     } catch(e) {
