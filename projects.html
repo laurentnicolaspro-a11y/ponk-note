@@ -1467,63 +1467,39 @@ function fermerIAModal() {
 
 async function lancerAnalyseIA(action, reponseUtilisateur) {
   const body = document.getElementById('iaModalBody');
-  const btnRow = document.querySelector('.ia-btn-row');
 
-  // Contexte projet complet
   const reunions = (projetActif.reunions || []).filter(r => r.fileName !== '_manual');
-  const contexte = 'Projet : "' + projetActif.nom + '"
-'
-    + (projetActif.description ? 'Description : ' + projetActif.description + '
-' : '')
-    + (projetActif.cadrage ? 'Cadrage : ' + projetActif.cadrage + '
-' : '')
-    + (reunions.length ? 'Réunions :
-' + reunions.map(r =>
-        r.titre + ' : ' + r.resume
-      ).join('
-') : '');
+  const lignesReunions = reunions.map(r => r.titre + ' : ' + (r.resume || '')).join(' | ');
+  const contexte = [
+    'Projet : ' + projetActif.nom,
+    projetActif.description ? 'Description : ' + projetActif.description : '',
+    projetActif.cadrage ? 'Cadrage : ' + projetActif.cadrage : '',
+    reunions.length ? 'Reunions : ' + lignesReunions : ''
+  ].filter(Boolean).join('. ');
 
-  const prompt = 'Tu es un assistant de gestion de projet. Analyse cette action et aide l'utilisateur.
-
-'
-    + 'Contexte du projet :
-' + contexte + '
-
-'
-    + 'Action à traiter : "' + action.quoi + '"
-'
-    + (action.qui ? 'Responsable : ' + action.qui + '
-' : '')
-    + (action.quand ? 'Échéance : ' + action.quand + '
-' : '')
-    + (reponseUtilisateur ? 'Information complémentaire fournie par l'utilisateur : ' + reponseUtilisateur + '
-' : '')
-    + '
-Tu dois décider comment aider :
-'
-    + '1. Si tu as besoin d'une information précise pour être vraiment utile (technologie, destinataire, contexte spécifique), pose UNE seule question courte.
-'
-    + '2. Si l'action implique de rédiger un document, email, message, brief ou contenu textuel → propose une rédaction.
-'
-    + '3. Si l'action est une tâche complexe à réaliser → décompose en 3-5 sous-tâches concrètes et actionnables.
-'
-    + (reponseUtilisateur ? 'L'utilisateur a déjà répondu à ta question, donc NE pose PAS de nouvelle question — génère directement le résultat.
-' : '')
-    + '
-Réponds UNIQUEMENT avec un JSON valide :
-'
-    + '{ "besoin_info": false, "type": "sous_taches", "items": [{"quoi": "Sous-tâche 1"}, ...] }
-'
-    + 'OU { "besoin_info": false, "type": "redaction", "label": "Email au client", "contenu": "Texte rédigé..." }
-'
-    + 'OU { "besoin_info": true, "question": "Ta question courte ici ?" }
-'
-    + 'Tout en français. JSON uniquement, sans markdown.';
+  const lignesPrompt = [
+    'Tu es un assistant de gestion de projet. Analyse cette action et aide utilisateur.',
+    'Contexte : ' + contexte,
+    'Action : ' + action.quoi,
+    action.qui ? 'Responsable : ' + action.qui : '',
+    action.quand ? 'Echeance : ' + action.quand : '',
+    reponseUtilisateur ? 'Info complementaire : ' + reponseUtilisateur : '',
+    'Decide comment aider :',
+    '1. Si besoin info precise, pose UNE question courte.',
+    '2. Si action implique rediger (email, brief, message) -> propose redaction.',
+    '3. Si tache complexe -> decompose en 3-5 sous-taches.',
+    reponseUtilisateur ? 'Utilisateur a repondu, NE pose PAS nouvelle question.' : '',
+    'Reponds UNIQUEMENT JSON valide :',
+    '{"besoin_info":false,"type":"sous_taches","items":[{"quoi":"Sous-tache 1"}]}',
+    'OU {"besoin_info":false,"type":"redaction","label":"Label","contenu":"Texte..."}',
+    'OU {"besoin_info":true,"question":"Ta question ?"}',
+    'Tout en francais. JSON uniquement sans markdown.'
+  ].filter(Boolean).join('\n');
 
   try {
     const res = await fetch('/api/project?action=ia_action&uid=' + encodeURIComponent(uid), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uid, prompt })
+      body: JSON.stringify({ uid, prompt: lignesPrompt })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
