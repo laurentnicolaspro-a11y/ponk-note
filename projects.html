@@ -534,6 +534,19 @@
     .ia-btn-secondary:hover { border-color:var(--cyan); color:var(--cyan); }
     .ia-loading { display:flex; align-items:center; gap:10px; padding:16px 0; color:var(--muted); font-size:13px; }
     .spinner-purple { width:16px; height:16px; border-radius:50%; border:2px solid rgba(124,77,255,0.2); border-top-color:var(--purple); animation:spin 0.8s linear infinite; flex-shrink:0; }
+    /* Boutons de choix IA */
+    .ia-choix-btn {
+      display:flex; align-items:center; gap:12px;
+      width:100%; padding:12px 14px; border-radius:10px;
+      background:rgba(124,77,255,0.07); border:1px solid rgba(124,77,255,0.18);
+      cursor:pointer; transition:all 0.15s; text-align:left;
+    }
+    .ia-choix-btn:hover { background:rgba(124,77,255,0.15); border-color:rgba(124,77,255,0.4); }
+    .ia-choix-icon { font-size:20px; flex-shrink:0; }
+    .ia-choix-body { flex:1; }
+    .ia-choix-titre { font-size:13px; font-weight:600; color:var(--text); margin-bottom:2px; }
+    .ia-choix-desc { font-size:11px; color:var(--muted); }
+
     /* Bouton IA sur action */
     .btn-ia {
       background:rgba(124,77,255,0.15); border:1px solid rgba(124,77,255,0.3);
@@ -1443,6 +1456,7 @@ let _iaFileName = null;
 let _iaActionIndex = null;
 let _iaSousTachesEnAttente = []; // sous-tâches sélectionnées à confirmer
 let _iaReponseDejaFournie = false;
+let _iaTypeChoisi = null; // sous_taches | redaction | questions
 
 function ouvrirIAModal(fileName, actionIndex) {
   _iaFileName = fileName;
@@ -1455,16 +1469,56 @@ function ouvrirIAModal(fileName, actionIndex) {
   if (!a) return;
 
   document.getElementById('iaModalAction').textContent = a.quoi;
-  document.getElementById('iaModalBody').innerHTML = `
-    <div class="ia-loading"><div class="spinner-purple"></div><span>Analyse en cours…</span></div>`;
   document.getElementById('iaModal').classList.add('active');
+  afficherChoixIA();
+}
 
+function afficherChoixIA() {
+  const body = document.getElementById('iaModalBody');
+  const btnRow = document.querySelector('#iaModal .ia-btn-row');
+  _iaTypeChoisi = null;
+  body.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px;margin:4px 0">
+      <button class="ia-choix-btn" onclick="choisirTypeIA('sous_taches')">
+        <span class="ia-choix-icon">📋</span>
+        <div class="ia-choix-body">
+          <div class="ia-choix-titre">Décomposer en sous-tâches</div>
+          <div class="ia-choix-desc">Diviser en étapes concrètes et actionnables</div>
+        </div>
+      </button>
+      <button class="ia-choix-btn" onclick="choisirTypeIA('redaction')">
+        <span class="ia-choix-icon">✍️</span>
+        <div class="ia-choix-body">
+          <div class="ia-choix-titre">Rédiger un contenu</div>
+          <div class="ia-choix-desc">Email, brief, message, compte-rendu…</div>
+        </div>
+      </button>
+      <button class="ia-choix-btn" onclick="choisirTypeIA('questions')">
+        <span class="ia-choix-icon">❓</span>
+        <div class="ia-choix-body">
+          <div class="ia-choix-titre">Questions à préparer</div>
+          <div class="ia-choix-desc">Liste de points à aborder ou à valider</div>
+        </div>
+      </button>
+    </div>`;
+  btnRow.innerHTML = `<button class="ia-btn ia-btn-secondary" onclick="fermerIAModal()">Annuler</button>`;
+}
+
+function choisirTypeIA(type) {
+  _iaTypeChoisi = type;
+  _iaReponseDejaFournie = false;
+  const r = projetActif.reunions.find(r => r.fileName === _iaFileName);
+  const a = r ? r.actions[_iaActionIndex] : null;
+  if (!a) return;
+  const body = document.getElementById('iaModalBody');
+  body.innerHTML = '<div class="ia-loading"><div class="spinner-purple"></div><span>Génération en cours…</span></div>';
+  document.querySelector('#iaModal .ia-btn-row').innerHTML = '';
   lancerAnalyseIA(a);
 }
 
 function fermerIAModal() {
   document.getElementById('iaModal').classList.remove('active');
-  _iaFileName = null; _iaActionIndex = null; _iaSousTachesEnAttente = []; _iaReponseDejaFournie = false;
+  _iaFileName = null; _iaActionIndex = null; _iaSousTachesEnAttente = []; _iaReponseDejaFournie = false; _iaTypeChoisi = null;
 }
 
 async function lancerAnalyseIA(action, reponseUtilisateur) {
@@ -1479,22 +1533,40 @@ async function lancerAnalyseIA(action, reponseUtilisateur) {
     reunions.length ? 'Reunions : ' + lignesReunions : ''
   ].filter(Boolean).join('. ');
 
+  // Prompt selon le type choisi par l'utilisateur
+  const typeLabel = { sous_taches: 'sous-taches', redaction: 'redaction', questions: 'questions' }[_iaTypeChoisi] || 'sous-taches';
+
+  const instructionsParType = {
+    sous_taches: [
+      'Decompose cette action en 3 a 5 sous-taches concretes et actionnables.',
+      reponseUtilisateur ? 'NE pose PAS de question, genere directement les sous-taches.' : 'Si tu as besoin d\'une info precise, pose UNE question courte. Sinon genere directement.',
+      'JSON attendu : {"besoin_info":false,"type":"sous_taches","items":[{"quoi":"Sous-tache 1"},{"quoi":"Sous-tache 2"}]}',
+    ],
+    redaction: [
+      'Redige un contenu textuel complet et pret a utiliser pour cette action (email, brief, message, compte-rendu selon le contexte).',
+      'Adapte le ton et le format au contexte du projet.',
+      reponseUtilisateur ? 'NE pose PAS de question, redige directement.' : 'Si destinataire ou format inconnu, pose UNE question courte. Sinon redige directement.',
+      'JSON attendu : {"besoin_info":false,"type":"redaction","label":"Type de contenu","contenu":"Texte complet ici..."}',
+    ],
+    questions: [
+      'Genere une liste de 5 a 8 questions pertinentes a preparer ou a valider pour realiser cette action.',
+      'Questions concretes, directement liees au contexte du projet.',
+      reponseUtilisateur ? 'NE pose PAS de question, genere directement la liste.' : 'Si contexte insuffisant, pose UNE question courte. Sinon genere directement.',
+      'JSON attendu : {"besoin_info":false,"type":"questions","items":[{"quoi":"Question 1 ?"},{"quoi":"Question 2 ?"}]}',
+    ]
+  };
+
+  const instructions = instructionsParType[_iaTypeChoisi] || instructionsParType.sous_taches;
+
   const lignesPrompt = [
-    'Tu es un assistant de gestion de projet. Analyse cette action et aide utilisateur.',
+    'Tu es un assistant de gestion de projet expert.',
     'Contexte : ' + contexte,
     'Action : ' + action.quoi,
     action.qui ? 'Responsable : ' + action.qui : '',
     action.quand ? 'Echeance : ' + action.quand : '',
     reponseUtilisateur ? 'Info complementaire : ' + reponseUtilisateur : '',
-    'Decide comment aider :',
-    '1. Si besoin info precise, pose UNE question courte.',
-    '2. Si action implique rediger (email, brief, message) -> propose redaction.',
-    '3. Si tache complexe -> decompose en 3-5 sous-taches.',
-    reponseUtilisateur ? 'Utilisateur a repondu, NE pose PAS nouvelle question.' : '',
-    'Reponds UNIQUEMENT JSON valide :',
-    '{"besoin_info":false,"type":"sous_taches","items":[{"quoi":"Sous-tache 1"}]}',
-    'OU {"besoin_info":false,"type":"redaction","label":"Label","contenu":"Texte..."}',
-    'OU {"besoin_info":true,"question":"Ta question ?"}',
+    ...instructions,
+    reponseUtilisateur ? 'IMPORTANT : Ne pose pas de nouvelle question, genere le resultat.' : '',
     'Tout en francais. JSON uniquement sans markdown.'
   ].filter(Boolean).join('\n');
 
@@ -1532,10 +1604,13 @@ function afficherResultatIA(result, action) {
     return;
   }
 
-  if (result.type === 'sous_taches') {
+  if (result.type === 'sous_taches' || result.type === 'questions') {
+    const isQuestions = result.type === 'questions';
+    const label = isQuestions ? 'Questions à préparer' : 'Sous-tâches proposées';
+    const btnLabel = isQuestions ? 'Ajouter comme sous-tâches' : 'Ajouter les sélectionnées';
     _iaSousTachesEnAttente = result.items.map((st, i) => ({ ...st, selected: true, idx: i }));
     body.innerHTML = `
-      <div class="ia-result-label">Sous-tâches proposées</div>
+      <div class="ia-result-label">${label}</div>
       <div class="ia-result-section" id="iaStList">
         ${_iaSousTachesEnAttente.map((st, i) => `
           <div class="ia-st-item" id="ia_st_${i}" onclick="toggleIASt(${i})">
@@ -1544,8 +1619,8 @@ function afficherResultatIA(result, action) {
           </div>`).join('')}
       </div>`;
     btnRow.innerHTML = `
-      <button class="ia-btn ia-btn-secondary" onclick="fermerIAModal()">Annuler</button>
-      <button class="ia-btn ia-btn-primary" onclick="confirmerSousTaches()">Ajouter les sélectionnées</button>`;
+      <button class="ia-btn ia-btn-secondary" onclick="afficherChoixIA()">← Retour</button>
+      <button class="ia-btn ia-btn-primary" onclick="confirmerSousTaches()">${btnLabel}</button>`;
     return;
   }
 
@@ -1554,7 +1629,7 @@ function afficherResultatIA(result, action) {
       <div class="ia-result-label">${result.label || 'Rédaction'}</div>
       <textarea class="ia-redaction-area" id="iaRedactionText">${result.contenu || ''}</textarea>`;
     btnRow.innerHTML = `
-      <button class="ia-btn ia-btn-secondary" onclick="fermerIAModal()">Fermer</button>
+      <button class="ia-btn ia-btn-secondary" onclick="afficherChoixIA()">← Retour</button>
       <button class="ia-btn ia-btn-primary" onclick="copierRedaction()">Copier</button>`;
     return;
   }
