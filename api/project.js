@@ -231,6 +231,50 @@ module.exports = async function handler(req, res) {
         project.reunions = project.reunions.filter(r => r.fileName !== changes.removeReunion);
       }
 
+      // Modifier une action existante — changes.actionEdit = { fileName, actionIndex, quoi, qui, quand }
+      if (changes.actionEdit) {
+        const { fileName, actionIndex, quoi, qui, quand } = changes.actionEdit;
+        const reunion = project.reunions.find(r => r.fileName === fileName);
+        if (reunion && reunion.actions[actionIndex] !== undefined) {
+          reunion.actions[actionIndex] = {
+            ...reunion.actions[actionIndex],
+            quoi: quoi || reunion.actions[actionIndex].quoi,
+            qui:  qui  !== undefined ? qui  : reunion.actions[actionIndex].qui,
+            quand: quand !== undefined ? quand : reunion.actions[actionIndex].quand
+          };
+        }
+      }
+
+      // Supprimer une action — changes.actionDelete = { fileName, actionIndex }
+      if (changes.actionDelete) {
+        const { fileName, actionIndex } = changes.actionDelete;
+        const reunion = project.reunions.find(r => r.fileName === fileName);
+        if (reunion) {
+          reunion.actions.splice(actionIndex, 1);
+        }
+      }
+
+      // Ajouter une action manuelle — changes.actionAdd = { quoi, qui, quand }
+      // Stockée dans une réunion virtuelle "_manual" ou dans la première réunion dispo
+      if (changes.actionAdd) {
+        const { quoi, qui, quand } = changes.actionAdd;
+        if (quoi) {
+          let manuelle = project.reunions.find(r => r.fileName === '_manual');
+          if (!manuelle) {
+            manuelle = {
+              fileName: '_manual',
+              titre: 'Actions manuelles',
+              date: new Date().toISOString(),
+              resume: '',
+              decisions: [],
+              actions: []
+            };
+            project.reunions.push(manuelle);
+          }
+          manuelle.actions.push({ quoi, qui: qui || '', quand: quand || '', done: false });
+        }
+      }
+
       project.updatedAt = new Date().toISOString();
       await supabasePut(path, project);
       return res.status(200).json({ project });
@@ -285,6 +329,104 @@ module.exports = async function handler(req, res) {
       await supabasePut(path, project);
 
       return res.status(200).json({ synthese });
+    }
+
+    // ── SUGGESTIONS — générer et cacher les suggestions IA ─────────────────
+    if (action === 'suggestions') {
+      const projectId = body.projectId;
+      if (!projectId) return res.status(400).json({ error: 'projectId requis' });
+
+      const path = `${projectsPrefix}proj-${projectId}.json`;
+      const project = await supabaseGet(path);
+      if (!project) return res.status(404).json({ error: 'Projet introuvable' });
+
+      const reunions = (project.reunions || []).filter(r => r.fileName !== '_manual');
+      if (!reunions.length) return res.status(200).json({ suggestions: [] });
+
+      // Contexte : résumés + actions existantes + décisions
+      const actionsExistantes = (project.reunions || [])
+        .flatMap(r => r.actions || [])
+        .map(a => a.quoi)
+        .filter(Boolean);
+
+      const contexteReunions = reunions.map((r, i) =>
+        `Réunion ${i+1} (${r.date ? new Date(r.date).toLocaleDateString('fr-FR') : ''}) — ${r.titre}:
+` +
+        `${r.resume || ''}
+` +
+        (r.decisions?.length ? `Décisions : ${r.decisions.join(', ')}
+` : '') +
+        (r.actions?.length   ? `Actions déjà identifiées : ${r.actions.map(a => a.quoi).join(', ')}` : '')
+      ).join('
+
+');
+
+      const cadrageBlock = project.cadrage ? `Cadrage du projet :
+${project.cadrage}
+
+` : '';
+
+      const prompt = `Tu es un assistant de gestion de projet. Analyse ce projet et ses réunions, puis suggère des actions concrètes manquantes.
+
+Projet : "${project.nom}"
+${cadrageBlock}Réunions :
+${contexteReunions}
+
+${actionsExistantes.length ? `Actions déjà présentes (ne pas redire) :
+${actionsExistantes.map(a => '- ' + a).join('
+')}
+
+` : ''}
+
+Génère 3 à 5 suggestions d'actions concrètes et spécifiques qui semblent manquantes ou nécessaires pour faire avancer ce projet. Chaque suggestion doit avoir une raison claire.
+
+Réponds UNIQUEMENT avec un JSON valide :
+[
+  {
+    "quoi": "Action concrète à faire",
+    "qui": "Prénom si évident sinon chaîne vide",
+    "quand": "Délai si évident sinon chaîne vide",
+    "pourquoi": "Courte explication (1 phrase) pourquoi cette action est nécessaire"
+  }
+]
+
+Règles :
+- Actions concrètes et actionnables, pas des généralités
+- Ne pas répéter les actions déjà existantes
+- Maximum 5 suggestions
+- Tout en français
+- JSON uniquement, sans markdown`;
+
+      const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+      let suggestions = [];
+
+      for (const model of GEMINI_MODELS) {
+        try {
+          const geminiRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,
+            { method:'POST', headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] }) }
+          );
+          if (!geminiRes.ok) continue;
+          const gData = await geminiRes.json();
+          const raw = gData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+          const clean = raw.replace(/```json|```/g, '').trim();
+          suggestions = JSON.parse(clean);
+          if (Array.isArray(suggestions) && suggestions.length) break;
+        } catch(e) {
+          console.warn('[suggestions] model failed:', e.message);
+        }
+      }
+
+      if (!Array.isArray(suggestions)) suggestions = [];
+
+      // Sauvegarder dans le projet
+      project.suggestions = suggestions;
+      project.suggestionsGeneratedAt = new Date().toISOString();
+      project.updatedAt = new Date().toISOString();
+      await supabasePut(path, project);
+
+      return res.status(200).json({ suggestions });
     }
 
     // ── DELETE — supprimer un projet ─────────────────────────────────────────
