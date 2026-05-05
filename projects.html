@@ -849,6 +849,7 @@ async function ouvrirProjet(id) {
 
 function retourListe() {
   projetActif = null;
+  _filtrePersonne = null;
   document.getElementById('viewDetail').style.display = 'none';
   document.getElementById('viewListe').style.display = 'block';
   document.querySelector('.content')?.classList.remove('detail-active');
@@ -1099,7 +1100,7 @@ function renderMetrics(project) {
     </div>
     <div class="metric-right">
       <div class="metric-right-label">Deadline</div>
-      <div class="metric-right-val ${deadlineSub.includes('dépassés') ? 'red' : 'amber'}" style="font-size:14px">${deadlineVal}</div>
+      <div class="metric-right-val ${deadlineSub.includes('dépassés') ? 'red' : 'amber'}">${deadlineVal}</div>
       <div class="metric-right-sub">${deadlineSub || 'Non définie'}</div>
     </div>`;
 }
@@ -1116,10 +1117,11 @@ function renderParPersonne(reunions) {
     return;
   }
 
-  // Grouper par personne
+  // Grouper par personne — "Non assigné" pour les actions sans qui
+  const ANON = '_anon_';
   const map = {};
   toutes.forEach(a => {
-    const key = (a.qui && a.qui.trim()) ? a.qui.trim() : '—';
+    const key = (a.qui && a.qui.trim()) ? a.qui.trim() : ANON;
     if (!map[key]) map[key] = { total: 0, done: 0 };
     map[key].total++;
     if (a.done) map[key].done++;
@@ -1129,20 +1131,29 @@ function renderParPersonne(reunions) {
 
   const COLORS = ['#4a7fd4','#00dcff','#3db87a','#e07a30','#8a55d4','#d45580','#30a8d4'];
   let ci = 0;
-  const rows = Object.entries(map)
-    .sort((a, b) => b[1].total - a[1].total)
-    .map(([nom, v]) => {
-      const pct = Math.round((v.total / maxTotal) * 100);
-      const doneFull = v.done === v.total && v.total > 0;
-      const color = COLORS[ci++ % COLORS.length];
-      const initiale = nom !== '—' ? nom[0].toUpperCase() : '?';
-      return `<div class="pers-row">
-        <div class="pers-avatar" style="background:${color}22;color:${color};border-color:${color}44">${initiale}</div>
-        <div class="pers-name">${nom}</div>
-        <div class="pers-track"><div class="pers-fill ${doneFull ? 'done-full' : ''}" style="width:${pct}%;background:${doneFull ? 'var(--green)' : color}"></div></div>
-        <div class="pers-count">${v.done}/${v.total}</div>
-      </div>`;
-    }).join('');
+
+  // Trier : personnes nommées d'abord (par total desc), non assigné en dernier
+  const entries = Object.entries(map).sort((a, b) => {
+    if (a[0] === ANON) return 1;
+    if (b[0] === ANON) return -1;
+    return b[1].total - a[1].total;
+  });
+
+  const rows = entries.map(([nom, v]) => {
+    const isAnon = nom === ANON;
+    const pct = Math.round((v.total / maxTotal) * 100);
+    const doneFull = v.done === v.total && v.total > 0;
+    const color = isAnon ? '#444860' : COLORS[ci++ % COLORS.length];
+    const initiale = isAnon ? '?' : nom[0].toUpperCase();
+    const label = isAnon ? 'Non assigné' : nom;
+    const isActive = _filtrePersonne === nom;
+    return `<div class="pers-row" style="${isAnon ? 'opacity:0.55' : ''};cursor:pointer;${isActive ? 'border-color:' + color + ';background:' + color + '11' : ''}" onclick="filtrerParPersonne('${nom.replace(/'/g,"\\'")}')">
+      <div class="pers-avatar" style="background:${color}22;color:${color};border-color:${color}44">${initiale}</div>
+      <div class="pers-name" style="${isAnon ? 'font-style:italic' : ''}${isActive ? ';color:' + color + ';font-weight:600' : ''}">${label}</div>
+      <div class="pers-track"><div class="pers-fill ${doneFull ? 'done-full' : ''}" style="width:${pct}%;background:${doneFull ? 'var(--green)' : color}"></div></div>
+      <div class="pers-count">${v.done}/${v.total}</div>
+    </div>`;
+  }).join('');
 
   container.innerHTML = rows;
   section.style.display = 'block';
@@ -1233,6 +1244,18 @@ function renderActions(reunions) {
     });
   });
 
+  // Tri : si filtre actif, actions de cette personne en premier
+  if (_filtrePersonne) {
+    const ANON = '_anon_';
+    toutes.sort((a, b) => {
+      const aMatch = _filtrePersonne === ANON ? !(a.qui && a.qui.trim()) : (a.qui || '').trim() === _filtrePersonne;
+      const bMatch = _filtrePersonne === ANON ? !(b.qui && b.qui.trim()) : (b.qui || '').trim() === _filtrePersonne;
+      if (aMatch && !bMatch) return -1;
+      if (!aMatch && bMatch) return 1;
+      return 0;
+    });
+  }
+
   const todo = toutes.filter(a => !a.done);
   const done = toutes.filter(a => a.done);
   const count = `${done.length}/${toutes.length} faite${done.length > 1 ? 's' : ''}`;
@@ -1278,9 +1301,20 @@ async function toggleAction(fileName, actionIndex) {
   } catch(e) { showToast('Erreur : ' + e.message); }
 }
 
+// ── Filtre par personne ──────────────────────────────────────────────────────
+function filtrerParPersonne(nom) {
+  // Toggle : re-clic sur la même personne annule le filtre
+  _filtrePersonne = (_filtrePersonne === nom) ? null : nom;
+  if (projetActif) {
+    renderParPersonne(projetActif.reunions || []);
+    renderActions(projetActif.reunions || []);
+  }
+}
+
 // ── Modal action (ajout / édition) ────────────────────────────────────────────
 let _editFileName = null;
 let _editActionIndex = null;
+let _filtrePersonne = null; // nom filtré ou null
 
 function ouvrirActionModal(fileName, actionIndex) {
   _editFileName = fileName ?? null;
@@ -1429,8 +1463,11 @@ async function creerProjet() {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatDate(str) {
   if (!str) return '';
-  try { return new Date(str).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}); }
-  catch { return str; }
+  try {
+    const d = new Date(str);
+    if (isNaN(d)) return str;
+    return d.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+  } catch { return str; }
 }
 
 function showToast(msg) {
