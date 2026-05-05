@@ -146,19 +146,84 @@
     .empty p { font-size:15px; line-height:1.7; }
 
     /* ── Vue détail projet ── */
-    .detail-header { margin-bottom:20px; }
+    /* Layout 3 colonnes desktop */
+    #viewDetail {
+      display:none;
+      animation:slideRight 0.3s ease;
+    }
     .detail-back {
-      display:flex; align-items:center; gap:8px; margin-bottom:16px;
+      display:flex; align-items:center; gap:8px; margin-bottom:14px;
       background:none; border:none; color:var(--cyan-dim); cursor:pointer;
       font-family:var(--font-display); font-size:11px; letter-spacing:0.5px;
-      padding:0; transition:color 0.2s;
+      padding:0; transition:color 0.2s; position:relative; z-index:2;
     }
     .detail-back:hover { color:var(--cyan); }
-    .detail-nom {
-      font-family:var(--font-display); font-size:18px; font-weight:700;
-      color:var(--text); margin-bottom:6px; letter-spacing:0.5px;
+    .detail-3col {
+      display:grid;
+      grid-template-columns: 260px 1fr 220px;
+      gap:0;
+      min-height:calc(100vh - 120px);
+      margin:0 -20px;
     }
-    .detail-desc { font-size:13px; color:var(--muted); margin-bottom:12px; line-height:1.5; }
+    .col-left {
+      background:rgba(124,77,255,0.04);
+      border-right:1px solid rgba(124,77,255,0.12);
+      padding:20px 16px;
+      position:sticky; top:70px; height:calc(100vh - 120px);
+      overflow-y:auto;
+    }
+    .col-center {
+      padding:20px 24px;
+      overflow-y:auto;
+    }
+    .col-right {
+      background:rgba(0,212,255,0.03);
+      border-left:1px solid rgba(0,212,255,0.1);
+      padding:20px 16px;
+      position:sticky; top:70px; height:calc(100vh - 120px);
+      overflow-y:auto;
+    }
+    /* Scrollbar fine dans les colonnes */
+    .col-left::-webkit-scrollbar, .col-right::-webkit-scrollbar { width:3px; }
+    .col-left::-webkit-scrollbar-thumb { background:rgba(124,77,255,0.2); border-radius:2px; }
+    .col-right::-webkit-scrollbar-thumb { background:rgba(0,212,255,0.15); border-radius:2px; }
+
+    .detail-nom {
+      font-family:var(--font-display); font-size:17px; font-weight:700;
+      color:var(--text); margin-bottom:5px; letter-spacing:0.5px;
+    }
+    .detail-desc { font-size:12px; color:var(--muted); margin-bottom:12px; line-height:1.5; }
+    .detail-header { margin-bottom:0; }
+
+    /* Barre progression sous titre */
+    .progress-bar-wrap { margin-bottom:16px; }
+    .progress-bar-labels { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-bottom:5px; }
+    .progress-bar-track { height:3px; background:rgba(255,255,255,0.07); border-radius:2px; }
+    .progress-bar-fill { height:100%; background:var(--green); border-radius:2px; transition:width 0.4s ease; }
+
+    /* Réunions verticales (droite) */
+    .reunion-row {
+      display:flex; align-items:flex-start; gap:8px;
+      padding:10px 11px; margin-bottom:6px;
+      background:rgba(4,10,30,0.5); border:1px solid var(--cyan-border);
+      border-radius:8px; cursor:pointer; transition:all 0.15s;
+    }
+    .reunion-row:hover { border-color:var(--cyan-border-hi); background:var(--bg-card2); }
+    .reunion-row-bullet { width:5px; height:5px; border-radius:50%; background:var(--cyan); opacity:0.4; flex-shrink:0; margin-top:5px; }
+    .reunion-row-body { flex:1; min-width:0; }
+    .reunion-row-date  { font-size:9px; color:var(--muted); margin-bottom:2px; font-family:var(--font-display); letter-spacing:0.3px; }
+    .reunion-row-titre { font-size:12px; color:var(--text); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .reunion-row-nb    { font-size:9px; color:rgba(180,220,255,0.3); margin-top:2px; }
+
+    /* Metric dans col-right */
+    .metric-right { margin-bottom:14px; }
+    .metric-right-label { font-family:var(--font-display); font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--cyan-dim); margin-bottom:4px; }
+    .metric-right-val { font-family:var(--font-display); font-size:19px; font-weight:700; color:var(--text); line-height:1; }
+    .metric-right-val.green { color:var(--green); }
+    .metric-right-val.amber { color:#ffb400; }
+    .metric-right-val.red   { color:var(--danger); }
+    .metric-right-sub { font-size:10px; color:var(--muted); margin-top:3px; }
+    .col-sep { height:1px; background:rgba(0,212,255,0.08); margin:14px 0; }
 
     /* Statut selector */
     .statut-selector { display:flex; gap:6px; margin-bottom:20px; }
@@ -517,74 +582,94 @@
   <!-- ── Vue détail ── -->
   <div id="viewDetail">
     <button class="detail-back" onclick="retourListe()">← Projets</button>
-    <div class="detail-header">
-      <div class="detail-nom" id="detailNom">—</div>
-      <div class="detail-desc" id="detailDesc"></div>
-      <div class="statut-selector" id="statutSelector">
-        <button class="statut-btn s-en_cours" data-statut="en_cours" onclick="changerStatut('en_cours')">En cours</button>
-        <button class="statut-btn s-termine"  data-statut="termine"  onclick="changerStatut('termine')">Terminé</button>
-        <button class="statut-btn s-en_pause" data-statut="en_pause" onclick="changerStatut('en_pause')">En pause</button>
-      </div>
-    </div>
 
-    <!-- Métriques -->
-    <div class="metrics-grid" id="metricsGrid"></div>
+    <div class="detail-3col">
 
-    <!-- Carousel réunions -->
-    <div class="carousel-wrap">
-      <div class="section-title">Réunions rattachées</div>
-      <div class="carousel-scroll" id="carouselScroll"></div>
-    </div>
-
-    <!-- Synthèse IA -->
-    <div class="synthese-card">
-      <div class="synthese-header">
-        <div class="synthese-label">
-          <div class="synthese-dot"></div>
-          Synthèse IA
-        </div>
-        <button onclick="regenererSynthese()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;font-family:var(--font-display);letter-spacing:0.3px" id="btnRegen">↻ Actualiser</button>
-      </div>
-      <div id="syntheseContent">
-        <div class="synthese-loading">
-          <div class="spinner-sm"></div>
-          <span>Génération en cours…</span>
+      <!-- ── Colonne gauche : Suggestions IA ── -->
+      <div class="col-left">
+        <div class="suggestions-card" id="suggestionsCard" style="background:none;border:none;padding:0;margin:0">
+          <div class="suggestions-header">
+            <div class="suggestions-label">
+              <div class="suggestions-dot"></div>
+              Suggestions IA
+            </div>
+            <button onclick="regenererSuggestions()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;font-family:var(--font-display);letter-spacing:0.3px" id="btnRegenSugg">↻</button>
+          </div>
+          <div id="suggestionsContent">
+            <div class="synthese-loading">
+              <div class="spinner-sm" style="border-color:rgba(0,212,255,0.2);border-top-color:var(--cyan)"></div>
+              <span>Analyse en cours…</span>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Actions par personne -->
-    <div class="pers-section" id="persSection" style="display:none">
-      <div class="actions-label">
-        Par personne
-      </div>
-      <div id="persList"></div>
-    </div>
-
-    <!-- Actions à faire -->
-    <div class="actions-section">
-      <div class="actions-label">
-        Actions
-        <span class="actions-count" id="actionsCount"></span>
-      </div>
-      <div id="actionsList"></div>
-    </div>
-
-    <!-- Suggestions IA -->
-    <div class="suggestions-card" id="suggestionsCard" style="display:none">
-      <div class="suggestions-header">
-        <div class="suggestions-label">
-          <div class="suggestions-dot"></div>
-          Suggestions IA
+      <!-- ── Colonne centre : titre + synthèse + actions ── -->
+      <div class="col-center">
+        <div class="detail-header">
+          <div class="detail-nom" id="detailNom">—</div>
+          <div class="detail-desc" id="detailDesc"></div>
+          <div class="statut-selector" id="statutSelector">
+            <button class="statut-btn s-en_cours" data-statut="en_cours" onclick="changerStatut('en_cours')">En cours</button>
+            <button class="statut-btn s-termine"  data-statut="termine"  onclick="changerStatut('termine')">Terminé</button>
+            <button class="statut-btn s-en_pause" data-statut="en_pause" onclick="changerStatut('en_pause')">En pause</button>
+          </div>
         </div>
-        <button onclick="regenererSuggestions()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;font-family:var(--font-display);letter-spacing:0.3px" id="btnRegenSugg">↻ Actualiser</button>
-      </div>
-      <div id="suggestionsContent">
-        <div class="synthese-loading">
-          <div class="spinner-sm" style="border-color:rgba(0,212,255,0.2);border-top-color:var(--cyan)"></div>
-          <span>Analyse en cours…</span>
+
+        <!-- Barre de progression -->
+        <div class="progress-bar-wrap" id="progressBarWrap">
+          <div class="progress-bar-labels">
+            <span>Avancement</span><span id="progressBarPct" style="color:var(--green)">—</span>
+          </div>
+          <div class="progress-bar-track"><div class="progress-bar-fill" id="progressBarFill" style="width:0%"></div></div>
+        </div>
+
+        <!-- Synthèse IA -->
+        <div class="synthese-card">
+          <div class="synthese-header">
+            <div class="synthese-label">
+              <div class="synthese-dot"></div>
+              Synthèse IA
+            </div>
+            <button onclick="regenererSynthese()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;font-family:var(--font-display);letter-spacing:0.3px" id="btnRegen">↻ Actualiser</button>
+          </div>
+          <div id="syntheseContent">
+            <div class="synthese-loading">
+              <div class="spinner-sm"></div>
+              <span>Génération en cours…</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions par personne -->
+        <div class="pers-section" id="persSection" style="display:none">
+          <div class="actions-label">Par personne</div>
+          <div id="persList"></div>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions-section">
+          <div class="actions-label">
+            Actions
+            <span class="actions-count" id="actionsCount"></span>
+          </div>
+          <div id="actionsList"></div>
+        </div>
+
+        <!-- Danger zone -->
+        <div class="danger-zone">
+          <button class="btn-delete-projet" onclick="supprimerProjet()">🗑 Supprimer ce projet</button>
         </div>
       </div>
+
+      <!-- ── Colonne droite : métriques + réunions ── -->
+      <div class="col-right">
+        <div id="metricsRight"></div>
+        <div class="col-sep"></div>
+        <div class="section-title" style="margin-bottom:10px">Réunions</div>
+        <div id="reunionsList"></div>
+      </div>
+
     </div>
 
     <!-- Modal ajout/edit action -->
@@ -599,11 +684,6 @@
         <button class="btn-save-action" id="btnSaveAction" onclick="sauvegarderAction()">Enregistrer</button>
         <button class="modal-close-btn" onclick="fermerActionModal()">Annuler</button>
       </div>
-    </div>
-
-    <!-- Danger zone -->
-    <div class="danger-zone">
-      <button class="btn-delete-projet" onclick="supprimerProjet()">🗑 Supprimer ce projet</button>
     </div>
   </div>
 </div>
@@ -747,8 +827,9 @@ async function ouvrirProjet(id) {
   // Métriques
   renderMetrics(project);
 
-  // Carousel
+  // Carousel (conservé pour compatibilité drawer) + liste colonne droite
   renderCarousel(project.reunions || []);
+  renderReunionsList(project.reunions || []);
 
   // Actions par personne
   renderParPersonne(project.reunions || []);
@@ -854,11 +935,14 @@ async function afficherSuggestions(project) {
   const card = document.getElementById('suggestionsCard');
   const el   = document.getElementById('suggestionsContent');
 
+  const colLeft = document.querySelector('.col-left');
   if (!project.reunions || !project.reunions.filter(r => r.fileName !== '_manual').length) {
     card.style.display = 'none';
+    if (colLeft) colLeft.style.display = 'none';
     return;
   }
   card.style.display = 'block';
+  if (colLeft) colLeft.style.display = 'block';
 
   // Cache : suggestions valides si générées après la dernière mise à jour
   if (project.suggestions && project.suggestionsGeneratedAt) {
@@ -991,21 +1075,28 @@ function renderMetrics(project) {
     }
   }
 
-  document.getElementById('metricsGrid').innerHTML = `
-    <div class="metric-card">
-      <div class="metric-label">Avancement</div>
-      <div class="metric-val ${accentPct}">${total ? pct + '%' : '—'}</div>
-      <div class="metric-sub">${total ? done + ' action' + (done > 1 ? 's' : '') + ' sur ' + total : 'Aucune action'}</div>
+  // Barre de progression (colonne centre)
+  const fill = document.getElementById('progressBarFill');
+  const pctEl = document.getElementById('progressBarPct');
+  if (fill) { fill.style.width = (total ? pct : 0) + '%'; }
+  if (pctEl) {
+    pctEl.textContent = total ? pct + '%' : '—';
+    pctEl.style.color = pct >= 80 ? 'var(--green)' : pct >= 40 ? '#ffb400' : total ? 'var(--danger)' : 'var(--muted)';
+  }
+
+  // Métriques colonne droite
+  const mr = document.getElementById('metricsRight');
+  if (!mr) return;
+  mr.innerHTML = `
+    <div class="metric-right">
+      <div class="metric-right-label">Avancement</div>
+      <div class="metric-right-val ${accentPct}">${total ? pct + '%' : '—'}</div>
+      <div class="metric-right-sub">${total ? done + ' / ' + total + ' actions' : 'Aucune action'}</div>
     </div>
-    <div class="metric-card">
-      <div class="metric-label">Réunions</div>
-      <div class="metric-val">${reunions.length}</div>
-      <div class="metric-sub">${derniereStr || 'Aucune encore'}</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label">Deadline</div>
-      <div class="metric-val" style="font-size:15px">${deadlineVal}</div>
-      <div class="metric-sub">${deadlineSub || 'Non définie'}</div>
+    <div class="metric-right">
+      <div class="metric-right-label">Deadline</div>
+      <div class="metric-right-val ${deadlineSub.includes('dépassés') ? 'red' : 'amber'}" style="font-size:14px">${deadlineVal}</div>
+      <div class="metric-right-sub">${deadlineSub || 'Non définie'}</div>
     </div>`;
 }
 
@@ -1046,6 +1137,29 @@ function renderParPersonne(reunions) {
 
   container.innerHTML = rows;
   section.style.display = 'block';
+}
+
+function renderReunionsList(reunions) {
+  const container = document.getElementById('reunionsList');
+  if (!container) return;
+  const vraies = reunions.filter(r => r.fileName !== '_manual');
+  if (!vraies.length) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:12px;font-style:italic">Aucune réunion</div>';
+    return;
+  }
+  container.innerHTML = vraies.map((r, i) => {
+    const nbActions = (r.actions || []).length;
+    const nbDecisions = (r.decisions || []).length;
+    const meta = [nbActions ? nbActions + ' action' + (nbActions > 1 ? 's' : '') : '', nbDecisions ? nbDecisions + ' décision' + (nbDecisions > 1 ? 's' : '') : ''].filter(Boolean).join(' · ');
+    return `<div class="reunion-row" onclick="ouvrirDrawerReunion(${i})">
+      <div class="reunion-row-bullet"></div>
+      <div class="reunion-row-body">
+        <div class="reunion-row-date">${formatDate(r.date)}</div>
+        <div class="reunion-row-titre">${r.titre || 'Réunion sans titre'}</div>
+        ${meta ? '<div class="reunion-row-nb">' + meta + '</div>' : ''}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function renderCarousel(reunions) {
