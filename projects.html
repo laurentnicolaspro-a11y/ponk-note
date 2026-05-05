@@ -395,7 +395,7 @@
     .action-item:hover { background:var(--bg-card2); border-color:var(--cyan-border-hi); }
     .action-item.done { opacity:0.4; }
     .action-item { position:relative; }
-    .action-btns { display:none; } /* masqué — dans le détail maintenant */
+    .action-btns { display:none; }
     .action-btn-sm {
       background:none; border:1px solid var(--cyan-border); border-radius:6px;
       color:var(--muted); font-size:10px; padding:3px 7px; cursor:pointer;
@@ -458,18 +458,12 @@
     .action-quoi:hover { color:var(--cyan); }
     .action-item.done .action-quoi { text-decoration:line-through; }
     .action-meta { font-size:11px; color:var(--muted); margin-top:3px; display:flex; gap:8px; flex-wrap:wrap; }
-    /* Action étendue */
-    .action-quoi-row { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
-    .action-more-dot {
-      font-size:13px; color:rgba(0,212,255,0.35); cursor:pointer; flex-shrink:0;
-      letter-spacing:2px; line-height:1.4; transition:color 0.15s; padding:0 2px;
-    }
-    .action-more-dot:hover { color:var(--cyan); }
-    .action-item.expanded .action-more-dot { color:var(--cyan); }
-    .action-detail { display:none; margin-top:8px; padding-top:8px; border-top:1px solid rgba(0,212,255,0.08); }
-    .action-item.expanded .action-detail { display:block; }
-    .action-item.expanded { border-color:rgba(0,212,255,0.2); background:rgba(0,212,255,0.03); }
-    .action-btns-detail { display:flex; gap:6px; margin-top:8px; }
+    /* Boutons action au hover */
+    .action-btns-hover { display:flex; gap:6px; flex-shrink:0; opacity:0; transition:opacity 0.15s; align-items:flex-start; padding-top:1px; }
+    .action-item:hover .action-btns-hover { opacity:1; }
+    /* Sous-tâches toujours visibles */
+    .action-detail { display:block; margin-top:6px; }
+    .action-source-line { font-size:10px; color:rgba(180,220,255,0.25); margin-top:2px; }
     .action-qui { color:var(--cyan); font-weight:500; }
     .action-quand { color:#ffb400; }
     .action-source { color:rgba(180,220,255,0.3); font-style:italic; }
@@ -1456,33 +1450,22 @@ function renderActions(reunions) {
       </div>
       <div class="st-count">${stDone}/${sts.length} sous-tâche${sts.length > 1 ? 's' : ''}</div>` : '';
     const aId = 'act_' + a._fileName.replace(/[^a-z0-9]/gi,'_') + '_' + a._actionIndex;
-    const hasMore = sts.length > 0 || !!a._reunionTitre;
     return `
     <div class="action-item ${a.done ? 'done' : ''}" id="${aId}">
       <div class="action-cb" onclick="event.stopPropagation();toggleAction('${a._fileName}', ${a._actionIndex})">${a.done ? '✓' : ''}</div>
       <div class="action-body">
-        <div class="action-quoi-row">
-          <div class="action-quoi">${a.quoi}</div>
-          ${hasMore ? `<span class="action-more-dot" onclick="event.stopPropagation();toggleExpandAction('${aId}')" title="Plus d'infos">···</span>` : ''}
-        </div>
+        <div class="action-quoi">${a.quoi}</div>
         <div class="action-meta">
           ${a.qui   ? `<span class="action-qui">👤 ${a.qui}</span>` : ''}
           ${a.quand ? `<span class="action-quand">📅 ${a.quand}</span>` : ''}
-          ${a._reunionTitre ? `<span class="action-source">${a._reunionTitre}</span>` : ''}
         </div>
-        <div class="action-detail">
-          ${stHtml}
-          <div class="action-btns-detail">
-            <button class="btn-ia" onclick="event.stopPropagation();ouvrirIAModal('${a._fileName}', ${a._actionIndex})">✦ IA</button>
-            <button class="action-btn-sm" onclick="event.stopPropagation();ouvrirActionModal('${a._fileName}', ${a._actionIndex})">Éditer</button>
-            <button class="action-btn-sm danger" onclick="event.stopPropagation();supprimerAction('${a._fileName}', ${a._actionIndex})">✕</button>
-          </div>
-        </div>
-        ${!hasMore ? `<div class="action-btns-detail" style="margin-top:6px">
-            <button class="btn-ia" onclick="event.stopPropagation();ouvrirIAModal('${a._fileName}', ${a._actionIndex})">✦ IA</button>
-            <button class="action-btn-sm" onclick="event.stopPropagation();ouvrirActionModal('${a._fileName}', ${a._actionIndex})">Éditer</button>
-            <button class="action-btn-sm danger" onclick="event.stopPropagation();supprimerAction('${a._fileName}', ${a._actionIndex})">✕</button>
-          </div>` : ''}
+        ${a._reunionTitre ? `<div class="action-source-line">${a._reunionTitre}</div>` : ''}
+        <div class="action-detail">${stHtml}</div>
+      </div>
+      <div class="action-btns-hover">
+        <button class="btn-ia" onclick="ouvrirIAModal('${a._fileName}', ${a._actionIndex})">✦ IA</button>
+        <button class="action-btn-sm" onclick="ouvrirActionModal('${a._fileName}', ${a._actionIndex})">Éditer</button>
+        <button class="action-btn-sm danger" onclick="supprimerAction('${a._fileName}', ${a._actionIndex})">✕</button>
       </div>
     </div>`;
   }).join('') + btnAdd;
