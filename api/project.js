@@ -282,6 +282,32 @@ module.exports = async function handler(req, res) {
         }
       }
 
+      // Ajouter sous-tâches à une action — changes.sousTachesAdd = { fileName, actionIndex, items: [{quoi}] }
+      if (changes.sousTachesAdd) {
+        const { fileName, actionIndex, items } = changes.sousTachesAdd;
+        const reunion = project.reunions.find(r => r.fileName === fileName);
+        if (reunion && reunion.actions[actionIndex] !== undefined) {
+          if (!reunion.actions[actionIndex].sousTaches) reunion.actions[actionIndex].sousTaches = [];
+          (items || []).forEach(st => {
+            if (st.quoi) reunion.actions[actionIndex].sousTaches.push({ quoi: st.quoi, done: false });
+          });
+        }
+      }
+
+      // Cocher/décocher une sous-tâche — changes.sousTacheToggle = { fileName, actionIndex, sousTacheIndex }
+      if (changes.sousTacheToggle) {
+        const { fileName, actionIndex, sousTacheIndex } = changes.sousTacheToggle;
+        const reunion = project.reunions.find(r => r.fileName === fileName);
+        if (reunion && reunion.actions[actionIndex]?.sousTaches?.[sousTacheIndex] !== undefined) {
+          reunion.actions[actionIndex].sousTaches[sousTacheIndex].done =
+            !reunion.actions[actionIndex].sousTaches[sousTacheIndex].done;
+          // Auto-done parent si toutes sous-tâches cochées
+          const sts = reunion.actions[actionIndex].sousTaches;
+          if (sts.every(s => s.done)) reunion.actions[actionIndex].done = true;
+          else reunion.actions[actionIndex].done = false;
+        }
+      }
+
       project.updatedAt = new Date().toISOString();
       await supabasePut(path, project);
       return res.status(200).json({ project });
@@ -408,6 +434,36 @@ module.exports = async function handler(req, res) {
       await supabasePut(path, project);
 
       return res.status(200).json({ suggestions });
+    }
+
+    // ── IA_ACTION — analyser une action et proposer aide ────────────────────────
+    if (action === 'ia_action') {
+      const { prompt } = body;
+      if (!prompt) return res.status(400).json({ error: 'prompt requis' });
+
+      const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+      let result = null;
+
+      for (const model of GEMINI_MODELS) {
+        try {
+          const geminiRes = await fetch(
+            'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + process.env.GEMINI_API_KEY,
+            { method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
+          );
+          if (!geminiRes.ok) continue;
+          const gData = await geminiRes.json();
+          const raw = (gData.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+          const clean = raw.replace(/```json|```/g, '').trim();
+          result = JSON.parse(clean);
+          if (result) break;
+        } catch(e) {
+          console.warn('[ia_action] model failed:', e.message);
+        }
+      }
+
+      if (!result) return res.status(500).json({ error: 'IA indisponible' });
+      return res.status(200).json({ result });
     }
 
     // ── DELETE — supprimer un projet ─────────────────────────────────────────
