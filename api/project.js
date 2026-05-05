@@ -22,29 +22,45 @@ async function supabaseGet(path) {
 
 async function supabasePut(path, data) {
   const url = `${SUPABASE_URL}/storage/v1/object/audio/${path}`;
-  const res = await fetch(url, {
-    method: 'POST',
+  // Essayer PUT (upsert) — si 404 (objet inexistant), fallback POST (création)
+  let res = await fetch(url, {
+    method: 'PUT',
     headers: {
       'Authorization': `Bearer ${SUPABASE_KEY}`,
       'apikey': SUPABASE_KEY,
       'Content-Type': 'application/json',
       'x-upsert': 'true',
-      'cache-control': '3600'
+      'cache-control': 'no-cache'
     },
     body: JSON.stringify(data)
   });
+  if (res.status === 404) {
+    // Objet n'existe pas encore — créer avec POST
+    res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'apikey': SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'cache-control': 'no-cache'
+      },
+      body: JSON.stringify(data)
+    });
+  }
   if (!res.ok) throw new Error(`Supabase PUT failed ${res.status}: ${await res.text()}`);
   return true;
 }
 
 async function supabaseDelete(path) {
-  const url = `${SUPABASE_URL}/storage/v1/object/audio/${path}`;
+  const url = `${SUPABASE_URL}/storage/v1/object/audio`;
   const res = await fetch(url, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'apikey': SUPABASE_KEY
-    }
+      'apikey': SUPABASE_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ prefixes: [path] })
   });
   if (!res.ok && res.status !== 404) throw new Error(`Supabase DELETE failed ${res.status}`);
   return true;
