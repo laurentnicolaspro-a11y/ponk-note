@@ -232,44 +232,56 @@
 
     /* Suggestions IA */
     .suggestions-card {
-      background:rgba(0,212,255,0.04); border:1px solid rgba(0,212,255,0.2);
+      background:rgba(124,77,255,0.05); border:1px solid rgba(124,77,255,0.22);
       border-radius:12px; padding:16px; margin-bottom:16px;
     }
-    .suggestions-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .suggestions-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
     .suggestions-label {
       font-family:var(--font-display); font-size:9px; font-weight:700;
-      color:var(--cyan-dim); text-transform:uppercase; letter-spacing:1.5px;
+      color:var(--purple); text-transform:uppercase; letter-spacing:1.5px;
       display:flex; align-items:center; gap:6px;
     }
     .suggestions-dot {
-      width:6px; height:6px; border-radius:50%; background:var(--cyan);
-      box-shadow:0 0 6px rgba(0,212,255,0.5);
+      width:6px; height:6px; border-radius:50%; background:var(--purple);
+      box-shadow:0 0 6px var(--purple-dim); animation:pulse-dot 2s ease-in-out infinite;
     }
     .suggestion-item {
-      display:flex; align-items:flex-start; gap:10px;
-      padding:10px 12px; margin-bottom:6px;
-      background:rgba(0,212,255,0.06); border:1px solid rgba(0,212,255,0.15);
-      border-radius:9px; transition:all 0.15s;
+      display:flex; align-items:flex-start; gap:12px;
+      padding:12px 14px; margin-bottom:8px;
+      background:rgba(124,77,255,0.07); border:1px solid rgba(124,77,255,0.18);
+      border-left:3px solid rgba(124,77,255,0.5);
+      border-radius:0 9px 9px 0; transition:all 0.15s;
     }
+    .suggestion-item:hover { background:rgba(124,77,255,0.11); border-left-color:var(--purple); }
     .suggestion-item.dismissed { display:none; }
+    .suggestion-icon {
+      font-size:16px; flex-shrink:0; margin-top:1px; opacity:0.8;
+    }
     .suggestion-body { flex:1; min-width:0; }
-    .suggestion-quoi { font-size:13px; color:var(--text); line-height:1.4; margin-bottom:3px; }
-    .suggestion-why { font-size:11px; color:var(--muted); line-height:1.4; }
-    .suggestion-actions { display:flex; gap:6px; flex-shrink:0; }
+    .suggestion-quoi { font-size:13px; color:var(--text); line-height:1.4; margin-bottom:4px; font-weight:500; }
+    .suggestion-why {
+      font-size:11px; color:rgba(180,160,255,0.7); line-height:1.5;
+      font-style:italic;
+    }
+    .suggestion-actions { display:flex; flex-direction:column; gap:5px; flex-shrink:0; align-items:flex-end; }
     .btn-suggestion-add {
-      background:rgba(0,212,255,0.12); border:1px solid var(--cyan);
-      color:var(--cyan); border-radius:6px; font-size:10px; padding:4px 10px;
+      background:var(--purple); border:none;
+      color:#fff; border-radius:6px; font-size:10px; padding:5px 12px;
       cursor:pointer; font-family:var(--font-display); font-weight:700;
       letter-spacing:0.5px; white-space:nowrap; transition:all 0.15s;
+      box-shadow:0 0 10px var(--purple-dim);
     }
-    .btn-suggestion-add:hover { background:rgba(0,212,255,0.22); }
-    .btn-suggestion-add.added { background:rgba(0,229,160,0.1); border-color:var(--green); color:var(--green); cursor:default; }
+    .btn-suggestion-add:hover { background:#9060ff; box-shadow:0 0 16px rgba(124,77,255,0.5); }
+    .btn-suggestion-add.added {
+      background:rgba(0,229,160,0.15); border:1px solid var(--green);
+      color:var(--green); cursor:default; box-shadow:none;
+    }
     .btn-suggestion-dismiss {
-      background:none; border:1px solid var(--cyan-border); border-radius:6px;
-      color:var(--muted); font-size:10px; padding:4px 8px; cursor:pointer;
-      transition:all 0.15s; line-height:1;
+      background:none; border:none;
+      color:rgba(124,77,255,0.35); font-size:11px; padding:2px 4px; cursor:pointer;
+      transition:color 0.15s; line-height:1;
     }
-    .btn-suggestion-dismiss:hover { border-color:var(--danger); color:var(--danger); }
+    .btn-suggestion-dismiss:hover { color:var(--danger); }
 
     /* Carousel réunions */
     .carousel-wrap { margin-bottom:16px; }
@@ -894,15 +906,17 @@ function renderSuggestions(suggestions) {
     el.innerHTML = `<div style="color:var(--muted);font-size:13px;font-style:italic">Aucune suggestion — le projet semble complet.</div>`;
     return;
   }
+  const icons = ['✦','◈','⬡','◆','✧'];
   el.innerHTML = suggestions.map((s, i) => `
     <div class="suggestion-item" id="sugg_${i}">
+      <div class="suggestion-icon">${icons[i % icons.length]}</div>
       <div class="suggestion-body">
         <div class="suggestion-quoi">${s.quoi}</div>
         ${s.pourquoi ? `<div class="suggestion-why">${s.pourquoi}</div>` : ''}
       </div>
       <div class="suggestion-actions">
         <button class="btn-suggestion-add" id="sugg_btn_${i}" onclick="ajouterSuggestion(${i})">+ Ajouter</button>
-        <button class="btn-suggestion-dismiss" onclick="ignorerSuggestion(${i})" title="Ignorer">✕</button>
+        <button class="btn-suggestion-dismiss" onclick="ignorerSuggestion(${i})" title="Ignorer">ignorer</button>
       </div>
     </div>`).join('');
 }
