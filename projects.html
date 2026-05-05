@@ -75,6 +75,8 @@
 
     /* ── Content ── */
     .content { position:relative; z-index:1; max-width:720px; margin:0 auto; padding:20px 20px 0; }
+    /* Plein écran quand vue détail active */
+    .content.detail-active { max-width:100%; padding:20px 20px 0; }
 
     .section-title {
       font-family:var(--font-display); font-size:9px; font-weight:700;
@@ -815,6 +817,7 @@ async function ouvrirProjet(id) {
   document.getElementById('viewListe').style.display = 'none';
   document.getElementById('viewDetail').style.display = 'block';
   document.getElementById('viewDetail').style.animation = 'slideRight 0.3s ease';
+  document.querySelector('.content')?.classList.add('detail-active');
 
   document.getElementById('detailNom').textContent = project.nom;
   document.getElementById('detailDesc').textContent = project.description || '';
@@ -848,6 +851,7 @@ function retourListe() {
   projetActif = null;
   document.getElementById('viewDetail').style.display = 'none';
   document.getElementById('viewListe').style.display = 'block';
+  document.querySelector('.content')?.classList.remove('detail-active');
   chargerProjets();
 }
 
@@ -1164,6 +1168,7 @@ function renderReunionsList(reunions) {
 
 function renderCarousel(reunions) {
   const scroll = document.getElementById('carouselScroll');
+  if (!scroll) return;
   if (!reunions.length) {
     scroll.innerHTML = `<div class="reunion-card-empty">Aucune réunion rattachée</div>`;
     return;
