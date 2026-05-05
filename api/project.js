@@ -202,6 +202,7 @@ module.exports = async function handler(req, res) {
       });
 
       project.updatedAt = new Date().toISOString();
+      project.reunionsUpdatedAt = new Date().toISOString(); // invalidera synthèse + suggestions
       await supabasePut(path, project);
       return res.status(200).json({ project });
     }
