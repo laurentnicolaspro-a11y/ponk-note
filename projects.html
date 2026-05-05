@@ -1518,7 +1518,7 @@ function afficherResultatIA(result, action) {
   if (result.besoin_info) {
     // Si _iaReponseDejaFournie est set, Gemini boucle — on force sous-tâches vides avec message
     if (_iaReponseDejaFournie) {
-      body.innerHTML = '<div style="color:var(--muted);font-size:13px;font-style:italic">L'IA n'a pas pu générer de résultat avec les informations fournies. Essayez de reformuler l'action.</div>';
+      body.innerHTML = '<div style="color:var(--muted);font-size:13px;font-style:italic">L\'IA n\'a pas pu g\'en\'erer de r\'esultat. Reformulez l\'action.</div>';
       return;
     }
     // Afficher la question
