@@ -541,23 +541,6 @@
       </div>
     </div>
 
-    <!-- Suggestions IA -->
-    <div class="suggestions-card" id="suggestionsCard" style="display:none">
-      <div class="suggestions-header">
-        <div class="suggestions-label">
-          <div class="suggestions-dot"></div>
-          Suggestions IA
-        </div>
-        <button onclick="regenererSuggestions()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;font-family:var(--font-display);letter-spacing:0.3px" id="btnRegenSugg">↻ Actualiser</button>
-      </div>
-      <div id="suggestionsContent">
-        <div class="synthese-loading">
-          <div class="spinner-sm" style="border-color:rgba(0,212,255,0.2);border-top-color:var(--cyan)"></div>
-          <span>Analyse en cours…</span>
-        </div>
-      </div>
-    </div>
-
     <!-- Actions par personne -->
     <div class="pers-section" id="persSection" style="display:none">
       <div class="actions-label">
@@ -573,6 +556,23 @@
         <span class="actions-count" id="actionsCount"></span>
       </div>
       <div id="actionsList"></div>
+    </div>
+
+    <!-- Suggestions IA -->
+    <div class="suggestions-card" id="suggestionsCard" style="display:none">
+      <div class="suggestions-header">
+        <div class="suggestions-label">
+          <div class="suggestions-dot"></div>
+          Suggestions IA
+        </div>
+        <button onclick="regenererSuggestions()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;font-family:var(--font-display);letter-spacing:0.3px" id="btnRegenSugg">↻ Actualiser</button>
+      </div>
+      <div id="suggestionsContent">
+        <div class="synthese-loading">
+          <div class="spinner-sm" style="border-color:rgba(0,212,255,0.2);border-top-color:var(--cyan)"></div>
+          <span>Analyse en cours…</span>
+        </div>
+      </div>
     </div>
 
     <!-- Modal ajout/edit action -->
@@ -775,15 +775,24 @@ async function changerStatut(statut) {
   } catch(e) { showToast('Erreur : ' + e.message); }
 }
 
+// ── Helpers cache ────────────────────────────────────────────────────────────
+function getLastReunionDate(project) {
+  const dates = (project.reunions || [])
+    .filter(r => r.fileName !== '_manual' && r.date)
+    .map(r => new Date(r.date))
+    .filter(d => !isNaN(d));
+  return dates.length ? new Date(Math.max(...dates)) : null;
+}
+
 // ── Synthèse IA ───────────────────────────────────────────────────────────────
 async function afficherSynthese(project) {
   const el = document.getElementById('syntheseContent');
 
-  // Cache : si synthèse existante et projet pas mis à jour depuis
-  if (project.synthese && project.syntheseGeneratedAt && project.updatedAt) {
+  if (project.synthese && project.syntheseGeneratedAt) {
     const syntheseDate = new Date(project.syntheseGeneratedAt);
-    const updateDate   = new Date(project.updatedAt);
-    if (syntheseDate >= updateDate) {
+    const lastReunion  = getLastReunionDate(project);
+    // Cache valide si généré après la dernière réunion (ou aucune réunion)
+    if (!lastReunion || syntheseDate >= lastReunion) {
       el.innerHTML = `<div class="synthese-text">${project.synthese}</div>`;
       return;
     }
@@ -840,10 +849,11 @@ async function afficherSuggestions(project) {
   card.style.display = 'block';
 
   // Cache : suggestions valides si générées après la dernière mise à jour
-  if (project.suggestions && project.suggestionsGeneratedAt && project.updatedAt) {
-    const suggDate   = new Date(project.suggestionsGeneratedAt);
-    const updateDate = new Date(project.updatedAt);
-    if (suggDate >= updateDate) {
+  if (project.suggestions && project.suggestionsGeneratedAt) {
+    const suggDate    = new Date(project.suggestionsGeneratedAt);
+    const lastReunion = getLastReunionDate(project);
+    // Valide si généré après la dernière réunion
+    if (!lastReunion || suggDate >= lastReunion) {
       renderSuggestions(project.suggestions);
       return;
     }
